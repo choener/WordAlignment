@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NLP.FourWay where
+module Linguistics.FourWay where
 
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape

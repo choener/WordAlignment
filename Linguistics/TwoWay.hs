@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module NLP.TwoWay where
+module Linguistics.TwoWay where
 
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
