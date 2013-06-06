@@ -30,7 +30,7 @@ fourway = FourWay
   }
 
 main = do
-  o <- cmdArgs $ modes [twoway]
+  o <- cmdArgs $ modes [twoway,fourway]
   ls <- fmap (map fromList . lines) $ getContents
   case o of
     TwoWay{..} -> do
@@ -44,6 +44,8 @@ main = do
                                                        ] -- `using` parBuffer 100 (evalTuple2 rdeepseq r0)
       mapM_ printAlignment ts
 
+printAlignment (s,[]) = do
+  printf "DEBUG!\nScore: %d\nDEBUG!\n\n" s
 
 printAlignment (s,(x:xs)) = do
   printf "Score: %d\n" s
