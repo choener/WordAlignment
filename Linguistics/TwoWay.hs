@@ -68,9 +68,7 @@ sAlign2 = STwoWay
   , h         = return . id
   }
 
-nWay2 i1' i2' = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  i1 = VU.fromList i1'
-  i2 = VU.fromList i2'
+nWay2 i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   ws = unsafePerformIO (nWay2Fill i1 i2)
   n1 = VU.length i1
   n2 = VU.length i2

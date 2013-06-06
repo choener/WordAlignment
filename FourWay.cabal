@@ -47,10 +47,13 @@ library
 executable WordAlign
   build-depends:
     cmdargs   >= 0.10 ,
+    parallel  >= 3.2
   main-is:
     WordAlign.hs
   ghc-options:
-    -Ow
+    -O2
+    -rtsopts
+    -threaded
     -funbox-strict-fields
     -funfolding-use-threshold100
     -funfolding-keeness-factor100
