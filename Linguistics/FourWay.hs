@@ -100,6 +100,7 @@ sScore = SFourWay
 {-# INLINE sScore #-}
 
 loopstep w (Z:.a:.b:.c:.d) = w + (sum [pairScore a b, pairScore a c, pairScore a d, pairScore b c, pairScore b d, pairScore c d])
+{-# INLINE loopstep #-}
 
 type PC = (Maybe Char,Char)
 
@@ -138,7 +139,7 @@ sAlign4 = SFourWay
   , nil_nil_nil_nil = const ("","","","")
   , h         = return . id
   }
-{-# INLINE sAlign4 #-}
+{-# NOINLINE sAlign4 #-}
 
 alignfake (w1,w2,w3,w4) (Z:.a:.b:.c:.d) = (w1++addAlign a, w2++addAlign b, w3++addAlign c, w4++addAlign d)
 

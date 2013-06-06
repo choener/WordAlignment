@@ -54,8 +54,6 @@ executable WordAlign
     WordAlign.hs
   ghc-options:
     -O2
-    -rtsopts
-    -threaded
     -funbox-strict-fields
     -funfolding-use-threshold100
     -funfolding-keeness-factor100
