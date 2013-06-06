@@ -42,7 +42,9 @@ library
     Linguistics.TwoWay
 
   ghc-options:
-    -O2 -funbox-strict-fields
+    -O2
+    -funbox-strict-fields
+    -fsimpl-tick-factor=1000000
 
 executable WordAlign
   build-depends:
@@ -57,6 +59,7 @@ executable WordAlign
     -funbox-strict-fields
     -funfolding-use-threshold100
     -funfolding-keeness-factor100
+    -fsimpl-tick-factor=1000000
 --    -fnew-codegen
     -fllvm
     -optlo-O3 -optlo-std-compile-opts
