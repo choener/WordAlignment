@@ -66,3 +66,5 @@ gFourWay sFourWay {-non-terminals:-} wwww {-terminals:-} c_1 c_2 c_3 c_4 empty_1
   )
 {-# INLINE gFourWay #-}
 
+type PC = (Maybe Char,Char)
+
