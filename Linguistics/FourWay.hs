@@ -34,48 +34,9 @@ import ADP.Fusion.Table
 import ADP.Fusion.Chr
 import ADP.Fusion.Multi
 
+import Linguistics.FourWay.Common
 
 
-data SFourWay _m _x _r c empty = SFourWay
-  { loop_loop_loop_step :: _x -> ((((Z:.()):.()):.()):.c) -> _x
-  , loop_loop_step_loop :: _x -> ((((Z:.()):.()):.c):.()) -> _x
-  , loop_loop_step_step :: _x -> ((((Z:.()):.()):.c):.c) -> _x
-  , loop_step_loop_loop :: _x -> ((((Z:.()):.c):.()):.()) -> _x
-  , loop_step_loop_step :: _x -> ((((Z:.()):.c):.()):.c) -> _x
-  , loop_step_step_loop :: _x -> ((((Z:.()):.c):.c):.()) -> _x
-  , loop_step_step_step :: _x -> ((((Z:.()):.c):.c):.c) -> _x
-  , step_loop_loop_loop :: _x -> ((((Z:.c):.()):.()):.()) -> _x
-  , step_loop_loop_step :: _x -> ((((Z:.c):.()):.()):.c) -> _x
-  , step_loop_step_loop :: _x -> ((((Z:.c):.()):.c):.()) -> _x
-  , step_loop_step_step :: _x -> ((((Z:.c):.()):.c):.c) -> _x
-  , step_step_loop_loop :: _x -> ((((Z:.c):.c):.()):.()) -> _x
-  , step_step_loop_step :: _x -> ((((Z:.c):.c):.()):.c) -> _x
-  , step_step_step_loop :: _x -> ((((Z:.c):.c):.c):.()) -> _x
-  , step_step_step_step :: _x -> ((((Z:.c):.c):.c):.c) -> _x
-  , nil_nil_nil_nil :: ((((Z:.empty):.empty):.empty):.empty) -> _x
-  , h :: S.Stream _m _x -> _m _r
-  }
-
-gFourWay sFourWay {-non-terminals:-} wwww {-terminals:-} c_1 c_2 c_3 c_4 empty_1 empty_2 empty_3 empty_4 =
-  (Z:.
-  ( wwww ,  loop_loop_loop_step sFourWay <<< wwww % (T:!None:!None:!None:!c_4) |||
-            loop_loop_step_loop sFourWay <<< wwww % (T:!None:!None:!c_3:!None) |||
-            loop_loop_step_step sFourWay <<< wwww % (T:!None:!None:!c_3:!c_4) |||
-            loop_step_loop_loop sFourWay <<< wwww % (T:!None:!c_2:!None:!None) |||
-            loop_step_loop_step sFourWay <<< wwww % (T:!None:!c_2:!None:!c_4) |||
-            loop_step_step_loop sFourWay <<< wwww % (T:!None:!c_2:!c_3:!None) |||
-            loop_step_step_step sFourWay <<< wwww % (T:!None:!c_2:!c_3:!c_4) |||
-            step_loop_loop_loop sFourWay <<< wwww % (T:!c_1:!None:!None:!None) |||
-            step_loop_loop_step sFourWay <<< wwww % (T:!c_1:!None:!None:!c_4) |||
-            step_loop_step_loop sFourWay <<< wwww % (T:!c_1:!None:!c_3:!None) |||
-            step_loop_step_step sFourWay <<< wwww % (T:!c_1:!None:!c_3:!c_4) ||| 
-            step_step_loop_loop sFourWay <<< wwww % (T:!c_1:!c_2:!None:!None) |||
-            step_step_loop_step sFourWay <<< wwww % (T:!c_1:!c_2:!None:!c_4) ||| 
-            step_step_step_loop sFourWay <<< wwww % (T:!c_1:!c_2:!c_3:!None) |||
-            step_step_step_step sFourWay <<< wwww % (T:!c_1:!c_2:!c_3:!c_4) |||
-            nil_nil_nil_nil sFourWay <<< (T:!empty_1:!empty_2:!empty_3:!empty_4) ... h sFourWay )
-  )
-{-# INLINE gFourWay #-}
 
 sScore :: Monad m => SFourWay m Int Int (Maybe Char,Char) ()
 sScore = SFourWay
@@ -176,7 +137,7 @@ nWay4Fill i1 i2 i3 i4 = do
   let w = mTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) t'
   fillTable4 $ gFourWay sScore w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
   freeze t'
-{-# INLINE nWay4Fill #-}
+{-# NOINLINE nWay4Fill #-}
 
 fillTable4 (Z:.(MTbl _ tbl, f)) = do
   let (_,Z:.PointL(0:.n1):.PointL(0:.n2):.PointL(0:.n3):.PointL(0:.n4)) = boundsM tbl
@@ -194,6 +155,7 @@ backtrack4 (i1 :: VU.Vector Char) (i2 :: VU.Vector Char) (i3 :: VU.Vector Char) 
     w :: DefBtTbl Id (Z:.PointL:.PointL:.PointL:.PointL) Int (String,String,String,String)
     w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) tbl g -- (g :: (Z:.PointL:.PointL:.PointL:.PointL) -> Id (S.Stream Id (String,String,String,String)))
     (Z:.(_,g)) = gFourWay (sScore <** sAlign4) w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
+{-# NOINLINE backtrack4 #-}
 
 (<**) f s = SFourWay llls llsl llss lsll lsls lssl lsss slll slls slsl slss ssll ssls sssl ssss nnnn h where
   SFourWay lllsf llslf llssf lsllf lslsf lsslf lsssf slllf sllsf slslf slssf ssllf sslsf ssslf ssssf nnnnf hf = f

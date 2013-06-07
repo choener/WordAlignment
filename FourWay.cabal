@@ -38,6 +38,7 @@ library
 --    ADPfusion      >= 0.2
   exposed-modules:
     Linguistics.FourWay
+    Linguistics.FourWay.Common
     Linguistics.ThreeWay
     Linguistics.TwoWay
 
