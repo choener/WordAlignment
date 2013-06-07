@@ -11,6 +11,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
+{-# OPTIONS_GHC -fno-liberate-case #-}
+
 module Linguistics.FourWay.Forward where
 
 import Data.Array.Repa.Index

@@ -46,6 +46,6 @@ nWay4 i1 i2 i3 i4 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2:.pointL 0 n3:.pointL 0 n4
   n2 = VU.length i2
   n3 = VU.length i3
   n4 = VU.length i4
-  bt = [] -- backtrack4 i1 i2 i3 i4 ws
+  bt = backtrack4 i1 i2 i3 i4 ws
 {-# NOINLINE nWay4 #-}
 
