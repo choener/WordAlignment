@@ -119,7 +119,7 @@ nWay4 i1 i2 i3 i4 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2:.pointL 0 n3:.pointL 0 n4
   n2 = VU.length i2
   n3 = VU.length i3
   n4 = VU.length i4
-  bt = backtrack4 i1 i2 i3 i4 ws
+  bt = [] -- backtrack4 i1 i2 i3 i4 ws
 {-# NOINLINE nWay4 #-}
 
 nWay4Fill
@@ -145,6 +145,7 @@ fillTable4 (Z:.(MTbl _ tbl, f)) = do
     (f $ Z:.pointL 0 k1:.pointL 0 k2:.pointL 0 k3:.pointL 0 k4) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2:.pointL 0 k3:.pointL 0 k4)
 {-# INLINE fillTable4 #-}
 
+{-
 backtrack4 (i1 :: VU.Vector Char) (i2 :: VU.Vector Char) (i3 :: VU.Vector Char) (i4 :: VU.Vector Char) tbl
   = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 :.pointL 0 n3 :.pointL 0 n4
   where
@@ -181,4 +182,4 @@ backtrack4 (i1 :: VU.Vector Char) (i2 :: VU.Vector Char) (i3 :: VU.Vector Char) 
     let phfs = S.concatMapM snd . S.filter ((hfs==) . fst) $ xs
     hs phfs
   go funL funR (x,ys) c = (funL x c, ys >>= return . S.map (\y -> funR y c))
-
+-}
