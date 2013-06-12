@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 {-# OPTIONS_GHC -fno-liberate-case #-}
+{-# OPTIONS_HADDOCK hide #-}
 
 module Linguistics.FourWay.Forward where
 

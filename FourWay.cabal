@@ -11,43 +11,49 @@ build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.6.0
 synopsis:
-                Word alignments (in multiple dimensions)
+                Bigram word alignments in 2-4 dimensions.
 description:
-                Describe me!
-
-
+                The library provides fast dynamic programming algorithms to
+                align 2-4 words using bigram scoring.
 
 Extra-Source-Files:
   README.md
 
-
+Flag Opt
+  description: use the ghc optimizer
+  default:     True
 
 library
   build-depends:
     base >= 4 && < 5,
     ghc-prim,
+    containers,
+    attoparsec     >= 0.10    ,
     deepseq        >= 1.3     ,
     primitive      >= 0.5     ,
     repa           >= 3.2     ,
     strict         >= 0.3.2   ,
+    text           >= 0.11    ,
     transformers              ,
     tuple-th       >= 0.2.4   ,
     vector         >= 0.10    ,
     QuickCheck     >= 2.5     ,
-    PrimitiveArray >= 0.5.1   
---    ADPfusion      >= 0.2
+    PrimitiveArray >= 0.5.1   ,
+    ADPfusion      >= 0.2
   exposed-modules:
     Linguistics.FourWay
+    Linguistics.Tools
     Linguistics.FourWay.Forward
     Linguistics.FourWay.Backward
     Linguistics.FourWay.Common
     Linguistics.ThreeWay
     Linguistics.TwoWay
-
   ghc-options:
-    -O2
-    -funbox-strict-fields
-    -fsimpl-tick-factor=1000000
+    -fsimpl-tick-factor=10000000
+  if flag(Opt)
+    ghc-options:
+      -O2
+      -funbox-strict-fields
 
 executable WordAlign
   build-depends:
@@ -56,15 +62,17 @@ executable WordAlign
   main-is:
     WordAlign.hs
   ghc-options:
-    -O2
-    -funbox-strict-fields
-    -funfolding-use-threshold100
-    -funfolding-keeness-factor100
-    -fsimpl-tick-factor=1000000
---    -fnew-codegen
-    -fllvm
-    -optlo-O3 -optlo-std-compile-opts
-    -fllvm-tbaa
+    -fsimpl-tick-factor=10000000
+  if flag(Opt)
+    ghc-options:
+      -O2
+      -funbox-strict-fields
+      -funfolding-use-threshold100
+      -funfolding-keeness-factor100
+      -- -fnew-codegen
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 
 
