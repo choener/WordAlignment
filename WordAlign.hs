@@ -27,6 +27,7 @@ data Config
   = TwoWay
     { scoreFile :: String
     , defaultScore :: Double
+    , debugmax :: Int
     }
   | FourWay
     { scoreFile :: String
@@ -37,6 +38,7 @@ data Config
 twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
+  , debugmax = 999999999
   }
 
 fourway = FourWay
@@ -45,7 +47,7 @@ fourway = FourWay
 
 main = do
   o <- cmdArgs $ modes [twoway,fourway]
-  ss <- TL.readFile (scoreFile o) >>= return . parseScoreFile (defaultScore o) . TL.unlines . take 100000 . TL.lines
+  ss <- TL.readFile (scoreFile o) >>= return . parseScoreFile (defaultScore o) . TL.unlines . take (debugmax o) . TL.lines
 --  mapM_ print $ concatMap (M.toList . scores) $ M.elems $ ss
   -- ls <- fmap (map (fromList . T.words) . T.lines) $ T.getContents
   ls <- TL.getContents >>= return . wordParser . TL.lines
