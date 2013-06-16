@@ -29,25 +29,28 @@ library
     ghc-prim,
     containers,
     attoparsec     >= 0.10    ,
+    bytestring                ,
     deepseq        >= 1.3     ,
+    hashable       >= 1.2     ,
     primitive      >= 0.5     ,
     repa           >= 3.2     ,
     strict         >= 0.3.2   ,
     text           >= 0.11    ,
     transformers              ,
     tuple-th       >= 0.2.4   ,
+    unordered-containers >= 0.2.3.1 ,
     vector         >= 0.10    ,
     QuickCheck     >= 2.5     ,
     PrimitiveArray >= 0.5.1   ,
     ADPfusion      >= 0.2
   exposed-modules:
-    Linguistics.FourWay
+--    Linguistics.FourWay
     Linguistics.Tools
-    Linguistics.FourWay.Forward
-    Linguistics.FourWay.Backward
-    Linguistics.FourWay.Common
-    Linguistics.ThreeWay
-    Linguistics.TwoWay
+--    Linguistics.FourWay.Forward
+--    Linguistics.FourWay.Backward
+--    Linguistics.FourWay.Common
+--    Linguistics.ThreeWay
+--    Linguistics.TwoWay
   ghc-options:
     -fsimpl-tick-factor=10000000
   if flag(Opt)

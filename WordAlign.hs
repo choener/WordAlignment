@@ -15,12 +15,15 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy.IO as TL
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.List (intersperse)
 import qualified Data.Vector as V
+import qualified Data.HashMap.Strict as H
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BL
 
-import Linguistics.TwoWay
-import Linguistics.FourWay
+--import Linguistics.TwoWay
+--import Linguistics.FourWay
 import Linguistics.Tools
 
 data Config
@@ -47,15 +50,31 @@ fourway = FourWay
 
 main = do
   o <- cmdArgs $ modes [twoway,fourway]
-  ss <- TL.readFile (scoreFile o) >>= return . parseScoreFile (defaultScore o) . TL.unlines . take (debugmax o) . TL.lines
+--  xs <- BL.readFile (scoreFile o) >>= return . generateLookups
+  xs <- BL.getContents >>= return . generateLookups
+  print $ M.size xs
+  let (_,x) = M.findMin xs in print (V.length x) >> print (V.head x)
+  let (_,x) = M.findMax xs in print (V.length x) >> print (V.last x)
+
+
+
+
+
+
+  --ss <- T.readFile (scoreFile o) >>= return . parseScoreFile (defaultScore o) -- . T.dropWhileEnd (/= '\n') . T.take (fromIntegral $ debugmax o)
+  --print "k"
+  --print $ M.size ss
+  --mapM_ (print . H.size . scores) $ M.elems ss
 --  mapM_ print $ concatMap (M.toList . scores) $ M.elems $ ss
   -- ls <- fmap (map (fromList . T.words) . T.lines) $ T.getContents
+  {-
   ls <- TL.getContents >>= return . wordParser . TL.lines
   case o of
     TwoWay{..} -> do
       let ts = [ ([a,b],second (map tup2List) $ nWay2 (getScores2 ss (wordLang a) (wordLang b)) (wordWord a) (wordWord b))
                | (a:as) <- tails ls, b <- as ]
       mapM_ printAlignment ts
+      -}
 {-
     FourWay{..} -> do
       let ts = [ second (map tup4List) $ nWay4 a b c d | (a:as) <- tails ls

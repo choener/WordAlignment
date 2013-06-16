@@ -25,6 +25,8 @@ import qualified Data.Text as T
 import Text.Printf
 import qualified Data.Map as M
 import Data.Strict.Tuple (Pair (..))
+import Data.Char
+import qualified Data.HashMap.Strict as H
 
 import Data.Array.Repa.Index.Points
 import Data.PrimitiveArray as PA
@@ -64,7 +66,7 @@ sScore  s = STwoWay
   , step_loop = \ww (Z:.(mc,c):.())     -> ww -4 -- in/del
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
-                                             (Just mc' , Just nd') -> ww + M.findWithDefault (def s) (Bigram mc' c :!: Bigram nd' d) (scores s)
+                                             (Just mc' , Just nd') -> ww + H.lookupDefault (def s) (Bigram mc' c , Bigram nd' d) (scores s)
                                              _                     -> -500000
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
@@ -78,9 +80,9 @@ sAlign2 = STwoWay
   , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
   , nil_nil   = const ("","")
   , h         = return . id
-  } where prnt x z = let pad = max 0 (T.length z - T.length x)
+  } where prnt x z = let pad = max 0 (length (filter isAlphaNum $ T.unpack z) - length (filter isAlphaNum $ T.unpack x))
                      in  printf " %s%s" (replicate pad ' ') (T.unpack  x)
-          ds   x = ' ' : replicate (length $ T.unpack x) '-'
+          ds   x = ' ' : replicate (length $ filter isAlphaNum $ T.unpack x) '-'
 
 nWay2 scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   ws = unsafePerformIO (nWay2Fill scores i1 i2)

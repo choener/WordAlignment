@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
@@ -21,9 +22,22 @@ import qualified Data.Text.IO as T
 import Data.Text (Text(..))
 import Data.Char (isSpace)
 import Data.Strict.Tuple
-import Data.List (foldl')
+import Data.List
+import Data.Function
 import qualified Data.Vector as V
 import Data.Either
+import qualified Data.HashMap.Strict as H
+import GHC.Generics (Generic)
+import Data.Hashable
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Attoparsec.ByteString as AB
+import qualified Data.Attoparsec.ByteString.Lazy as ABL
+import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
+import Control.DeepSeq
+import System.Mem
+import System.IO.Unsafe
 
 
 
@@ -36,39 +50,16 @@ createMaps xs = let m = M.fromList $ zip xs [0..] in (m, M.fromList . map swap $
 
 
 -- | Read the scores into an associated map
---
--- TODO strictify
 
 data Scores k = Scores
-  { scores :: !(M.Map (Bigram :!: Bigram) Double)
+  { scores :: !(H.HashMap (Bigram , Bigram) Double)
   , def    :: !(Double)
   } deriving (Show)
 
-{-
-readScoreFile :: Double -> FilePath -> IO Scores
-readScoreFile md fp = do
-  ss <- lines <$> getContents
-  let (d,ts) = case (map words ss,md) of
-                 ([dflt]:xs,_)  -> (read dflt, map wordsToEntry xs)
-                 (xs,dflt)      -> (dflt     , map wordsToEntry xs)
-  let s = Scores (M.fromList ts) d
-  return s
--}
-
-{-
-wordsToEntry :: [String] -> ( ((Int,Int),(Int,Int)) , Double )
-wordsToEntry [a,b,c,d,s] = ( ((a',b'),(c',d')) , s' ) where
-  a' = read a
-  b' = read b
-  c' = read c
-  d' = read d
-  s' = read s
--}
-
 -- | This parser efficiently parses a score file (theses things are big!)
 
-parseScoreFile :: Double -> TL.Text -> M.Map (Text,Text) (Scores Text)
-parseScoreFile def t = case PL.eitherResult (PL.parse go t) of
+parseScoreFile :: Double -> T.Text -> M.Map (Text,Text) (Scores Text)
+parseScoreFile def t = case P.parseOnly go t of -- P.eitherResult (P.parse go t) of
                          Left  err -> error err
                          Right p   -> p
   where
@@ -80,20 +71,24 @@ parseScoreFile def t = case PL.eitherResult (PL.parse go t) of
       bigram = (\l p h -> (l,Bigram p h)) <$> wrd <*> wrd <*> wrd <?> "one bigram"
       wrd    = P.takeWhile1 (not . P.isHorizontalSpace) <* P.space
       f d xs = foldl' (mk d) (M.empty :: M.Map (Text,Text) (Scores Text)) xs -- Scores (M.fromList xs) d
-      mk d m x = M.alter altering (la, lb) m
+      mk !d !m !x = M.alter altering (cla, clb) m
         where (((la,a):!:(lb,b)),c) = x
-              a' = Bigram { peekChar = T.copy $ peekChar a, hitChar = T.copy $ hitChar a }
-              b' = Bigram { peekChar = T.copy $ peekChar b, hitChar = T.copy $ hitChar b }
+              a' = a -- Bigram { peekChar = T.copy $ peekChar a, hitChar = T.copy $ hitChar a }
+              b' = b -- Bigram { peekChar = T.copy $ peekChar b, hitChar = T.copy $ hitChar b }
+              cla = la -- T.copy la
+              clb = lb -- T.copy lb
               altering Nothing
-                = Just $ Scores (M.singleton (a':!:b') c) d
+                = Just $ Scores (H.singleton (a',b') c) d
               altering (Just (Scores im d))
-                = Just $ Scores (M.insert (a':!:b') c im) d
+                = Just $ Scores (H.insert (a',b') c im) d
 
 data Bigram = Bigram
-  { peekChar :: !Text
-  , hitChar  :: !Text
+  { peekChar :: {-# UNPACK #-} !Text
+  , hitChar  :: {-# UNPACK #-} !Text
   }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
+
+instance Hashable Bigram
 
 
 --
@@ -101,11 +96,11 @@ data Bigram = Bigram
 --
 
 data Word = Word
-  { wordID     :: !Int
-  , wordLang   :: !Text
-  , wordClass  :: !Text
-  , wordLength :: !Int
-  , wordWord   :: !(V.Vector Text)
+  { wordID     :: {-# UNPACK #-} !Int
+  , wordLang   :: {-# UNPACK #-} !Text
+  , wordClass  :: {-# UNPACK #-} !Text
+  , wordLength :: {-# UNPACK #-} !Int
+  , wordWord   :: {-# UNPACK #-} !(V.Vector Text)
   }
   deriving (Show,Eq,Ord)
 
@@ -124,3 +119,81 @@ wordParser ts = let (ls,rs) = partitionEithers . map (PL.eitherResult . PL.parse
                 <*> (V.fromList <$> (P.takeWhile1 (not . isSpace) `P.sepBy` P.space))
     wrd  = P.takeWhile1 (not . isSpace) <* P.space
 
+
+test :: M.Map Int Int
+test = M.fromList [ (i,i) | i <- [ 1 .. 4000000 ] ]
+
+
+withDefault :: Double -> [BL.ByteString] -> (Double,[BL.ByteString])
+withDefault d xs = (d,xs)
+
+--parseLine :: BL.ByteString -> (
+parseLine l = case ABL.eitherResult (ABL.parse go l) of
+                Left  err -> error err
+                Right p   -> p
+  where
+    go  = (\(!a) (!b) (!c) -> ((a,b),c)) <$> big <*> big <*> AB.double -- <?> "one bigram score line"
+    big = (\(!l) (!p) (!h) -> (l,BiG p h)) <$> wrd <*> wrd <*> wrd -- <?> "on bigram"
+    wrd = B.copy <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+
+type Lang = B.ByteString
+type LangBiG = (B.ByteString,BiG)
+type Line = ((LangBiG, LangBiG), Double)
+type LLBB = M.Map (Lang:!:Lang) (V.Vector BiGBiGD)
+
+data BiGBiGD = BBD !BiG !BiG !Double
+  deriving Show
+
+data VorS a
+  = V !(V.Vector a) ![a] !Int
+  | S !a
+
+getVector :: VorS a -> V.Vector a
+getVector !(V v l c) | V.null v  = V.fromListN c l
+                     | otherwise = v V.++ (V.fromListN c l)
+getVector !(S s) = V.singleton s
+
+vors :: VorS a -> VorS a -> VorS a
+vors !(V v1 l1 c1) !(V v2 l2 c2) = V (V.concat [v1, v2, V.fromListN c1 $ reverse l1, V.fromListN c2 $ reverse l2]) [] 0
+vors !(V v l c   ) !(S s       ) | c<cMax    = V v (s:l) (c+1)
+                                 | otherwise = V (v V.++ (V.fromListN (c+1) $ reverse (s:l))) [] 0
+vors !(S s       ) !(V v l c   ) | c<cMax    = V v (s:l) (c+1)
+                                 | otherwise = V (v V.++ (V.fromListN (c+1) $ reverse (s:l))) [] 0
+vors !(S s1) !(S s2) = V V.empty [s2,s1] 2
+
+cMax = 1000
+
+data Mapping = Mapping
+  { big2int :: !(M.Map BiG Int)
+  , int2big :: !(M.Map Int BiG)
+  , lliid   :: !(M.Map (Lang:!:Lang) (M.Map (Int:!:Int) Double))
+  }
+
+lines2mapping :: [Line] -> Mapping
+lines2mapping = addGrp mdef . groupBy ((==) `on` langPair) where
+  mdef = Mapping (M.singleton (BiG "" "") 0) (M.singleton 0 (BiG "" "")) M.empty
+  langPair (((l1,_),(l2,_)),_) = (l1,l2)
+  addGrp m [] = m
+  addGrp m ([]:xs) = addGrp m xs
+  addGrp m (x:xs) = addGrp (go m x) xs
+  go m [] = m
+  go m xs@(x:_) = goLang m (langPair x) $ map bbd xs where
+  bbd (((_,b1),(_,b2)),d) = (b1,b2,d)
+  goLang m (l1,l2) [] = m
+
+lines2languages :: [Line] -> LLBB -- M.Map (Lang,Lang) [BiGBiGD]
+lines2languages = M.map getVector . M.fromListWith vors . map l2l where
+  l2l :: Line -> ( (Lang:!:Lang), VorS BiGBiGD )
+  l2l (((l1,b1),(l2,b2)),d) = ( (l1:!:l2), S $ BBD b1 b2 d )
+
+generateLookups :: BL.ByteString -> LLBB -- V.Vector (((B.ByteString,BiG),(B.ByteString,BiG)),Double)
+generateLookups t = lines2languages xs where
+  (d,ls) = withDefault (-42) $ BL.lines t
+  xs = map parseLine ls
+
+
+data BiG = BiG
+  { peekChr :: {-# UNPACK #-} !B.ByteString
+  , hitChr  :: {-# UNPACK #-} !B.ByteString
+  }
+  deriving (Show,Eq,Ord)
