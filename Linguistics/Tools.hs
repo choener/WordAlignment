@@ -36,6 +36,7 @@ import Control.Arrow
 import qualified Data.HashTable.IO as H
 import System.IO.Unsafe
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Set as S
 
 
 
@@ -129,16 +130,16 @@ mkMapping !(Mapping bs ll) xs@(x:_)
            , let d = y ^._5
            ]
 
-generateLookups :: [B.ByteString] -> Double -> BL.ByteString -> Mapping
+generateLookups :: S.Set B.ByteString -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls
   inLangSet l
-    | null ls = True
-    | (l^._1) `elem` langs && (l^._2) `elem` langs = True
+    | S.null langs = True
+    | (l^._1) `S.member` langs && (l^._2) `S.member` langs = True
     | otherwise = False
 
 test = do
-  xs <- BL.readFile "sc01M" >>= return . generateLookups [] (-42)
+  xs <- BL.readFile "sc01M" >>= return . generateLookups S.empty (-42)
   print xs
 
