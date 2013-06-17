@@ -15,6 +15,7 @@ import qualified Data.Map.Strict as M
 import Data.List (intersperse)
 import qualified Data.Vector as V
 import qualified Data.ByteString as BS
+import Data.ByteString.Char8 (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Strict.Tuple
 import qualified Data.Set as S
@@ -77,47 +78,16 @@ main = do
       let t4 :: Double = fromIntegral c4 / 5000 / 60 / 60 -- TODO fix time constant
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
     TwoWay{..} -> do
-      -- TODO good idea would be to *calculate* the block we are interested in
-      --
-      -- TODO good idea would be to use the *omega monad* or some *cantorization* here
-      let bs = ws -- blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
-                    else S.fromList . map wordLang $ ws -- map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
-      -- TODO good idea would be to use blocks by language, together with cantorization
-      let ts = blockWith block $ alignAllTwo defaultScore gapOpen ss bs
-{-      let ts = map (\(a,b) -> ( [a,b]
-                              , second (map tup2List)
-                                $ nWay2 defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
-                                    (wordWord a)
-                                    (wordWord b)
+      let ts = map (\(a,b) -> ( [a,b], alignTwo defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
+                                                (wordWord a) (wordWord b)
                               )
-                    ) bs -}
+                    ) bs
       mapM_ printAlignment ts
-
-alignAllTwo :: Double -> Double -> Mapping -> [Word] -> [([Word], (Double, [[String]]))]
-alignAllTwo sDef sGapOpen langs ls = concatMap (Prelude.uncurry (alignInBlockTwo sDef sGapOpen langs))
-                                   . mkPairs
-                                   . L.groupBy ((==) `on` wordLang)
-                                   $ ls
-  where
-    mkPairs :: [[Word]] -> [([Word],[Word])]
-    mkPairs [] = []
-    mkPairs ws = (head ws, []) : [ (a,b) | (a:as) <- tails ws, b <- as ]
-
--- TODO cantorization still much better!
-
---alignInBlockTwo :: Double -> Double -> Mapping -> [Word] -> [Word] -> [([Word], (Double, [(String,String)]))]
-alignInBlockTwo sDef sGapOpen langs = go where
-  go [] [] = []
-  go xs@(x:_) [] = let scores = getScores2 langs (wordLang x) (wordLang x)
-                   in  map (calcAlign scores)
-                       [ [a,b] | (a:as) <- tails xs, b <- as ]
-  go xs@(x:_) ys@(y:_) = let scores = getScores2 langs (wordLang x) (wordLang y)
-                         in map (calcAlign scores)
-                            [ [a,b] | a <- xs, b <- ys ]
-  calcAlign scores [a,b] = ([a,b], alignTwo sDef sGapOpen scores (wordWord a) (wordWord b))
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
 alignTwo sDef sGapOpen scores x y = second (map tup2List) $ nWay2 sDef sGapOpen scores x y
@@ -132,30 +102,6 @@ alignTwo sDef sGapOpen scores x y = second (map tup2List) $ nWay2 sDef sGapOpen 
       mapM_ printAlignment ts
 -}
 
--- create fancy language block
-
-data Block a = Block
-  { blocked :: [a]
-  , count :: !Int
-  , langs :: [BS.ByteString]
-  }
-
-{-
-blockify :: Int -> [Word] -> [Block Word]
-blockify k xs = concatMap mkBlocks
-              . langs
-              . L.groupBy ((==) `on` wordLang)
---              . L.sortBy (comparing wordLang)
-              $ xs
-  where
-    langs :: [[Word]] -> [([Word],[Word])]
-    langs [] = []
-    langs ws = (head ws, []) : [ (a,b) | (a:as) <- tails ws, b <- as ]
-    mkBlocks :: ([Word],[Word]) -> [Block Word]
-    mkBlocks (xs,[]) = undefined $ [ (a,b) | (a:as) <- tails xs, b <- as ]
-    mkBlocks (xs,ys) = undefined $ [ (a,b) | a <- xs, b <- ys ]
--}
-
 blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 
@@ -167,8 +113,9 @@ printAlignment (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
 
 printAlignment (ws,(s,(x:xs))) = do
-  mapM_ print ws
-  printf "Score: %f\n" s
+  let ids = concat . intersperse " " . map (show . wordID)   $ ws
+  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map pp . V.toList . wordWord) $ ws
+  printf "IDS: %s SCORE: %f    WORDS: %s\n" ids s wds
   mapM_ putStrLn x
   putStrLn ""
 

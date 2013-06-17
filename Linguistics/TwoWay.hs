@@ -87,9 +87,10 @@ sAlign2 = STwoWay
   , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
   , nil_nil   = const ("","")
   , h         = return . id
-  } where prnt x z = let pad = max 0 (length (filter isAlphaNum $ pp z) - length (filter isAlphaNum $ pp x))
+  } where prnt x z = let pad = max 0 (length (filter isAN $ pp z) - length (filter isAN $ pp x))
                      in  printf " %s%s" (replicate pad ' ') (pp x)
-          ds   x = ' ' : replicate (length $ filter isAlphaNum $ pp x) '-'
+          ds   x = ' ' : replicate (length $ filter isAN $ pp x) '-'
+          isAN c = isAlphaNum c || c `elem` [ '\\', '\'' ]
 
 pp :: ByteString -> String
 pp = T.unpack . T.decodeUtf8
