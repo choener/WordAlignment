@@ -9,6 +9,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+--
+-- NOTE currently does ~ 4300 alignments (with backtracking) / second.
+
 module Linguistics.TwoWay where
 
 import Data.Array.Repa.Index
