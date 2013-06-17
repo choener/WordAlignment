@@ -23,6 +23,7 @@ import qualified Data.HashTable.IO as H
 import qualified Data.List as L
 import Data.Ord
 import Data.Function
+import Data.ByteString (ByteString)
 
 import Linguistics.TwoWay
 --import Linguistics.FourWay
@@ -79,20 +80,48 @@ main = do
       -- TODO good idea would be to *calculate* the block we are interested in
       --
       -- TODO good idea would be to use the *omega monad* or some *cantorization* here
-      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let bs = ws -- blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
-                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    else S.fromList . map wordLang $ ws -- map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       -- TODO good idea would be to use blocks by language, together with cantorization
-      let ts = map (\(a,b) -> ( [a,b]
+      let ts = blockWith block $ alignAllTwo defaultScore gapOpen ss bs
+{-      let ts = map (\(a,b) -> ( [a,b]
                               , second (map tup2List)
                                 $ nWay2 defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
                                     (wordWord a)
                                     (wordWord b)
                               )
-                    ) bs
+                    ) bs -}
       mapM_ printAlignment ts
+
+alignAllTwo :: Double -> Double -> Mapping -> [Word] -> [([Word], (Double, [[String]]))]
+alignAllTwo sDef sGapOpen langs ls = concatMap (Prelude.uncurry (alignInBlockTwo sDef sGapOpen langs))
+                                   . mkPairs
+                                   . L.groupBy ((==) `on` wordLang)
+                                   $ ls
+  where
+    mkPairs :: [[Word]] -> [([Word],[Word])]
+    mkPairs [] = []
+    mkPairs ws = (head ws, []) : [ (a,b) | (a:as) <- tails ws, b <- as ]
+
+-- TODO cantorization still much better!
+
+--alignInBlockTwo :: Double -> Double -> Mapping -> [Word] -> [Word] -> [([Word], (Double, [(String,String)]))]
+alignInBlockTwo sDef sGapOpen langs = go where
+  go [] [] = []
+  go xs@(x:_) [] = let scores = getScores2 langs (wordLang x) (wordLang x)
+                   in  map (calcAlign scores)
+                       [ [a,b] | (a:as) <- tails xs, b <- as ]
+  go xs@(x:_) ys@(y:_) = let scores = getScores2 langs (wordLang x) (wordLang y)
+                         in map (calcAlign scores)
+                            [ [a,b] | a <- xs, b <- ys ]
+  calcAlign scores [a,b] = ([a,b], alignTwo sDef sGapOpen scores (wordWord a) (wordWord b))
+
+alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
+alignTwo sDef sGapOpen scores x y = second (map tup2List) $ nWay2 sDef sGapOpen scores x y
+
 {-
     FourWay{..} -> do
       let ts = [ second (map tup4List) $ nWay4 a b c d | (a:as) <- tails ls
@@ -133,6 +162,7 @@ blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b = lliid ss M.! (a:!:b)
 
+printAlignment :: ([Word], (Double, [[String]])) -> IO ()
 printAlignment (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
 

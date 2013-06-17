@@ -19,15 +19,14 @@
 module Linguistics.Bigram where
 
 import Control.Applicative
+import Control.Arrow
 import Control.DeepSeq
-import Data.Char (isSpace)
-import Data.Either
+import Control.Lens
+import Data.ByteString (ByteString)
 import Data.Function
 import Data.Hashable
 import Data.List
 import Data.Strict.Tuple
-import Data.Text (Text(..))
-import Data.Tuple (swap)
 import GHC.Generics (Generic)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
@@ -35,16 +34,10 @@ import qualified Data.Attoparsec.ByteString.Lazy as ABL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
---import qualified Data.HashMap.Strict as H
-import qualified Data.Map.Strict as M
-import qualified Data.Vector as V
-import Data.ByteString (ByteString)
-import Control.Lens
-import Control.Arrow
 import qualified Data.HashTable.IO as H
-import System.IO.Unsafe
-import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import System.IO.Unsafe
 
 
 
@@ -79,7 +72,7 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
     wrd = B.copy <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
 
-type Lang = B.ByteString
+type Lang = ByteString
 type Line = (Lang, Lang, Bigram, Bigram, Double)
 type Scores = H.BasicHashTable {- M.Map -} (Bigram:!:Bigram) Double
 
@@ -128,7 +121,7 @@ mkMapping !(Mapping bs ll) xs@(x:_)
            , let d = y ^._5
            ] -}
 
-generateLookups :: S.Set B.ByteString -> Double -> BL.ByteString -> Mapping
+generateLookups :: S.Set ByteString -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls
@@ -136,8 +129,4 @@ generateLookups langs wd b = lines2mapping xs where
     | S.null langs = True
     | (l^._1) `S.member` langs && (l^._2) `S.member` langs = True
     | otherwise = False
-
-test = do
-  xs <- BL.readFile "sc01M" >>= return . generateLookups S.empty (-42)
-  print xs
 
