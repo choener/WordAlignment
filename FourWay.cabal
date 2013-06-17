@@ -30,6 +30,7 @@ library
     containers,
     attoparsec     >= 0.10    ,
     bytestring                ,
+    control-monad-omega >= 0.3  ,
     deepseq        >= 1.3     ,
     hashable       >= 1.2     ,
     hashtables     >= 1.1     ,

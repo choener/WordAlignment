@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternGuards #-}
@@ -53,6 +54,9 @@ data Bigram = Bigram
   }
   deriving (Show,Eq,Ord,Generic)
 
+instance Hashable Bigram where
+  hashWithSalt s (Bigram p h) = hashWithSalt s (p,h)
+
 instance NFData Bigram where
   rnf (Bigram !a !b) = ()
 
@@ -107,7 +111,7 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
 
 type Lang = B.ByteString
 type Line = (Lang, Lang, Bigram, Bigram, Double)
-type Scores = M.Map (Bigram:!:Bigram) Double
+type Scores = H.BasicHashTable {- M.Map -} (Bigram:!:Bigram) Double
 
 data Mapping = Mapping
   { bigrams :: !(M.Map Bigram Bigram)
@@ -115,6 +119,8 @@ data Mapping = Mapping
   }
   deriving (Show)
 
+instance Hashable (Pair Bigram Bigram) where
+  hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
 lines2mapping :: [Line] -> Mapping
 lines2mapping = foldl' mkMapping emptyMapping . groupBy ((==) `on` ((^._1) &&& (^._2)))
@@ -129,13 +135,28 @@ mkMapping !(Mapping bs ll) xs@(x:_)
   where
     nom = filter (`M.notMember` bs) $ map (^._3) xs ++ map (^._4) xs
     bs' = bs `M.union` (M.fromList $ map (\a -> (a,a)) nom)
-    ll' = M.insertWith M.union (x^._1 :!: x^._2) ys ll
-    ys = M.fromList $ [ ((k1:!:k2),d)
+    ll' = M.insertWith theUnion (x^._1 :!: x^._2) ys ll
+    theUnion :: Scores -> Scores -> Scores
+    theUnion a b = unsafePerformIO $ do
+      a' <- H.toList a
+      b' <- H.toList b
+      H.fromList $ a' ++ b'
+    ys :: Scores
+    ys = unsafePerformIO $ do
+          H.fromListWithSizeHint (length xs)
+           [ ((k1:!:k2),d)
            | y <- xs
            , let k1 = bs' M.! (y^._3)
            , let k2 = bs' M.! (y^._4)
            , let d = y ^._5
            ]
+    {-
+    ys = M.fromList $ [ ((k1:!:k2),d)
+           | y <- xs
+           , let k1 = bs' M.! (y^._3)
+           , let k2 = bs' M.! (y^._4)
+           , let d = y ^._5
+           ] -}
 
 generateLookups :: S.Set B.ByteString -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where

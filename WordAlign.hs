@@ -14,13 +14,12 @@ import Data.Vector (fromList)
 import qualified Data.Map.Strict as M
 import Data.List (intersperse)
 import qualified Data.Vector as V
-import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.HashTable.ST.Basic as H
 import Data.Strict.Tuple
 import qualified Data.Set as S
 import Control.Monad (when)
+import qualified Data.HashTable.IO as H
 
 import Linguistics.TwoWay
 --import Linguistics.FourWay

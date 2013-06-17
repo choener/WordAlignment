@@ -30,9 +30,9 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Map as M
 import Data.Strict.Tuple (Pair (..))
 import Data.Char
-import qualified Data.HashMap.Strict as H
 import qualified Data.Text.Encoding as T
 import qualified Data.Text as T
+import qualified Data.HashTable.IO as H
 
 import Data.Array.Repa.Index.Points
 import Data.PrimitiveArray as PA
@@ -72,7 +72,8 @@ sScore dS s = STwoWay
   , step_loop = \ww (Z:.(mc,c):.())     -> ww -4 -- in/del
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
-                                             (Just mc' , Just nd') -> ww + M.findWithDefault dS (Bigram mc' c :!: Bigram nd' d) s
+--                                             (Just mc' , Just nd') -> ww + M.findWithDefault dS (Bigram mc' c :!: Bigram nd' d) s
+                                             (Just mc' , Just nd') -> ww + ( maybe dS id (unsafePerformIO (H.lookup s (Bigram mc' c :!: Bigram nd' d))))
                                              _                     -> -500000
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
