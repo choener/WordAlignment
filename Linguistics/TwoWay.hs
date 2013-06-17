@@ -45,7 +45,7 @@ import ADP.Fusion.Table
 import ADP.Fusion.Chr
 import ADP.Fusion.Multi
 
-import Linguistics.Tools
+import Linguistics.Bigrams
 
 
 

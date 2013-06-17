@@ -24,7 +24,7 @@ import Control.Monad (when)
 
 import Linguistics.TwoWay
 --import Linguistics.FourWay
-import Linguistics.Tools
+import Linguistics.Bigrams
 
 data Config
   = TwoWay

@@ -7,8 +7,15 @@
 
 -- | Map between 'String's that represent characters and their 'Int'-based
 -- representation.
+--
+-- NOTE filtering the scores list and creating a single bigram map takes about
+-- 70 seconds.
+--
+-- NOTE A single bigram map costs around 160 MByte ram. This includes the
+-- overhead for actually storing the bigrams once (creating pointers instead of
+-- multiple copied 'Bigram' data structures.
 
-module Linguistics.Tools where
+module Linguistics.Bigrams where
 
 import Control.Applicative
 import Control.DeepSeq
