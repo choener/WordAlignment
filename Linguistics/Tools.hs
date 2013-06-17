@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,86 +10,49 @@
 
 module Linguistics.Tools where
 
-import qualified Data.Map.Strict as M
-import Data.Tuple (swap)
 import Control.Applicative
-import qualified Data.Attoparsec.Text as P
-import qualified Data.Attoparsec.Text.Lazy as PL
-import Data.Attoparsec.Text ((<?>))
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.IO as TL
-import qualified Data.Text.IO as T
-import Data.Text (Text(..))
+import Control.DeepSeq
 import Data.Char (isSpace)
-import Data.Strict.Tuple
-import Data.List
-import Data.Function
-import qualified Data.Vector as V
 import Data.Either
-import qualified Data.HashMap.Strict as H
-import GHC.Generics (Generic)
+import Data.Function
 import Data.Hashable
+import Data.List
+import Data.Strict.Tuple
+import Data.Text (Text(..))
+import Data.Tuple (swap)
+import GHC.Generics (Generic)
+import qualified Data.Attoparsec.ByteString as AB
+import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
+import qualified Data.Attoparsec.ByteString.Lazy as ABL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.Attoparsec.ByteString as AB
-import qualified Data.Attoparsec.ByteString.Lazy as ABL
-import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
-import Control.DeepSeq
-import System.Mem
+import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
+--import qualified Data.HashMap.Strict as H
+import qualified Data.Map.Strict as M
+import qualified Data.Vector as V
+import Data.ByteString (ByteString)
+import Control.Lens
+import Control.Arrow
+import qualified Data.HashTable.IO as H
 import System.IO.Unsafe
+import Data.Word
+import qualified Data.IntMap.Strict as IM
+import Data.Bits
+import Foreign.Storable
 
 
-
-type CharIntMap = M.Map String Int
-type IntCharMap = M.Map Int String
-
-createMaps :: [String] -> (CharIntMap,IntCharMap)
-createMaps xs = let m = M.fromList $ zip xs [0..] in (m, M.fromList . map swap $ M.assocs m)
-
-
-
--- | Read the scores into an associated map
-
-data Scores k = Scores
-  { scores :: !(H.HashMap (Bigram , Bigram) Double)
-  , def    :: !(Double)
-  } deriving (Show)
-
--- | This parser efficiently parses a score file (theses things are big!)
-
-parseScoreFile :: Double -> T.Text -> M.Map (Text,Text) (Scores Text)
-parseScoreFile def t = case P.parseOnly go t of -- P.eitherResult (P.parse go t) of
-                         Left  err -> error err
-                         Right p   -> p
-  where
-    go = f <$> (P.double <* P.endOfLine <|> pure def)
-           <*> aline `P.sepBy'` P.endOfLine
-           <*  (P.endOfLine <|> pure ())
-           <*  P.endOfInput where
-      aline  = (\a b c -> ((a:!:b),c)) <$> bigram <*> bigram <*> P.double <?> "one bigram-bigram score line"
-      bigram = (\l p h -> (l,Bigram p h)) <$> wrd <*> wrd <*> wrd <?> "one bigram"
-      wrd    = P.takeWhile1 (not . P.isHorizontalSpace) <* P.space
-      f d xs = foldl' (mk d) (M.empty :: M.Map (Text,Text) (Scores Text)) xs -- Scores (M.fromList xs) d
-      mk !d !m !x = M.alter altering (cla, clb) m
-        where (((la,a):!:(lb,b)),c) = x
-              a' = a -- Bigram { peekChar = T.copy $ peekChar a, hitChar = T.copy $ hitChar a }
-              b' = b -- Bigram { peekChar = T.copy $ peekChar b, hitChar = T.copy $ hitChar b }
-              cla = la -- T.copy la
-              clb = lb -- T.copy lb
-              altering Nothing
-                = Just $ Scores (H.singleton (a',b') c) d
-              altering (Just (Scores im d))
-                = Just $ Scores (H.insert (a',b') c im) d
 
 data Bigram = Bigram
-  { peekChar :: {-# UNPACK #-} !Text
-  , hitChar  :: {-# UNPACK #-} !Text
+  { peekChar :: {-# UNPACK #-} !ByteString
+  , hitChar  :: {-# UNPACK #-} !ByteString
   }
   deriving (Show,Eq,Ord,Generic)
 
-instance Hashable Bigram
+instance NFData Bigram where
+  rnf (Bigram !a !b) = ()
+
+instance Hashable (Pair Int Int) where
+  hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
 
 --
@@ -97,13 +61,14 @@ instance Hashable Bigram
 
 data Word = Word
   { wordID     :: {-# UNPACK #-} !Int
-  , wordLang   :: {-# UNPACK #-} !Text
-  , wordClass  :: {-# UNPACK #-} !Text
+  , wordLang   :: {-# UNPACK #-} !ByteString
+  , wordClass  :: {-# UNPACK #-} !ByteString
   , wordLength :: {-# UNPACK #-} !Int
-  , wordWord   :: {-# UNPACK #-} !(V.Vector Text)
+  , wordWord   :: {-# UNPACK #-} !(V.Vector ByteString)
   }
   deriving (Show,Eq,Ord)
 
+{-
 wordParser :: [TL.Text] -> [Word]
 wordParser ts = let (ls,rs) = partitionEithers . map (PL.eitherResult . PL.parse go) $ ts
                 in if null ls then rs
@@ -118,27 +83,116 @@ wordParser ts = let (ls,rs) = partitionEithers . map (PL.eitherResult . PL.parse
                 <*  P.many1 P.space
                 <*> (V.fromList <$> (P.takeWhile1 (not . isSpace) `P.sepBy` P.space))
     wrd  = P.takeWhile1 (not . isSpace) <* P.space
-
-
-test :: M.Map Int Int
-test = M.fromList [ (i,i) | i <- [ 1 .. 4000000 ] ]
-
+-}
 
 withDefault :: Double -> [BL.ByteString] -> (Double,[BL.ByteString])
 withDefault d xs = (d,xs)
 
---parseLine :: BL.ByteString -> (
 parseLine l = case ABL.eitherResult (ABL.parse go l) of
                 Left  err -> error err
-                Right p   -> p
+                Right p   -> force p
   where
-    go  = (\(!a) (!b) (!c) -> ((a,b),c)) <$> big <*> big <*> AB.double -- <?> "one bigram score line"
-    big = (\(!l) (!p) (!h) -> (l,BiG p h)) <$> wrd <*> wrd <*> wrd -- <?> "on bigram"
+    go  = (\(l1,b1) (l2,b2) d -> (l1,l2,b1,b2,d)) <$> big <*> big <*> AB.double -- <?> "one bigram score line"
+    big = (\l p h -> (l,Bigram p h)) <$> wrd <*> wrd <*> wrd -- <?> "on bigram"
     wrd = B.copy <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
+
 type Lang = B.ByteString
+type Line = (Lang, Lang, Bigram, Bigram, Double)
+
+data Mapping = Mapping
+  { bigrams :: !(M.Map Bigram Bigram)
+  , lliid   :: !(M.Map (Lang:!:Lang) (M.Map (Bigram:!:Bigram) Double))
+  }
+  deriving (Show)
+
+
+lines2mapping :: [Line] -> Mapping
+lines2mapping = foldl' mkMapping emptyMapping . groupBy ((==) `on` ((^._1) &&& (^._2)))
+
+emptyMapping = let b = Bigram "" ""
+               in Mapping (M.singleton b b) M.empty
+
+mkMapping :: Mapping -> [Line] -> Mapping
+mkMapping !m [] = m
+mkMapping !(Mapping bs ll) xs@(x:_)
+  | otherwise = Mapping bs' ll'
+  where
+    nom = filter (`M.notMember` bs) $ map (^._3) xs ++ map (^._4) xs
+    bs' = bs `M.union` (M.fromList $ map (\a -> (a,a)) nom)
+    ll' = M.insertWith M.union (x^._1 :!: x^._2) ys ll
+    ys = M.fromList $ [ ((k1:!:k2),d)
+           | y <- xs
+           , let k1 = bs' M.! (y^._3)
+           , let k2 = bs' M.! (y^._4)
+           , let d = y ^._5
+           ]
+{-
+    (maxk,_) = M.findMax i2b
+    b2i' = b2i `M.union` (M.fromList nom)
+    i2b' = M.fromList $ map swap $ M.toList b2i'
+    ll' = M.insertWith IM.union (x^._1 :!: x^._2) ys ll
+    ys = IM.fromList $ [ ((shiftL i1 btsz .|. i2),d)
+                       | y <- xs
+                       , let i1 = b2i' M.! (y^._3)
+                       , let i2 = b2i' M.! (y^._4)
+                       , let d  = y^._5
+                       ]
+    btsz = bitSize (undefined :: Int) `div` 2 -1
+-}
+
+
+generateLookups t = lines2mapping xs where
+  (d,ls) = withDefault (-42) $ BL.lines t
+  xs = map parseLine ls
+
+test = do
+  xs <- BL.readFile "sc01M" >>= return . generateLookups
+  print xs
+
+
+
+{-
+data Mapping = Mapping
+  { big2int :: !(M.Map Bigram Int)
+  , int2big :: !(M.Map Int Bigram)
+  , lliid   :: !(M.Map (Lang:!:Lang) (IM.IntMap Double)) -- (M.Map (Word32:!:Word32) Double))
+  }
+  deriving (Show)
+
+lines2mapping :: [Line] -> Mapping
+lines2mapping = foldl' mkMapping emptyMapping . groupBy ((==) `on` ((^._1) &&& (^._2)))
+
+emptyMapping = Mapping (M.singleton (Bigram "" "") 0) (M.singleton 0 (Bigram "" "")) M.empty
+
+mkMapping :: Mapping -> [Line] -> Mapping
+mkMapping !m [] = m
+mkMapping !(Mapping b2i i2b ll) xs@(x:_)
+  | M.size b2i' > 2^btsz = error "to many bigrams in mkMapping!"
+  | otherwise = Mapping b2i' i2b' ll'
+  where
+    nom = zip (filter (`M.notMember` b2i) $ map (^._3) xs ++ map (^._4) xs) [maxk+1 ..]
+    (maxk,_) = M.findMax i2b
+    b2i' = b2i `M.union` (M.fromList nom)
+    i2b' = M.fromList $ map swap $ M.toList b2i'
+    ll' = M.insertWith IM.union (x^._1 :!: x^._2) ys ll
+    ys = IM.fromList $ [ ((shiftL i1 btsz .|. i2),d)
+                       | y <- xs
+                       , let i1 = b2i' M.! (y^._3)
+                       , let i2 = b2i' M.! (y^._4)
+                       , let d  = y^._5
+                       ]
+    btsz = bitSize (undefined :: Int) `div` 2 -1
+-}
+
+
+
+
+
+
+
+{-
 type LangBiG = (B.ByteString,BiG)
-type Line = ((LangBiG, LangBiG), Double)
 type LLBB = M.Map (Lang:!:Lang) (V.Vector BiGBiGD)
 
 data BiGBiGD = BBD !BiG !BiG !Double
@@ -197,3 +251,4 @@ data BiG = BiG
   , hitChr  :: {-# UNPACK #-} !B.ByteString
   }
   deriving (Show,Eq,Ord)
+-}

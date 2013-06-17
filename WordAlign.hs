@@ -21,6 +21,7 @@ import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.HashTable.ST.Basic as H
 
 --import Linguistics.TwoWay
 --import Linguistics.FourWay
@@ -52,9 +53,13 @@ main = do
   o <- cmdArgs $ modes [twoway,fourway]
 --  xs <- BL.readFile (scoreFile o) >>= return . generateLookups
   xs <- BL.getContents >>= return . generateLookups
-  print $ M.size xs
-  let (_,x) = M.findMin xs in print (V.length x) >> print (V.head x)
-  let (_,x) = M.findMax xs in print (V.length x) >> print (V.last x)
+  {-
+  print $ M.size $ big2int xs
+  print $ M.size $ int2big xs
+  print $ M.size $ lliid xs
+  -}
+  print $ M.size $ bigrams xs
+  print $ M.size $ lliid xs
 
 
 
