@@ -20,13 +20,15 @@ import qualified Data.Vector as V
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad
 import Data.Vector.Fusion.Util
-import Data.Text (Text(..))
-import qualified Data.Text as T
 import Text.Printf
+import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Map as M
 import Data.Strict.Tuple (Pair (..))
 import Data.Char
 import qualified Data.HashMap.Strict as H
+import qualified Data.Text.Encoding as T
+import qualified Data.Text as T
 
 import Data.Array.Repa.Index.Points
 import Data.PrimitiveArray as PA
@@ -60,48 +62,52 @@ gTwoWay sTwoWay {-non-terminals:-} ww {-terminals:-} c1 c2 empty1 empty2 =
   )
 {-# INLINE gTwoWay #-}
 
-sScore :: Monad m => Scores Text -> STwoWay m Double Double (Maybe Text,Text) ()
-sScore  s = STwoWay
+sScore :: Monad m => Double -> Scores -> STwoWay m Double Double (Maybe ByteString,ByteString) ()
+sScore dS s = STwoWay
   { loop_step = \ww (Z:.():.(mc,c))     -> ww -4 -- in/del
   , step_loop = \ww (Z:.(mc,c):.())     -> ww -4 -- in/del
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
-                                             (Just mc' , Just nd') -> ww + H.lookupDefault (def s) (Bigram mc' c , Bigram nd' d) (scores s)
+                                             (Just mc' , Just nd') -> ww + M.findWithDefault dS (Bigram mc' c :!: Bigram nd' d) s
                                              _                     -> -500000
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   }
 {-# INLINE sScore #-}
 
-sAlign2 :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) (Maybe Text,Text) ()
+sAlign2 :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) (Maybe ByteString,ByteString) ()
 sAlign2 = STwoWay
   { loop_step = \(w1,w2) (Z:.():.(_,c)) -> (w1++ds c  ,w2++prnt c "")
   , step_loop = \(w1,w2) (Z:.(_,c):.()) -> (w1++prnt c "",w2++ds c  )
   , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
   , nil_nil   = const ("","")
   , h         = return . id
-  } where prnt x z = let pad = max 0 (length (filter isAlphaNum $ T.unpack z) - length (filter isAlphaNum $ T.unpack x))
-                     in  printf " %s%s" (replicate pad ' ') (T.unpack  x)
-          ds   x = ' ' : replicate (length $ filter isAlphaNum $ T.unpack x) '-'
+  } where prnt x z = let pad = max 0 (length (filter isAlphaNum $ pp z) - length (filter isAlphaNum $ pp x))
+                     in  printf " %s%s" (replicate pad ' ') (pp x)
+          ds   x = ' ' : replicate (length $ filter isAlphaNum $ pp x) '-'
 
-nWay2 scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  ws = unsafePerformIO (nWay2Fill scores i1 i2)
+pp :: ByteString -> String
+pp = T.unpack . T.decodeUtf8
+
+nWay2 dS scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
+  ws = unsafePerformIO (nWay2Fill dS scores i1 i2)
   n1 = V.length i1
   n2 = V.length i2
-  bt = backtrack2 scores i1 i2 ws
+  bt = backtrack2 dS scores i1 i2 ws
 {-# NOINLINE nWay2 #-}
 
 nWay2Fill
-  :: Scores Text
-  -> V.Vector Text
-  -> V.Vector Text
+  :: Double
+  -> Scores
+  -> V.Vector ByteString
+  -> V.Vector ByteString
   -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
-nWay2Fill scores i1 i2 = do
+nWay2Fill dS scores i1 i2 = do
   let n1 = V.length i1
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScore scores) w (chrLeft i1) (chrLeft i2) Empty Empty
+  fillTable2 $ gTwoWay (sScore dS scores) w (chrLeft i1) (chrLeft i2) Empty Empty
   freeze t'
 {-# INLINE nWay2Fill #-}
 
@@ -111,12 +117,12 @@ fillTable2 (Z:.(MTbl _ tbl, f)) = do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
 
-backtrack2 scores (i1 :: V.Vector Text) (i2 :: V.Vector Text) tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
+backtrack2 dS scores (i1 :: V.Vector ByteString) (i2 :: V.Vector ByteString) tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
-  (Z:.(_,g)) = gTwoWay (sScore scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
+  (Z:.(_,g)) = gTwoWay (sScore dS scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
 
 (<**) f s = STwoWay l_s s_l s_s n_n h where
   STwoWay lsf slf ssf nnf hf = f -- (emptyF,leftF,rightF,pairF,splitF,hF) = f

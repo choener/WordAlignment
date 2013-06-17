@@ -11,19 +11,17 @@ import Text.Printf
 import Control.Arrow
 import Control.Parallel.Strategies
 import Data.Vector (fromList)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.IO as T
-import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Map.Strict as M
 import Data.List (intersperse)
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashTable.ST.Basic as H
+import Data.Strict.Tuple
+import qualified Data.Set as S
 
---import Linguistics.TwoWay
+import Linguistics.TwoWay
 --import Linguistics.FourWay
 import Linguistics.Tools
 
@@ -51,35 +49,14 @@ fourway = FourWay
 
 main = do
   o <- cmdArgs $ modes [twoway,fourway]
---  xs <- BL.readFile (scoreFile o) >>= return . generateLookups
-  xs <- BL.getContents >>= return . generateLookups
-  {-
-  print $ M.size $ big2int xs
-  print $ M.size $ int2big xs
-  print $ M.size $ lliid xs
-  -}
-  print $ M.size $ bigrams xs
-  print $ M.size $ lliid xs
-
-
-
-
-
-
-  --ss <- T.readFile (scoreFile o) >>= return . parseScoreFile (defaultScore o) -- . T.dropWhileEnd (/= '\n') . T.take (fromIntegral $ debugmax o)
-  --print "k"
-  --print $ M.size ss
-  --mapM_ (print . H.size . scores) $ M.elems ss
---  mapM_ print $ concatMap (M.toList . scores) $ M.elems $ ss
-  -- ls <- fmap (map (fromList . T.words) . T.lines) $ T.getContents
-  {-
-  ls <- TL.getContents >>= return . wordParser . TL.lines
+  ws <- BL.getContents >>= return . map parseWord . BL.lines
+  let ls = S.toList $ S.fromList $ map wordLang ws
+  ss <- BL.readFile (scoreFile o) >>= return . generateLookups ls (defaultScore o)
   case o of
     TwoWay{..} -> do
-      let ts = [ ([a,b],second (map tup2List) $ nWay2 (getScores2 ss (wordLang a) (wordLang b)) (wordWord a) (wordWord b))
-               | (a:as) <- tails ls, b <- as ]
+      let ts = [ ([a,b],second (map tup2List) $ nWay2 defaultScore (getScores2 ss (wordLang a) (wordLang b)) (wordWord a) (wordWord b))
+               | (a:as) <- tails ws, b <- as ]
       mapM_ printAlignment ts
-      -}
 {-
     FourWay{..} -> do
       let ts = [ second (map tup4List) $ nWay4 a b c d | (a:as) <- tails ls
@@ -90,7 +67,8 @@ main = do
       mapM_ printAlignment ts
 -}
 
-getScores2 ss a b = ss M.! (a,b)
+getScores2 :: Mapping -> Lang -> Lang -> Scores
+getScores2 ss a b = lliid ss M.! (a:!:b)
 
 printAlignment (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
