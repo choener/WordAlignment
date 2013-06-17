@@ -45,7 +45,7 @@ import ADP.Fusion.Table
 import ADP.Fusion.Chr
 import ADP.Fusion.Multi
 
-import Linguistics.Bigrams
+import Linguistics.Bigram
 
 
 
@@ -66,10 +66,10 @@ gTwoWay sTwoWay {-non-terminals:-} ww {-terminals:-} c1 c2 empty1 empty2 =
   )
 {-# INLINE gTwoWay #-}
 
-sScore :: Monad m => Double -> Scores -> STwoWay m Double Double (Maybe ByteString,ByteString) ()
-sScore dS s = STwoWay
-  { loop_step = \ww (Z:.():.(mc,c))     -> ww -4 -- in/del
-  , step_loop = \ww (Z:.(mc,c):.())     -> ww -4 -- in/del
+sScore :: Monad m => Double -> Double -> Scores -> STwoWay m Double Double (Maybe ByteString,ByteString) ()
+sScore dS gapOpen s = STwoWay
+  { loop_step = \ww (Z:.():.(mc,c))     -> ww + gapOpen
+  , step_loop = \ww (Z:.(mc,c):.())     -> ww + gapOpen
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
 --                                             (Just mc' , Just nd') -> ww + M.findWithDefault dS (Bigram mc' c :!: Bigram nd' d) s
@@ -94,25 +94,26 @@ sAlign2 = STwoWay
 pp :: ByteString -> String
 pp = T.unpack . T.decodeUtf8
 
-nWay2 dS scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  ws = unsafePerformIO (nWay2Fill dS scores i1 i2)
+nWay2 dS gapOpen scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
+  ws = unsafePerformIO (nWay2Fill dS gapOpen scores i1 i2)
   n1 = V.length i1
   n2 = V.length i2
-  bt = backtrack2 dS scores i1 i2 ws
+  bt = backtrack2 dS gapOpen scores i1 i2 ws
 {-# NOINLINE nWay2 #-}
 
 nWay2Fill
   :: Double
+  -> Double
   -> Scores
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
-nWay2Fill dS scores i1 i2 = do
+nWay2Fill dS gapOpen scores i1 i2 = do
   let n1 = V.length i1
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScore dS scores) w (chrLeft i1) (chrLeft i2) Empty Empty
+  fillTable2 $ gTwoWay (sScore dS gapOpen scores) w (chrLeft i1) (chrLeft i2) Empty Empty
   freeze t'
 {-# INLINE nWay2Fill #-}
 
@@ -122,12 +123,12 @@ fillTable2 (Z:.(MTbl _ tbl, f)) = do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
 
-backtrack2 dS scores (i1 :: V.Vector ByteString) (i2 :: V.Vector ByteString) tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
+backtrack2 dS gapOpen scores (i1 :: V.Vector ByteString) (i2 :: V.Vector ByteString) tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
-  (Z:.(_,g)) = gTwoWay (sScore dS scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
+  (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
 
 (<**) f s = STwoWay l_s s_l s_s n_n h where
   STwoWay lsf slf ssf nnf hf = f -- (emptyF,leftF,rightF,pairF,splitF,hF) = f

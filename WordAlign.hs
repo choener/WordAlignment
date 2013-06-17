@@ -20,21 +20,27 @@ import Data.Strict.Tuple
 import qualified Data.Set as S
 import Control.Monad (when)
 import qualified Data.HashTable.IO as H
+import qualified Data.List as L
+import Data.Ord
+import Data.Function
 
 import Linguistics.TwoWay
 --import Linguistics.FourWay
-import Linguistics.Bigrams
+import Linguistics.Bigram
+import Linguistics.Word
 
 data Config
   = TwoWay
     { scoreFile :: String
     , defaultScore :: Double
-    , debugmax :: Int
+    , gapOpen :: Double
     , block :: Maybe (Integer,Integer)
     }
   | FourWay
     { scoreFile :: String
     , defaultScore :: Double
+    , gapOpen :: Double
+    , block :: Maybe (Integer,Integer)
     }
   | Info
     {
@@ -44,7 +50,7 @@ data Config
 twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
-  , debugmax = 999999999
+  , gapOpen = 0 &= help "cost to open a gap"
   , block = Nothing
   }
 
@@ -70,14 +76,18 @@ main = do
       let t4 :: Double = fromIntegral c4 / 5000 / 60 / 60 -- TODO fix time constant
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
     TwoWay{..} -> do
+      -- TODO good idea would be to *calculate* the block we are interested in
+      --
+      -- TODO good idea would be to use the *omega monad* or some *cantorization* here
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
                     else S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
+      -- TODO good idea would be to use blocks by language, together with cantorization
       let ts = map (\(a,b) -> ( [a,b]
                               , second (map tup2List)
-                                $ nWay2 defaultScore (getScores2 ss (wordLang a) (wordLang b))
+                                $ nWay2 defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
                                     (wordWord a)
                                     (wordWord b)
                               )
@@ -93,6 +103,30 @@ main = do
       mapM_ printAlignment ts
 -}
 
+-- create fancy language block
+
+data Block a = Block
+  { blocked :: [a]
+  , count :: !Int
+  , langs :: [BS.ByteString]
+  }
+
+{-
+blockify :: Int -> [Word] -> [Block Word]
+blockify k xs = concatMap mkBlocks
+              . langs
+              . L.groupBy ((==) `on` wordLang)
+--              . L.sortBy (comparing wordLang)
+              $ xs
+  where
+    langs :: [[Word]] -> [([Word],[Word])]
+    langs [] = []
+    langs ws = (head ws, []) : [ (a,b) | (a:as) <- tails ws, b <- as ]
+    mkBlocks :: ([Word],[Word]) -> [Block Word]
+    mkBlocks (xs,[]) = undefined $ [ (a,b) | (a:as) <- tails xs, b <- as ]
+    mkBlocks (xs,ys) = undefined $ [ (a,b) | a <- xs, b <- ys ]
+-}
+
 blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 
@@ -103,7 +137,6 @@ printAlignment (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
 
 printAlignment (ws,(s,(x:xs))) = do
-  --mapM_ (\w -> (mapM_ (\x -> T.putStr x >> putStr " ") . V.toList . wordWord $ w) >> putStrLn "") ws
   mapM_ print ws
   printf "Score: %f\n" s
   mapM_ putStrLn x

@@ -16,7 +16,7 @@
 -- overhead for actually storing the bigrams once (creating pointers instead of
 -- multiple copied 'Bigram' data structures.
 
-module Linguistics.Bigrams where
+module Linguistics.Bigram where
 
 import Control.Applicative
 import Control.DeepSeq
@@ -63,36 +63,6 @@ instance NFData Bigram where
 instance Hashable (Pair Int Int) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
-
---
---  9 Albanian_Tosk 1.214 6 \' b a lʸ t ə
---
-
-data Word = Word
-  { wordID     :: {-# UNPACK #-} !Int
-  , wordLang   :: {-# UNPACK #-} !ByteString
-  , wordClass  :: {-# UNPACK #-} !ByteString
-  , wordLength :: {-# UNPACK #-} !Int
-  , wordWord   :: {-# UNPACK #-} !(V.Vector ByteString)
-  }
-  deriving (Show,Eq,Ord)
-
-instance NFData Word where
-  rnf !(Word {}) = ()
-
-parseWord :: BL.ByteString -> Word
-parseWord w = case ABL.eitherResult (ABL.parse go w) of
-                Left  err -> error err
-                Right p   -> force p
-  where
-    go = Word <$> AB.decimal
-              <*  AB.many1 AB.space
-              <*> wrd
-              <*> wrd
-              <*> AB.decimal
-              <*  AB.many1 AB.space
-              <*> (V.fromList <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
-    wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
 withDefault :: Double -> [BL.ByteString] -> (Double,[BL.ByteString])
 withDefault d [] = (d,[])
