@@ -46,6 +46,7 @@ import ADP.Fusion.Chr
 import ADP.Fusion.Multi
 
 import Linguistics.Bigram
+import Linguistics.Common
 
 
 
@@ -72,28 +73,32 @@ sScore dS gapOpen s = STwoWay
   , step_loop = \ww (Z:.(mc,c):.())     -> ww + gapOpen
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
---                                             (Just mc' , Just nd') -> ww + M.findWithDefault dS (Bigram mc' c :!: Bigram nd' d) s
-                                             (Just mc' , Just nd') -> ww + ( maybe dS id (unsafePerformIO (H.lookup s (Bigram mc' c :!: Bigram nd' d))))
+                                             (Just mc' , Just nd') -> ww + lkup mc' c nd' d
                                              _                     -> -500000
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
-  }
+  } where
+    lkup mc' c nd' d = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
+    {-# INLINE lkup #-}
 {-# INLINE sScore #-}
+
+-- | Backtrack the alignment
 
 sAlign2 :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) (Maybe ByteString,ByteString) ()
 sAlign2 = STwoWay
-  { loop_step = \(w1,w2) (Z:.():.(_,c)) -> (w1++ds c  ,w2++prnt c "")
-  , step_loop = \(w1,w2) (Z:.(_,c):.()) -> (w1++prnt c "",w2++ds c  )
+  { loop_step = \(w1,w2) (Z:.():.(_,c)) -> (w1++padd "" c, w2++prnt c "")
+  , step_loop = \(w1,w2) (Z:.(_,c):.()) -> (w1++prnt c "", w2++padd "" c)
   , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
   , nil_nil   = const ("","")
   , h         = return . id
-  } where prnt x z = let pad = max 0 (length (filter isAN $ pp z) - length (filter isAN $ pp x))
-                     in  printf " %s%s" (replicate pad ' ') (pp x)
-          ds   x = ' ' : replicate (length $ filter isAN $ pp x) '-'
-          isAN c = isAlphaNum c || c `elem` [ '\\', '\'' ]
+  } where --prnt x z = let pad = max 0 (length (filter isAN $ pp z) - length (filter isAN $ pp x))
+          --           in  printf " %s%s" (replicate pad ' ') (pp x)
+          --ds   x = ' ' : replicate (length $ filter isAN $ pp x) '-'
+          --isAN c = isAlphaNum c || c `elem` [ '\\', '\'' ]
+          prnt x z = printAligned x [z]
+          padd x z = printAlignedPad '-' x [z]
 
-pp :: ByteString -> String
-pp = T.unpack . T.decodeUtf8
+-- | Wrap calculations
 
 nWay2 dS gapOpen scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   ws = unsafePerformIO (nWay2Fill dS gapOpen scores i1 i2)
@@ -101,6 +106,8 @@ nWay2 dS gapOpen scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   n2 = V.length i2
   bt = backtrack2 dS gapOpen scores i1 i2 ws
 {-# NOINLINE nWay2 #-}
+
+-- | Forward phase
 
 nWay2Fill
   :: Double
@@ -118,18 +125,32 @@ nWay2Fill dS gapOpen scores i1 i2 = do
   freeze t'
 {-# INLINE nWay2Fill #-}
 
+-- | Fill 2-dim table
+
 fillTable2 (Z:.(MTbl _ tbl, f)) = do
   let (_,Z:.PointL(0:.n1):.PointL(0:.n2)) = boundsM tbl
   forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
 
-backtrack2 dS gapOpen scores (i1 :: V.Vector ByteString) (i2 :: V.Vector ByteString) tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
+-- | Backtrack results
+
+backtrack2
+  :: Double
+  -> Double
+  -> Scores
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> PA.Unboxed (Z:.PointL:.PointL) Double
+  -> [(String,String)]
+backtrack2 dS gapOpen scores i1 i2 tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
   (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
+
+-- | Algebra product operation
 
 (<**) f s = STwoWay l_s s_l s_s n_n h where
   STwoWay lsf slf ssf nnf hf = f -- (emptyF,leftF,rightF,pairF,splitF,hF) = f
