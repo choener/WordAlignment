@@ -54,8 +54,8 @@ twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
   , gapOpen = 0 &= help "cost to open a gap"
-  , block = Nothing
-  }
+  , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
+  } &= help "Align two words at a time for all ordered word combinations"
 
 fourway = FourWay
   {
@@ -65,8 +65,12 @@ info = Info
   {
   }
 
+config = [twoway,info]
+  &= program "WordAlign"
+  &= summary "WordAlign v.0.0.1"
+
 main = do
-  o <- cmdArgs $ modes [twoway,fourway,info]
+  o <- cmdArgs $ modes config
   ws <- BL.getContents >>= return . map parseWord . BL.lines
   case o of
     Info{} -> do
