@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
@@ -15,6 +16,7 @@
 
 module Linguistics.TwoWay where
 
+import qualified Data.List as L
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
 import qualified Data.Vector.Fusion.Stream.Monadic as S hiding ((++))
@@ -29,7 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Map as M
 import Data.Strict.Tuple (Pair (..))
-import Data.Char
+import Data.Char hiding (chr)
 import qualified Data.Text.Encoding as T
 import qualified Data.Text as T
 import qualified Data.HashTable.IO as H
@@ -47,6 +49,8 @@ import ADP.Fusion.Multi
 
 import Linguistics.Bigram
 import Linguistics.Common
+
+import Debug.Trace
 
 
 
@@ -82,6 +86,29 @@ sScore dS gapOpen s = STwoWay
     {-# INLINE lkup #-}
 {-# INLINE sScore #-}
 
+sScoreSimple :: Monad m => [Double] -> Double -> STwoWay m Double Double ByteString ()
+sScoreSimple scores gapOpen = STwoWay
+  { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
+  , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
+  , step_step = \ww (Z:.c:.d ) -> let cev = any (`elem` vowel)     $ B.unpack {- toUtf8String -} c
+                                      cec = any (`elem` consonant) $ B.unpack {- toUtf8String -} c
+                                      dev = any (`elem` vowel)     $ B.unpack {- toUtf8String -} d
+                                      dec = any (`elem` consonant) $ B.unpack {- toUtf8String -} d
+                                  in if
+                  | c==d && cec -> consonantIDS
+                  | c==d && cev -> vowelIDS
+                  | cev && dev  -> vowelS
+                  | cec && dec  -> consonantS
+                  | cev && dec || cec && dev -> vowelConsonantS
+                  | otherwise   -> otherS
+  , nil_nil   = const 0
+  , h         = S.foldl' max (-500000)
+  } where
+    vowel = "aeiou"
+    consonant = ['a' .. 'z'] L.\\ vowel
+    [consonantIDS,consonantS,vowelIDS,vowelS,otherS,vowelConsonantS] = scores
+{-# INLINE sScoreSimple #-}
+
 -- | Backtrack the alignment
 
 sAlign2 :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) (Maybe ByteString,ByteString) ()
@@ -91,11 +118,17 @@ sAlign2 = STwoWay
   , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
   , nil_nil   = const ("","")
   , h         = return . id
-  } where --prnt x z = let pad = max 0 (length (filter isAN $ pp z) - length (filter isAN $ pp x))
-          --           in  printf " %s%s" (replicate pad ' ') (pp x)
-          --ds   x = ' ' : replicate (length $ filter isAN $ pp x) '-'
-          --isAN c = isAlphaNum c || c `elem` [ '\\', '\'' ]
-          prnt x z = printAligned x [z]
+  } where prnt x z = printAligned x [z]
+          padd x z = printAlignedPad '-' x [z]
+
+sAlign2Simple :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) ByteString ()
+sAlign2Simple = STwoWay
+  { loop_step = \(w1,w2) (Z:.():.c) -> (w1++padd "" c, w2++prnt c "")
+  , step_loop = \(w1,w2) (Z:.c:.()) -> (w1++prnt c "", w2++padd "" c)
+  , step_step = \(w1,w2) (Z:.a:.b) -> (w1++prnt a b,w2++prnt b a)
+  , nil_nil   = const ("","")
+  , h         = return . id
+  } where prnt x z = printAligned x [z]
           padd x z = printAlignedPad '-' x [z]
 
 -- | Wrap calculations
@@ -106,6 +139,13 @@ nWay2 dS gapOpen scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
   n2 = V.length i2
   bt = backtrack2 dS gapOpen scores i1 i2 ws
 {-# NOINLINE nWay2 #-}
+
+nWay2Simple scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
+  ws = unsafePerformIO (nWay2FillSimple scores gapOpen i1 i2)
+  n1 = V.length i1
+  n2 = V.length i2
+  bt = backtrack2Simple scores gapOpen i1 i2 ws
+{-# NOINLINE nWay2Simple #-}
 
 -- | Forward phase
 
@@ -125,11 +165,27 @@ nWay2Fill dS gapOpen scores i1 i2 = do
   freeze t'
 {-# INLINE nWay2Fill #-}
 
+nWay2FillSimple
+  :: [Double]
+  -> Double
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
+nWay2FillSimple scores gapOpen i1 i2 = do
+  let n1 = V.length i1
+  let n2 = V.length i2
+  !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
+  let w = mTbl (Z:.EmptyT:.EmptyT) t'
+  fillTable2 $ gTwoWay (sScoreSimple scores gapOpen) w (chr i1) (chr i2) Empty Empty
+  freeze t'
+{-# INLINE nWay2FillSimple #-}
+
 -- | Fill 2-dim table
 
 fillTable2 (Z:.(MTbl _ tbl, f)) = do
   let (_,Z:.PointL(0:.n1):.PointL(0:.n2)) = boundsM tbl
-  forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
+  forM_ [1 .. n1] $ \k1 -> forM_ [1 .. n2] $ \k2 -> do
+  --forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
 
@@ -149,6 +205,20 @@ backtrack2 dS gapOpen scores i1 i2 tbl = unId . P.toList . unId $ g $ Z:.pointL 
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
   (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign2) w (chrLeft i1) (chrLeft i2) Empty Empty
+
+backtrack2Simple
+  :: [Double]
+  -> Double
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> PA.Unboxed (Z:.PointL:.PointL) Double
+  -> [(String,String)]
+backtrack2Simple scores gapOpen i1 i2 tbl = unId . P.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
+  n1 = V.length i1
+  n2 = V.length i2
+  w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
+  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
+  (Z:.(_,g)) = gTwoWay (sScoreSimple scores gapOpen <** sAlign2Simple) w (chr i1) (chr i2) Empty Empty
 
 -- | Algebra product operation
 

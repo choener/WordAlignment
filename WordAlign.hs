@@ -39,6 +39,11 @@ data Config
     , gapOpen :: Double
     , block :: Maybe (Integer,Integer)
     }
+  | TwoWaySimple
+    { scores :: [Double]
+    , gapOpen :: Double
+    , block :: Maybe (Integer,Integer)
+    }
   | FourWay
     { scoreFile :: String
     , defaultScore :: Double
@@ -57,6 +62,11 @@ twoway = TwoWay
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
   } &= help "Align two words at a time for all ordered word combinations"
 
+twowaySimple = TwoWaySimple
+  { scores = [3,1,1,0,0,-1] &= help ""
+--  , gapOpen = -3
+  }
+
 fourway = FourWay
   {
   }
@@ -65,7 +75,7 @@ info = Info
   {
   }
 
-config = [twoway,info]
+config = [twoway,twowaySimple,info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
@@ -93,9 +103,18 @@ main = do
                               )
                     ) bs
       mapM_ printAlignment ts
+    TwoWaySimple{..} -> do
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple scores gapOpen (wordWord a) (wordWord b)
+                              )
+                    ) bs
+      mapM_ printAlignment ts
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
 alignTwo sDef sGapOpen scores x y = second (map tup2List) $ nWay2 sDef sGapOpen scores x y
+
+alignTwoSimple :: [Double] -> Double -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
+alignTwoSimple scores sGapOpen x y = second (map tup2List) $ nWay2Simple scores sGapOpen x y
 
 {-
     FourWay{..} -> do
