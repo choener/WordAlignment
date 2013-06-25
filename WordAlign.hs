@@ -111,10 +111,10 @@ main = do
       mapM_ printAlignment ts
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwo sDef sGapOpen scores x y = second (map tup2List) $ nWay2 sDef sGapOpen scores x y
+alignTwo sDef sGapOpen scores x y = second (map tup2List) $ twoWayBigram sDef sGapOpen scores x y
 
 alignTwoSimple :: [Double] -> Double -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwoSimple scores sGapOpen x y = second (map tup2List) $ nWay2Simple scores sGapOpen x y
+alignTwoSimple scores sGapOpen x y = second (map tup2List) $ twoWaySimple scores sGapOpen x y
 
 {-
     FourWay{..} -> do
