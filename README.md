@@ -49,24 +49,52 @@ We set the gapopen cost to (-2) with (-g -2), and if you need program runtime
 statistics, you may add (+RTS -s -RTS), but that is not required.
 
 The output are four lines for each alignment. An info line with the word ids
-(IDS), the alignment score (SCORE), and the actual words, started by (WORDS)
-and interleaved by (WORD). The next two lines are the alignment, with deletions
-showning up as minus symbols (---) in the deletion field. Note that a deletion
-does not delete a character from the input, it merely aligns an existing
-character in one alignment with the symbol for deletion (--) in the other.
-After the alignment follows one empty line.
+(IDS), the alignment score (SCORE), the normalized scores (NSCORE) and the
+actual words, started by (WORDS) and interleaved by (WORD). The next two lines
+are the alignment, with deletions showning up as minus symbols (---) in the
+deletion field. Note that a deletion does not delete a character from the
+input, it merely aligns an existing character in one alignment with the symbol
+for deletion (--) in the other.  After the alignment follows one empty line.
 
-cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twoway -s albanian.scores -g -2
+The normalized score is defined as SCORE / maximum of input word lengths
+
+cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twoway -s albanian.scores
+
+IDS: 0 1 SCORE: -1.28 NSCORE: -0.18    WORDS: ^ \' b o t ə $   WORD   ^ ð e $
+ ^ \' b o t ə $
+ ^ -- - ð e - $
+
+IDS: 0 2 SCORE: 1.46 NSCORE: 0.12    WORDS: ^ \' b o t ə $   WORD   ^ r̃ o k u lʸ i a\' lʸ e m $
+ ^ -- - \' -  b -   o  t ə $ -
+ ^ r̃ o  k u lʸ i a\' lʸ e m $
+
+IDS: 1 2 SCORE: -1.56 NSCORE: -0.13    WORDS: ^ ð e $   WORD   ^ r̃ o k u lʸ i a\' lʸ e m $
+ ^ -- - ð - -- -   e -- $ - -
+ ^ r̃ o k u lʸ i a\' lʸ e m $
+
+
+
+In addition, a simplified scoring model is available. Here, the word delimiters
+(^) and ($) are not required, as the scoring model does not score the initial
+and last character differently. The simplified scoring model consists of:
+consonant equality, both consonant, vowel equality, both vowel, both of type
+"other", and vowel vs. consonant. With scores of 3,1,1,0,0,-1 by default. Gap
+costs are set via --gapopen with -1 by default.
+
+ cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twowaysimple
+IDS: 0 1 SCORE: -3.00 NSCORE: -0.60    WORDS: \' b o t ə   WORD   ð e
  \' b o t ə
   ð - e - -
 
-IDS: 0 2 SCORE: -3.417719000000001    WORDS: \' b o t ə   WORD   r̃ o k u lʸ i a\' lʸ e m
- \' - - -  b -   o  t ə -
+IDS: 0 2 SCORE: -3.00 NSCORE: -0.30    WORDS: \' b o t ə   WORD   r̃ o k u lʸ i a\' lʸ e m
+ \' - b o  t ə --- -- - -
  r̃ o k u lʸ i a\' lʸ e m
 
-IDS: 1 2 SCORE: -12.2272    WORDS: ð e   WORD   r̃ o k u lʸ i a\' lʸ e m
-  ð - - - -- -   e -- - -
+IDS: 1 2 SCORE: -7.00 NSCORE: -0.70    WORDS: ð e   WORD   r̃ o k u lʸ i a\' lʸ e m
+  ð - - - -- - --- -- e -
  r̃ o k u lʸ i a\' lʸ e m
+
+
 
 
 
