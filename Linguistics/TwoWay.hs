@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 
+{-# OPTIONS_GHC -fno-liberate-case #-}
+
 -- |
 --
 -- NOTE currently does ~ 4300 alignments (with backtracking) / second.
@@ -94,7 +96,7 @@ sScoreSimple scores gapOpen = STwoWay
                                       cec = any (`elem` consonant) $ B.unpack {- toUtf8String -} c
                                       dev = any (`elem` vowel)     $ B.unpack {- toUtf8String -} d
                                       dec = any (`elem` consonant) $ B.unpack {- toUtf8String -} d
-                                  in if
+                                  in ww + if
                   | c==d && cec -> consonantIDS
                   | c==d && cev -> vowelIDS
                   | cev && dev  -> vowelS
@@ -144,7 +146,7 @@ nWay2Simple scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) wher
   ws = unsafePerformIO (nWay2FillSimple scores gapOpen i1 i2)
   n1 = V.length i1
   n2 = V.length i2
-  bt = backtrack2Simple scores gapOpen i1 i2 ws
+  bt = [] -- backtrack2Simple scores gapOpen i1 i2 ws
 {-# NOINLINE nWay2Simple #-}
 
 -- | Forward phase
@@ -176,7 +178,7 @@ nWay2FillSimple scores gapOpen i1 i2 = do
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScoreSimple scores gapOpen) w (chr i1) (chr i2) Empty Empty
+  fillTable2 $ gTwoWay (sScoreSimple scores gapOpen) w (chr' i1 B.empty) (chr' i2 B.empty) Empty Empty
   freeze t'
 {-# INLINE nWay2FillSimple #-}
 
@@ -184,8 +186,8 @@ nWay2FillSimple scores gapOpen i1 i2 = do
 
 fillTable2 (Z:.(MTbl _ tbl, f)) = do
   let (_,Z:.PointL(0:.n1):.PointL(0:.n2)) = boundsM tbl
-  forM_ [1 .. n1] $ \k1 -> forM_ [1 .. n2] $ \k2 -> do
-  --forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
+  --forM_ [1 .. n1] $ \k1 -> forM_ [1 .. n2] $ \k2 -> do
+  forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
 
@@ -235,3 +237,7 @@ backtrack2Simple scores gapOpen i1 i2 tbl = unId . P.toList . unId $ g $ Z:.poin
     hs phfs
   go funL funR (x,ys) c = (funL x c, ys >>= return . S.map (\y -> funR y c))
 
+
+
+test (s :: String) = nWay2Simple [3,1,1,0,0,-1] (-1) s' s' where
+  s' = V.fromList $ L.map (B.pack . (:[])) $ s
