@@ -146,7 +146,7 @@ nWay2Simple scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) wher
   ws = unsafePerformIO (nWay2FillSimple scores gapOpen i1 i2)
   n1 = V.length i1
   n2 = V.length i2
-  bt = [] -- backtrack2Simple scores gapOpen i1 i2 ws
+  bt = backtrack2Simple scores gapOpen i1 i2 ws
 {-# NOINLINE nWay2Simple #-}
 
 -- | Forward phase
@@ -178,7 +178,7 @@ nWay2FillSimple scores gapOpen i1 i2 = do
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScoreSimple scores gapOpen) w (chr' i1 B.empty) (chr' i2 B.empty) Empty Empty
+  fillTable2 $ gTwoWay (sScoreSimple scores gapOpen) w (chr i1) (chr i2) Empty Empty
   freeze t'
 {-# INLINE nWay2FillSimple #-}
 
