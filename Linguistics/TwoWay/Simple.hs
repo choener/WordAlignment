@@ -18,6 +18,8 @@ import qualified Data.List as L
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 
 import ADP.Fusion
 import ADP.Fusion.Chr
@@ -36,10 +38,10 @@ sScore :: Monad m => [Double] -> Double -> STwoWay m Double Double ByteString ()
 sScore scores gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
-  , step_step = \ww (Z:.c:.d ) -> let cev = any (`elem` vowel)     $ B.unpack {- toUtf8String -} c
-                                      cec = any (`elem` consonant) $ B.unpack {- toUtf8String -} c
-                                      dev = any (`elem` vowel)     $ B.unpack {- toUtf8String -} d
-                                      dec = any (`elem` consonant) $ B.unpack {- toUtf8String -} d
+  , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     $ T.decodeUtf8 c
+                                      cec = T.any consonant $ T.decodeUtf8 c
+                                      dev = T.any vowel     $ T.decodeUtf8 d
+                                      dec = T.any consonant $ T.decodeUtf8 d
                                   in ww + if
                   | c==d && cec -> consonantIDS
                   | c==d && cev -> vowelIDS
@@ -50,8 +52,8 @@ sScore scores gapOpen = STwoWay
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   } where
-    vowel = "aeiou"
-    consonant = ['a' .. 'z'] L.\\ vowel
+    vowel     x = x `elem` "aeiou"
+    consonant x = x >= 'a' && x <= 'z' && (not $ vowel x)
     [consonantIDS,consonantS,vowelIDS,vowelS,otherS,vowelConsonantS] = scores
 {-# INLINE sScore #-}
 
