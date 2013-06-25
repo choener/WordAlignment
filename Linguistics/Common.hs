@@ -27,7 +27,7 @@ printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
 
 printLength :: ByteString -> Int
 printLength = length . filter isAN . toUtf8String where
-  isAN c = isAlphaNum c || c `elem` [ '\\', '\'' ]
+  isAN c = isAlphaNum c || c `elem` [ '\\', '\'', '^', '$' ]
 
 
 {-

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 
 module Linguistics.Word where
@@ -40,6 +41,7 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*> wrd
               <*> AB.decimal
               <*  AB.many1 AB.space
-              <*> (V.fromList <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
+              <*> (wrapWord <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrapWord w = V.fromList $ ["^"] ++ w ++ ["$"]
 

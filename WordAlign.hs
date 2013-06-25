@@ -58,7 +58,7 @@ data Config
 twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
-  , gapOpen = 0 &= help "cost to open a gap"
+  , gapOpen = (-1) &= help "cost to open a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
   } &= help "Align two words at a time for all ordered word combinations"
 
