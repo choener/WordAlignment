@@ -139,7 +139,8 @@ printAlignment (ws,(s,[])) = do
 printAlignment (ws,(s,(x:xs))) = do
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
   let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . V.toList . wordWord) $ ws
-  printf "IDS: %s SCORE: %f    WORDS: %s\n" ids s wds
+  let ns = s / (maximum $ 1 : map (fromIntegral . V.length . wordWord) ws)
+  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
   mapM_ putStrLn x
   putStrLn ""
 
