@@ -38,10 +38,10 @@ sScore :: Monad m => [Double] -> Double -> STwoWay m Double Double ByteString ()
 sScore scores gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
-  , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     $ T.decodeUtf8 c
-                                      cec = T.any consonant $ T.decodeUtf8 c
-                                      dev = T.any vowel     $ T.decodeUtf8 d
-                                      dec = T.any consonant $ T.decodeUtf8 d
+  , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     . T.toLower . T.decodeUtf8 $ c
+                                      cec = T.any consonant . T.toLower . T.decodeUtf8 $ c
+                                      dev = T.any vowel     . T.toLower . T.decodeUtf8 $ d
+                                      dec = T.any consonant . T.toLower . T.decodeUtf8 $ d
                                   in ww + if
                   | c==d && cec -> consonantIDS
                   | c==d && cev -> vowelIDS
