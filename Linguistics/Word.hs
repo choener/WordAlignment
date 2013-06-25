@@ -41,7 +41,11 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*> wrd
               <*> AB.decimal
               <*  AB.many1 AB.space
-              <*> (wrapWord <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
+              <*> (V.fromList <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
-    wrapWord w = V.fromList $ ["^"] ++ w ++ ["$"]
 
+addWordDelims :: Word -> Word
+addWordDelims w = w { wordWord = V.fromList $ ["^"] ++ (V.toList $ wordWord w) ++ ["$"] }
+
+removeWordDelims :: Word -> Word
+removeWordDelims w = w { wordWord = V.init . V.tail $ wordWord w }

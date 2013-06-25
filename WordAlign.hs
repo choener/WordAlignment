@@ -81,10 +81,10 @@ config = [twoway,twowaySimple,info]
 
 main = do
   o <- cmdArgs $ modes config
-  ws <- BL.getContents >>= return . map parseWord . BL.lines
+  ws' <- BL.getContents >>= return . map parseWord . BL.lines
   case o of
     Info{} -> do
-      let l :: Integer = genericLength ws
+      let l :: Integer = genericLength ws'
       let c2 = l * (l-1) `div` 2 -- number of alignments
       let t2 :: Double = fromIntegral c2 / 5000 / 60 / 60 -- approximate time in hours
       let c3 = l * (l-1) * (l-2) `div` 3
@@ -93,6 +93,7 @@ main = do
       let t4 :: Double = fromIntegral c4 / 5000 / 60 / 60 -- TODO fix time constant
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
     TwoWay{..} -> do
+      let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
@@ -104,6 +105,7 @@ main = do
                     ) bs
       mapM_ printAlignment ts
     TwoWaySimple{..} -> do
+      let ws = ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let ts = map (\(a,b) -> ( [a,b], alignTwoSimple scores gapOpen (wordWord a) (wordWord b)
                               )
