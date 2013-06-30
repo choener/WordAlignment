@@ -5,26 +5,27 @@
 
 module Main where
 
-import System.Console.CmdArgs
-import Data.List (tails,genericLength,genericTake,genericDrop,group)
-import Text.Printf
 import Control.Arrow
-import Control.Parallel.Strategies
-import Data.Vector (fromList)
-import qualified Data.Map.Strict as M
-import Data.List (intersperse)
-import qualified Data.Vector as V
-import qualified Data.ByteString as BS
-import Data.ByteString.Char8 (unpack)
-import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Strict.Tuple
-import qualified Data.Set as S
 import Control.Monad (when)
+import Control.Parallel.Strategies
+import Data.ByteString (ByteString)
+import Data.ByteString.Char8 (unpack)
+import Data.Function
+import Data.List (intersperse)
+import Data.List (tails,genericLength,genericTake,genericDrop,group)
+import Data.Ord
+import Data.Strict.Tuple
+import Data.Vector (fromList)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashTable.IO as H
 import qualified Data.List as L
-import Data.Ord
-import Data.Function
-import Data.ByteString (ByteString)
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
+import System.Console.CmdArgs
+import Text.Printf
 
 import Linguistics.TwoWay
 --import Linguistics.FourWay
@@ -42,6 +43,7 @@ data Config
   | TwoWaySimple
     { scores :: [Double]
     , gapOpen :: Double
+    , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
   | FourWay
@@ -64,7 +66,8 @@ twoway = TwoWay
 
 twowaySimple = TwoWaySimple
   { scores = [3,1,1,0,0,-1] &= help ""
---  , gapOpen = -3
+  , vowelConsonantFile = "vowel-consonant.txt" &= help "a file defining what is a vowel and what is a consonant"
+  , gapOpen = -1
   }
 
 fourway = FourWay
@@ -103,20 +106,28 @@ main = do
                                                 (wordWord a) (wordWord b)
                               )
                     ) bs
-      mapM_ printAlignment ts
+      mapM_ (printAlignment (-2)) ts
     TwoWaySimple{..} -> do
+      [v,c] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
       let ws = ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
-      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple scores gapOpen (wordWord a) (wordWord b)
+      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple v c scores gapOpen (wordWord a) (wordWord b)
                               )
                     ) bs
-      mapM_ printAlignment ts
+      mapM_ (printAlignment 0) ts
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
 alignTwo sDef sGapOpen scores x y = second (map tup2List) $ twoWayBigram sDef sGapOpen scores x y
 
-alignTwoSimple :: [Double] -> Double -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwoSimple scores sGapOpen x y = second (map tup2List) $ twoWaySimple scores sGapOpen x y
+alignTwoSimple
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> [Double]
+  -> Double
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> (Double, [[String]])
+alignTwoSimple v c scores sGapOpen x y = second (map tup2List) $ twoWaySimple v c scores sGapOpen x y
 
 {-
     FourWay{..} -> do
@@ -134,14 +145,14 @@ blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b = lliid ss M.! (a:!:b)
 
-printAlignment :: ([Word], (Double, [[String]])) -> IO ()
-printAlignment (ws,(s,[])) = do
+printAlignment :: Double -> ([Word], (Double, [[String]])) -> IO ()
+printAlignment k (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
 
-printAlignment (ws,(s,(x:xs))) = do
+printAlignment k (ws,(s,(x:xs))) = do
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
   let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . V.toList . wordWord) $ ws
-  let ns = s / (maximum $ 1 : map (fromIntegral . V.length . wordWord) ws)
+  let ns = s / (maximum $ 1 : map (fromIntegral . V.length . wordWord) ws)   - k
   printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
   mapM_ putStrLn x
   putStrLn ""
