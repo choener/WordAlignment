@@ -36,7 +36,7 @@ import Linguistics.TwoWay.Common
 
 
 sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double ByteString ()
-sScore vowels consonants scores gapOpen = STwoWay
+sScore !vowels !consonants !scores !gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
   , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     . T.toLower . T.decodeUtf8 $ c
@@ -54,8 +54,10 @@ sScore vowels consonants scores gapOpen = STwoWay
   , h         = S.foldl' max (-500000)
   } where
     vowel     x = x `VU.elem` vowels -- x `elem` "aeiou"
+    {-# INLINE vowel #-}
     consonant x = x `VU.elem` consonants -- x >= 'a' && x <= 'z' && (not $ vowel x)
-    [consonantIDS,consonantS,vowelIDS,vowelS,otherS,vowelConsonantS] = scores
+    {-# INLINE consonant #-}
+    [ !consonantIDS, !consonantS, !vowelIDS, !vowelS, !otherS, !vowelConsonantS ] = scores
 {-# INLINE sScore #-}
 
 sAlign :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) ByteString ()
