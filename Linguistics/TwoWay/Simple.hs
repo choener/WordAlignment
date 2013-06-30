@@ -73,7 +73,7 @@ twoWay vowels consonants scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 
   ws = unsafePerformIO (twoWayFill vowels consonants scores gapOpen i1 i2)
   n1 = V.length i1
   n2 = V.length i2
-  bt = [] -- backtrack vowels consonants scores gapOpen i1 i2 ws
+  bt = backtrack vowels consonants scores gapOpen i1 i2 ws
 {-# NOINLINE twoWay #-}
 
 twoWayFill
