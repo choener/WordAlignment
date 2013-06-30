@@ -41,26 +41,9 @@ sScore !vowels !consonants !scores !gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
   , step_step = \ww (Z:.c:.d ) -> ww + scoreMatch vowels consonants scores gapOpen c d
-  {-
-  , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     . T.toLower . T.decodeUtf8 $ c
-                                      cec = T.any consonant . T.toLower . T.decodeUtf8 $ c
-                                      dev = T.any vowel     . T.toLower . T.decodeUtf8 $ d
-                                      dec = T.any consonant . T.toLower . T.decodeUtf8 $ d
-                                  in ww + if
-                  | c==d && cec -> consonantIDS
-                  | c==d && cev -> vowelIDS
-                  | cev && dev  -> vowelS
-                  | cec && dec  -> consonantS
-                  | cev && dec || cec && dev -> vowelConsonantS
-                  | otherwise   -> otherS -}
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
-  } where
-    vowel     x = x `VU.elem` vowels -- x `elem` "aeiou"
-    {-# INLINE vowel #-}
-    consonant x = x `VU.elem` consonants -- x >= 'a' && x <= 'z' && (not $ vowel x)
-    {-# INLINE consonant #-}
-    [ !consonantIDS, !consonantS, !vowelIDS, !vowelS, !otherS, !vowelConsonantS ] = scores
+  }
 {-# INLINE sScore #-}
 
 sAlign :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) ByteString ()
