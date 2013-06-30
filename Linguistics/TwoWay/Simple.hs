@@ -31,6 +31,7 @@ import Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Zero as PA
 
 import Linguistics.Common
+import Linguistics.Scoring.Simple
 import Linguistics.TwoWay.Common
 
 
@@ -39,6 +40,8 @@ sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> S
 sScore !vowels !consonants !scores !gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
+  , step_step = \ww (Z:.c:.d ) -> ww + scoreMatch vowels consonants scores gapOpen c d
+  {-
   , step_step = \ww (Z:.c:.d ) -> let cev = T.any vowel     . T.toLower . T.decodeUtf8 $ c
                                       cec = T.any consonant . T.toLower . T.decodeUtf8 $ c
                                       dev = T.any vowel     . T.toLower . T.decodeUtf8 $ d
@@ -49,7 +52,7 @@ sScore !vowels !consonants !scores !gapOpen = STwoWay
                   | cev && dev  -> vowelS
                   | cec && dec  -> consonantS
                   | cev && dec || cec && dev -> vowelConsonantS
-                  | otherwise   -> otherS
+                  | otherwise   -> otherS -}
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   } where

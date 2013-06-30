@@ -1,0 +1,36 @@
+Grammar: Step
+NT: W
+NT: A
+NT: B
+T:  c
+T:  empty
+W -> step <<< W c
+W -> loop <<< W
+
+A -> idel <<< A empty
+A -> idem <<< W c
+
+B -> odel <<< B empty
+B -> odem <<< W c
+//
+Grammar: Done
+NT: W
+T:  empty
+W -> nil <<< empty
+//
+Grammar: Loop
+NT: W
+W -> loop <<< W
+//
+Product: TwoWay
+Step >< Step + Done * 2 - Loop * 2
+//
+
+
+{-
+>    S --> X u | Y -
+>    X u --> X u u | Y - u | e u      (e = epsilon, leeres Wort)
+>    Y - --> Y . - | X u - | e -
+>    Y . --> Y . . | X u . | e .
+-}
+

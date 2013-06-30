@@ -1,0 +1,24 @@
+Grammar: Step
+NT: W
+T:  c
+W -> step <<< W c
+W -> loop <<< W
+//
+Grammar: Done
+NT: W
+T:  empty
+W -> nil <<< empty
+//
+Grammar: Loop
+NT: W
+W -> loop <<< W
+//
+Product: TwoWay
+Step >< Step + Done * 2 - Loop * 2
+//
+Product: ThreeWay
+Step >< Step >< Step + Done * 3 - Loop * 3
+//
+Product: FourWay
+Step >< Step >< Step >< Step + Done * 4 - Loop * 4
+//
