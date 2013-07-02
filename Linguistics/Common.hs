@@ -9,8 +9,15 @@ import qualified Data.Text as T
 import Text.Printf
 import qualified Data.Text.Encoding as T
 import Data.Char
+import Data.List (transpose)
 
 
+
+-- | Actually align something prettily
+
+alignPretty :: [[ByteString]] -> [String]
+alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose $ xss where
+  f zs x = printAligned x zs
 
 -- | Prettyprint ``characters'', which are actually small bytestrings.
 
@@ -27,7 +34,7 @@ printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
 
 printLength :: ByteString -> Int
 printLength = length . filter isAN . toUtf8String where
-  isAN c = isAlphaNum c || c `elem` [ '\\', '\'', '^', '$' ]
+  isAN c = isAlphaNum c || c `elem` [ '\\', '\'', '^', '$', '-', '\'' ]
 
 
 {-

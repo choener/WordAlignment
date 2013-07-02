@@ -117,7 +117,7 @@ main = do
       mapM_ (printAlignment 0) ts
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwo sDef sGapOpen scores x y = second (map tup2List) $ twoWayBigram sDef sGapOpen scores x y
+alignTwo sDef sGapOpen scores x y = second (map (alignPretty . tup2List)) $ twoWayBigram sDef sGapOpen scores x y
 
 alignTwoSimple
   :: VU.Vector Char
@@ -127,7 +127,7 @@ alignTwoSimple
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> (Double, [[String]])
-alignTwoSimple v c scores sGapOpen x y = second (map tup2List) $ twoWaySimple v c scores sGapOpen x y
+alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
 
 {-
     FourWay{..} -> do

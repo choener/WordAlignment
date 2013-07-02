@@ -46,15 +46,14 @@ sScore !vowels !consonants !scores !gapOpen = STwoWay
   }
 {-# INLINE sScore #-}
 
-sAlign :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) ByteString ()
+sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) ByteString ()
 sAlign = STwoWay
-  { loop_step = \(w1,w2) (Z:.():.c) -> (w1++padd "" c, w2++prnt c "")
-  , step_loop = \(w1,w2) (Z:.c:.()) -> (w1++prnt c "", w2++padd "" c)
-  , step_step = \(w1,w2) (Z:.a:.b) -> (w1++prnt a b,w2++prnt b a)
-  , nil_nil   = const ("","")
+  { loop_step = \(w1,w2) (Z:.():.c) -> ( w1 ++ ["-"], w2 ++ [c]   )
+  , step_loop = \(w1,w2) (Z:.c:.()) -> ( w1 ++ [c]  , w2 ++ ["-"] )
+  , step_step = \(w1,w2) (Z:.a:.b) ->  ( w1 ++ [a]  , w2 ++ [b]   )
+  , nil_nil   = const ([],[])
   , h         = return . id
-  } where prnt x z = printAligned x [z]
-          padd x z = printAlignedPad '-' x [z]
+  }
 {-# INLINE sAlign #-}
 
 twoWay vowels consonants scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
@@ -89,12 +88,12 @@ backtrack
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> PA.Unboxed (Z:.PointL:.PointL) Double
-  -> [(String,String)]
+  -> [Aligned]
 backtrack vowels consonants scores gapOpen i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
-  w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
-  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
+  w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
+  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) Empty Empty
 {-# INLINE backtrack #-}
 

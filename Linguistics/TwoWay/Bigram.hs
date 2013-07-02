@@ -51,12 +51,12 @@ sScore dS gapOpen s = STwoWay
 
 -- | Backtrack the alignment
 
-sAlign :: Monad m => STwoWay m (String,String) (S.Stream m (String,String)) (Maybe ByteString,ByteString) ()
+sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) (Maybe ByteString,ByteString) ()
 sAlign = STwoWay
-  { loop_step = \(w1,w2) (Z:.():.(_,c)) -> (w1++padd "" c, w2++prnt c "")
-  , step_loop = \(w1,w2) (Z:.(_,c):.()) -> (w1++prnt c "", w2++padd "" c)
-  , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> (w1++prnt a b,w2++prnt b a)
-  , nil_nil   = const ("","")
+  { loop_step = \(w1,w2) (Z:.():.(_,c)) -> ( w1 ++ ["-"], w2 ++ [c]   ) -- (w1++padd "" c, w2++prnt c "")
+  , step_loop = \(w1,w2) (Z:.(_,c):.()) -> ( w1 ++ [c]  , w2 ++ ["-"] ) -- (w1++prnt c "", w2++padd "" c)
+  , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> ( w1 ++ [a], w2 ++ [b] ) -- (w1++prnt a b,w2++prnt b a)
+  , nil_nil   = const ([],[])
   , h         = return . id
   } where prnt x z = printAligned x [z]
           padd x z = printAlignedPad '-' x [z]
@@ -96,11 +96,11 @@ backtrack
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> PA.Unboxed (Z:.PointL:.PointL) Double
-  -> [(String,String)]
+  -> [Aligned]
 backtrack dS gapOpen scores i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
-  w :: DefBtTbl Id (Z:.PointL:.PointL) Double (String,String)
-  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id (String,String)))
+  w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
+  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) Empty Empty
 

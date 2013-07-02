@@ -33,20 +33,14 @@ sAlign = SThreeWay
   { loop_loop_step = \(w1,w2,w3) (Z:.():.():.c ) -> (w1++padd "" c  , w2++padd "" c, w3++prnt c "")
   , loop_step_loop = \(w1,w2,w3) (Z:.():.b :.()) -> (w1++padd "" b  , w2++prnt b "", w3++padd "" b)
   , loop_step_step = \(w1,w2,w3) (Z:.():.b :.c ) -> (w1++pad2 "" b c, w2++prn2 b c , w3++prn2 c b )
-  , step_loop_loop = \(w1,w2,w3) (Z:.a :.():.()) -> (w1++padd a ""  , 
+  , step_loop_loop = \(w1,w2,w3) (Z:.a :.():.()) -> (w1,w2,w3) -- (w1++padd a ""  , 
   , step_loop_step = \(w1,w2,w3) (Z:.a :.():.c ) -> (w1++prnt a c   , w2++pad2 a c , w3++prnt c a )
-  , step_step_loop = \(w1,w2,w3) (Z:.a :.b :.()) ->
-  , step_step_step = \(w1,w2,w3) (Z:.a :.b :.c ) ->
+  , step_step_loop = \(w1,w2,w3) (Z:.a :.b :.()) -> (w1,w2,w3)
+  , step_step_step = \(w1,w2,w3) (Z:.a :.b :.c ) -> (w1,w2,w3)
   , nil_nil_nil    = const ("","","")
   , h              = return . id
-  {-
-  { loop_step = \(w1,w2) (Z:.():.c) -> (w1++padd "" c, w2++prnt c "")
-  , step_loop = \(w1,w2) (Z:.c:.()) -> (w1++prnt c "", w2++padd "" c)
-  , step_step = \(w1,w2) (Z:.a:.b) -> (w1++prnt a b,w2++prnt b a)
-  , nil_nil   = const ("","")
-  , h         = return . id
-  -}
-  } where prnt x z = printAligned x [z]
-          padd x z = printAlignedPad '-' x [z]
+  } where prnt x z   = printAligned x [z]
+          padd x z   = printAlignedPad '-' x [z]
+          pad2 x y z = printAlignedPad '-' x [y,z]
 {-# INLINE sAlign #-}
 

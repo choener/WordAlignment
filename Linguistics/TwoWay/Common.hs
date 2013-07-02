@@ -2,11 +2,12 @@
 
 module Linguistics.TwoWay.Common where
 
+import Control.Monad
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
+import Data.ByteString (ByteString)
 import Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
-import Control.Monad
 
 import Data.PrimitiveArray (boundsM, writeM)
 
@@ -39,6 +40,10 @@ gTwoWay sTwoWay {-non-terminals:-} ww {-terminals:-} c1 c2 empty1 empty2 =
           nil_nil   sTwoWay  <<< (T:!empty1:!empty2) ... h sTwoWay )
   )
 {-# INLINE gTwoWay #-}
+
+-- | Type of backtracked results
+
+type Aligned = ( [ByteString], [ByteString] )
 
 -- | Algebra product operation
 
