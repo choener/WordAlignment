@@ -28,6 +28,7 @@ import System.Console.CmdArgs
 import Text.Printf
 
 import Linguistics.TwoWay
+import Linguistics.ThreeWay
 --import Linguistics.FourWay
 import Linguistics.Bigram
 import Linguistics.Word
@@ -41,6 +42,18 @@ data Config
     , block :: Maybe (Integer,Integer)
     }
   | TwoWaySimple
+    { scores :: [Double]
+    , gapOpen :: Double
+    , vowelConsonantFile :: String
+    , block :: Maybe (Integer,Integer)
+    }
+  | ThreeWay
+    { scoreFile :: String
+    , defaultScore :: Double
+    , gapOpen :: Double
+    , block :: Maybe (Integer,Integer)
+    }
+  | ThreeWaySimple
     { scores :: [Double]
     , gapOpen :: Double
     , vowelConsonantFile :: String
@@ -70,6 +83,14 @@ twowaySimple = TwoWaySimple
   , gapOpen = -1
   }
 
+threeway = ThreeWay
+  {
+  }
+
+threewaySimple = ThreeWaySimple
+  {
+  }
+
 fourway = FourWay
   {
   }
@@ -78,7 +99,7 @@ info = Info
   {
   }
 
-config = [twoway,twowaySimple,info]
+config = [twoway,twowaySimple,threewaySimple,info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
@@ -115,9 +136,18 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment 0) ts
+    ThreeWaySimple{..} -> do
+      [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
+      let ws = ws'
+      let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
+      let ts = map (\(a,b,c) -> ( [a,b,c], alignThreeSimple vwl cns scores gapOpen (wordWord a) (wordWord b) (wordWord c)
+                                )
+                    ) bs
+      mapM_ (printAlignment 0) ts
+
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwo sDef sGapOpen scores x y = second (map (alignPretty . tup2List)) $ twoWayBigram sDef sGapOpen scores x y
+alignTwo sDef sGapOpen scores x y = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List)) $ twoWayBigram sDef sGapOpen scores x y
 
 alignTwoSimple
   :: VU.Vector Char
@@ -128,6 +158,17 @@ alignTwoSimple
   -> V.Vector ByteString
   -> (Double, [[String]])
 alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
+
+alignThreeSimple
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> [Double]
+  -> Double
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> (Double, [[String]])
+alignThreeSimple v c scores sGapOpen x y z = second (map (alignPretty . tup3List)) $ threeWaySimple v c scores sGapOpen x y z
 
 {-
     FourWay{..} -> do
