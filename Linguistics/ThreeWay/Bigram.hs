@@ -30,20 +30,20 @@ import Linguistics.ThreeWay.Common
 
 
 
-sScore :: Monad m => Double -> Double -> Scores -> SThreeWay m Double Double (Maybe ByteString,ByteString) ()
-sScore dS gapOpen s = SThreeWay
+sScore :: Monad m => Double -> Double -> (Scores,Scores,Scores) -> SThreeWay m Double Double (Maybe ByteString,ByteString) ()
+sScore dS gapOpen (sab,sac,sbc) = SThreeWay
   { loop_loop_step = \ww (Z:.():.():.c ) -> ww + gapOpen + gapOpen + 0 -- 0 is the mnemonic for loop/loop match
   , loop_step_loop = \ww (Z:.():.b :.()) -> ww + gapOpen + gapOpen + 0
-  , loop_step_step = \ww (Z:.():.(mb,b) :.(mc,c) ) -> ww + gapOpen + gapOpen + lkup mb b mc c
+  , loop_step_step = \ww (Z:.():.(mb,b) :.(mc,c) ) -> ww + gapOpen + gapOpen + lkup sbc mb b mc c
   , step_loop_loop = \ww (Z:.a :.():.()) -> ww + gapOpen + gapOpen + 0
-  , step_loop_step = \ww (Z:.(ma,a) :.():.(mc,c) ) -> ww + gapOpen + gapOpen + lkup ma a mc c
-  , step_step_loop = \ww (Z:.(ma,a) :.(mb,b) :.()) -> ww + gapOpen + gapOpen + lkup ma a mb b
-  , step_step_step = \ww (Z:.(ma,a) :.(mb,b) :.(mc,c) ) -> ww + lkup ma a mb b + lkup ma a mc c + lkup mb b mc c
+  , step_loop_step = \ww (Z:.(ma,a) :.():.(mc,c) ) -> ww + gapOpen + gapOpen + lkup sac ma a mc c
+  , step_step_loop = \ww (Z:.(ma,a) :.(mb,b) :.()) -> ww + gapOpen + gapOpen + lkup sab ma a mb b
+  , step_step_step = \ww (Z:.(ma,a) :.(mb,b) :.(mc,c) ) -> ww + lkup sab ma a mb b + lkup sac ma a mc c + lkup sbc mb b mc c
   , nil_nil_nil    = const 0
   , h              = S.foldl' max (-500000)
-  } where lkup Nothing   _ Nothing   _ = 0
-          lkup (Just mx) x (Just my) y = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mx x :!: Bigram my y)
-          lkup _         _ _         _ = -500000
+  } where lkup s Nothing   _ Nothing   _ = 0
+          lkup s (Just mx) x (Just my) y = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mx x :!: Bigram my y)
+          lkup s _         _ _         _ = -500000
           {-# INLINE lkup #-}
 {-# INLINE sScore #-}
 
@@ -79,7 +79,7 @@ threeWay dS gapOpen scores i1 i2 i3 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2:.pointL
 threeWayFill
   :: Double
   -> Double
-  -> Scores
+  -> (Scores,Scores,Scores)
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> V.Vector ByteString
@@ -97,7 +97,7 @@ threeWayFill dS gapOpen scores i1 i2 i3 = do
 backtrack
   :: Double
   -> Double
-  -> Scores
+  -> (Scores,Scores,Scores)
   -> V.Vector ByteString
   -> V.Vector ByteString
   -> V.Vector ByteString

@@ -99,7 +99,7 @@ info = Info
   {
   }
 
-config = [twoway,twowaySimple,threewaySimple,info]
+config = [twoway,twowaySimple,threeway,threewaySimple,info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
@@ -138,7 +138,7 @@ main = do
       mapM_ (printAlignment 0) ts
     ThreeWay{..} -> do
       let ws = map addWordDelims ws'
-      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
+      let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
                     else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c) -> [a,b,c]) $ bs
@@ -171,8 +171,8 @@ alignTwoSimple
   -> (Double, [[String]])
 alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
 
-alignThree :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignThree sDef sGapOpen scores = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup3List)) . threeWayBigram sDef sGapOpen scores
+alignThree :: Double -> Double -> (Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
+alignThree sDef sGapOpen scores x y z = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup3List)) $ threeWayBigram sDef sGapOpen scores x y z
 
 alignThreeSimple
   :: VU.Vector Char
@@ -201,6 +201,9 @@ blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b = lliid ss M.! (a:!:b)
 
+getScores3 :: Mapping -> Lang -> Lang -> Lang -> (Scores,Scores,Scores)
+getScores3 ss a b c = (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
+
 printAlignment :: Double -> ([Word], (Double, [[String]])) -> IO ()
 printAlignment k (ws,(s,[])) = do
   printf "DEBUG!\nScore: %f\nDEBUG!\n\n" s
@@ -208,7 +211,7 @@ printAlignment k (ws,(s,[])) = do
 printAlignment k (ws,(s,(x:xs))) = do
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
   let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . V.toList . wordWord) $ ws
-  let ns = s / (maximum $ 1 : map (fromIntegral . V.length . wordWord) ws)   - k
+  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . V.length . wordWord) ws)
   printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
   mapM_ putStrLn x
   putStrLn ""
