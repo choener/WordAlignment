@@ -136,6 +136,18 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment 0) ts
+    ThreeWay{..} -> do
+      let ws = map addWordDelims ws'
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
+      let chkLs = if block==Nothing
+                    then S.fromList . map wordLang $ ws
+                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c) -> [a,b,c]) $ bs
+      ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
+      let ts = map (\(a,b,c) -> ( [a,b,c], alignThree defaultScore gapOpen (getScores3 ss (wordLang a) (wordLang b) (wordLang c))
+                                                (wordWord a) (wordWord b) (wordWord c)
+                                )
+                    ) bs
+      mapM_ (printAlignment (-2)) ts
     ThreeWaySimple{..} -> do
       [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
       let ws = ws'
@@ -158,6 +170,9 @@ alignTwoSimple
   -> V.Vector ByteString
   -> (Double, [[String]])
 alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
+
+alignThree :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
+alignThree sDef sGapOpen scores = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup3List)) . threeWayBigram sDef sGapOpen scores
 
 alignThreeSimple
   :: VU.Vector Char

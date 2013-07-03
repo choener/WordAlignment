@@ -65,9 +65,6 @@ sAlign = SThreeWay
   , nil_nil_nil    = const ([],[],[])
   , h              = return . id
   } where ndl = ["-"]
---          prnt x z   = printAligned x [z]
---          padd x z   = printAlignedPad '-' x [z]
---          pad2 x y z = printAlignedPad '-' x [y,z]
 {-# INLINE sAlign #-}
 
 threeWay vowels consonants scores gapOpen i1 i2 i3 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2:.pointL 0 n3), bt) where
