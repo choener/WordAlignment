@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
 
+{-# OPTIONS_GHC -fno-liberate-case #-}
+
 module Linguistics.ThreeWay.Bigram where
 
 import Data.Array.Repa.Index
