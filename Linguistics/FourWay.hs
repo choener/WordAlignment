@@ -1,18 +1,28 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE RecordWildCards #-}
+{- LANGUAGE NoMonomorphismRestriction #-}
+{- LANGUAGE MultiParamTypeClasses #-}
+{- LANGUAGE TemplateHaskell #-}
+{- LANGUAGE ScopedTypeVariables #-}
+{- LANGUAGE RankNTypes #-}
+{- LANGUAGE FlexibleContexts #-}
+{- LANGUAGE BangPatterns #-}
+{- LANGUAGE FlexibleInstances #-}
+{- LANGUAGE TypeOperators #-}
+{- LANGUAGE NoMonomorphismRestriction #-}
+{- LANGUAGE TypeFamilies #-}
+{- LANGUAGE RecordWildCards #-}
 
-module Linguistics.FourWay where
+module Linguistics.FourWay
+  ( fourWaySimple
+  , fourWayBigram
+  ) where
 
+import qualified Linguistics.FourWay.Simple as Simple
+import qualified Linguistics.FourWay.Bigram as Bigram
+
+fourWaySimple = Simple.fourWay
+fourWayBigram = Bigram.fourWay
+
+{-
 import Data.Array.Repa.Index
 import Data.Array.Repa.Shape
 import qualified Data.Vector.Fusion.Stream.Monadic as S
@@ -48,4 +58,5 @@ nWay4 i1 i2 i3 i4 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2:.pointL 0 n3:.pointL 0 n4
   n4 = VU.length i4
   bt = backtrack4 i1 i2 i3 i4 ws
 {-# NOINLINE nWay4 #-}
+-}
 
