@@ -29,7 +29,7 @@ import Text.Printf
 
 import Linguistics.TwoWay
 import Linguistics.ThreeWay
---import Linguistics.FourWay
+import Linguistics.FourWay
 import Linguistics.Bigram
 import Linguistics.Word
 import Linguistics.Common
@@ -65,6 +65,12 @@ data Config
     , gapOpen :: Double
     , block :: Maybe (Integer,Integer)
     }
+  | FourWaySimple
+    { scores :: [Double]
+    , gapOpen :: Double
+    , vowelConsonantFile :: String
+    , block :: Maybe (Integer,Integer)
+    }
   | Info
     {
     }
@@ -95,11 +101,15 @@ fourway = FourWay
   {
   }
 
+fourwaySimple = FourWaySimple
+  {
+  }
+
 info = Info
   {
   }
 
-config = [twoway,twowaySimple,threeway,threewaySimple,info]
+config = [twoway,twowaySimple,threeway,threewaySimple,fourwaySimple,info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
@@ -156,6 +166,14 @@ main = do
                                 )
                     ) bs
       mapM_ (printAlignment 0) ts
+    FourWaySimple{..} -> do
+      [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
+      let ws = ws'
+      let bs = blockWith block $ [ (a,b,c,d) | (a:as) <- tails ws, (b:bs) <- tails as, (c:cs) <- tails bs, d <- cs ]
+      let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFourSimple vwl cns scores gapOpen (wordWord a) (wordWord b) (wordWord c) (wordWord d)
+                                  )
+                    ) bs
+      mapM_ (printAlignment 0) ts
 
 
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
@@ -185,15 +203,17 @@ alignThreeSimple
   -> (Double, [[String]])
 alignThreeSimple v c scores sGapOpen x y z = second (map (alignPretty . tup3List)) $ threeWaySimple v c scores sGapOpen x y z
 
-{-
-    FourWay{..} -> do
-      let ts = [ second (map tup4List) $ nWay4 a b c d | (a:as) <- tails ls
-                                                       , (b:bs) <- tails as
-                                                       , (c:cs) <- tails bs
-                                                       , d      <- cs
-                                                       ]
-      mapM_ printAlignment ts
--}
+alignFourSimple
+  :: VU.Vector Char
+  -> VU.Vector Char
+  -> [Double]
+  -> Double
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> V.Vector ByteString
+  -> (Double, [[String]])
+alignFourSimple v c scores sGapOpen w x y z = second (map (alignPretty . tup4List)) $ fourWaySimple v c scores sGapOpen w x y z
 
 blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs

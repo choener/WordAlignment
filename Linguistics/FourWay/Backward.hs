@@ -87,29 +87,3 @@ backtrack4 (i1 :: VU.Vector Char) (i2 :: VU.Vector Char) (i3 :: VU.Vector Char) 
     (Z:.(_,g)) = gFourWay (sScore <** sAlign4) w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
 {-# NOINLINE backtrack4 #-}
 
-(<**) f s = SFourWay llls llsl llss lsll lsls lssl lsss slll slls slsl slss ssll ssls sssl ssss nnnn h where
-  SFourWay lllsf llslf llssf lsllf lslsf lsslf lsssf slllf sllsf slslf slssf ssllf sslsf ssslf ssssf nnnnf hf = f
-  SFourWay lllss llsls llsss lslls lslss lssls lssss sllls sllss slsls slsss sslls sslss sssls sssss nnnns hs = s
-  llls = go lllsf lllss
-  llsl = go llslf llsls
-  llss = go llssf llsss
-  lsll = go lsllf lslls
-  lsls = go lslsf lslss
-  lssl = go lsslf lssls
-  lsss = go lsssf lssss
-  slll = go slllf sllls
-  slls = go sllsf sllss
-  slsl = go slslf slsls
-  slss = go slssf slsss
-  ssll = go ssllf sslls
-  ssls = go sslsf sslss
-  sssl = go ssslf sssls
-  ssss = go ssssf sssss
-  nnnn e = (nnnnf e, return $ S.singleton $ nnnns e)
-  h xs = do
-    hfs <- hf $ S.map fst xs
-    let phfs = S.concatMapM snd . S.filter ((hfs==) . fst) $ xs
-    hs phfs
-  go funL funR (x,ys) c = (funL x c, ys >>= return . S.map (\y -> funR y c))
-{-# INLINE (<**) #-}
-

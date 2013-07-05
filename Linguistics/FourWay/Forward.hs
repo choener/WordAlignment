@@ -41,28 +41,6 @@ import Linguistics.FourWay.Common
 
 
 
-sScore :: Monad m => SFourWay m Int Int (Maybe Char,Char) ()
-sScore = SFourWay
-  { loop_loop_loop_step = loopstep
-  , loop_loop_step_loop = loopstep
-  , loop_loop_step_step = loopstep
-  , loop_step_loop_loop = loopstep
-  , loop_step_loop_step = loopstep
-  , loop_step_step_loop = loopstep
-  , loop_step_step_step = loopstep
-  , step_loop_loop_loop = loopstep
-  , step_loop_loop_step = loopstep
-  , step_loop_step_loop = loopstep
-  , step_loop_step_step = loopstep
-  , step_step_loop_loop = loopstep
-  , step_step_loop_step = loopstep
-  , step_step_step_loop = loopstep
-  , step_step_step_step = loopstep
-  , nil_nil_nil_nil = const 0
-  , h         = S.foldl' max 0
-  }
-{-# INLINE sScore #-}
-
 loopstep w (Z:.a:.b:.c:.d) = w + (sum [pairScore a b, pairScore a c, pairScore a d, pairScore b c, pairScore b d, pairScore c d])
 {-# INLINE loopstep #-}
 

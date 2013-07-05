@@ -56,7 +56,7 @@ library
 --    Linguistics.ThreeWay
 --    Linguistics.TwoWay
   ghc-options:
-    -fsimpl-tick-factor=10000000
+    -fsimpl-tick-factor=900
   if flag(Opt)
     ghc-options:
       -O2
@@ -69,7 +69,7 @@ executable WordAlign
   main-is:
     WordAlign.hs
   ghc-options:
-    -fsimpl-tick-factor=10000000
+    -fsimpl-tick-factor=900
   if flag(Opt)
     ghc-options:
       -O2
