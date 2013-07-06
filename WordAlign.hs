@@ -109,7 +109,7 @@ info = Info
   {
   }
 
-config = [twoway,twowaySimple,threeway,threewaySimple,fourwaySimple,info]
+config = [twoway,twowaySimple,threeway,threewaySimple,fourway,fourwaySimple,info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
