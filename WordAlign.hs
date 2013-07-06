@@ -166,6 +166,18 @@ main = do
                                 )
                     ) bs
       mapM_ (printAlignment 0) ts
+    FourWay{..} -> do
+      let ws = map addWordDelims ws'
+      let bs = blockWith block $ [ (a,b,c,d) | (a:as) <- tails ws, (b:bs) <- tails as, (c:cs) <- tails bs, d <- cs ]
+      let chkLs = if block==Nothing
+                    then S.fromList . map wordLang $ ws
+                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c,d) -> [a,b,c,d]) $ bs
+      ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
+      let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFour defaultScore gapOpen (getScores4 ss (wordLang a) (wordLang b) (wordLang c) (wordLang d))
+                                                (wordWord a) (wordWord b) (wordWord c) (wordWord d)
+                                  )
+                    ) bs
+      mapM_ (printAlignment (-2)) ts
     FourWaySimple{..} -> do
       [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
       let ws = ws'
@@ -203,6 +215,9 @@ alignThreeSimple
   -> (Double, [[String]])
 alignThreeSimple v c scores sGapOpen x y z = second (map (alignPretty . tup3List)) $ threeWaySimple v c scores sGapOpen x y z
 
+alignFour :: Double -> Double -> (Scores,Scores,Scores,Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
+alignFour sDef sGapOpen scores w x y z = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup4List)) $ fourWayBigram sDef sGapOpen scores w x y z
+
 alignFourSimple
   :: VU.Vector Char
   -> VU.Vector Char
@@ -223,6 +238,9 @@ getScores2 ss a b = lliid ss M.! (a:!:b)
 
 getScores3 :: Mapping -> Lang -> Lang -> Lang -> (Scores,Scores,Scores)
 getScores3 ss a b c = (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
+
+getScores4 :: Mapping -> Lang -> Lang -> Lang -> Lang -> (Scores,Scores,Scores,Scores,Scores,Scores)
+getScores4 ss a b c d = (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (a:!:d), lliid ss M.! (b:!:c), lliid ss M.! (b:!:d), lliid ss M.! (c:!:d))
 
 printAlignment :: Double -> ([Word], (Double, [[String]])) -> IO ()
 printAlignment k (ws,(s,[])) = do
