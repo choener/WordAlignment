@@ -115,7 +115,6 @@ config = [twoway,twowaySimple,threeway,threewaySimple,fourway,fourwaySimple,info
 
 main = do
   o <- cmdArgs $ modes config
-  print o
   ws' <- BL.getContents >>= return . map parseWord . BL.lines
   case o of
     Info{} -> do
