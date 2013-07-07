@@ -26,6 +26,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import System.Console.CmdArgs
 import Text.Printf
+import Control.Monad (unless)
 
 import Linguistics.TwoWay
 import Linguistics.ThreeWay
@@ -42,7 +43,7 @@ data Config
     , block :: Maybe (Integer,Integer)
     }
   | TwoWaySimple
-    { scores :: [Double]
+    { scoreFile :: String
     , gapOpen :: Double
     , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
@@ -54,7 +55,7 @@ data Config
     , block :: Maybe (Integer,Integer)
     }
   | ThreeWaySimple
-    { scores :: [Double]
+    { scoreFile :: String
     , gapOpen :: Double
     , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
@@ -66,7 +67,7 @@ data Config
     , block :: Maybe (Integer,Integer)
     }
   | FourWaySimple
-    { scores :: [Double]
+    { scoreFile :: String
     , gapOpen :: Double
     , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
@@ -84,9 +85,8 @@ twoway = TwoWay
   } &= help "Align two words at a time for all ordered word combinations"
 
 twowaySimple = TwoWaySimple
-  { scores = [3,1,1,0,0,-1] &= help ""
+  { scoreFile = def &= help ""
   , vowelConsonantFile = "vowel-consonant.txt" &= help "a file defining what is a vowel and what is a consonant"
-  , gapOpen = -1
   }
 
 threeway = ThreeWay
@@ -115,6 +115,7 @@ config = [twoway,twowaySimple,threeway,threewaySimple,fourway,fourwaySimple,info
 
 main = do
   o <- cmdArgs $ modes config
+  print o
   ws' <- BL.getContents >>= return . map parseWord . BL.lines
   case o of
     Info{} -> do
@@ -140,9 +141,11 @@ main = do
       mapM_ (printAlignment (-2)) ts
     TwoWaySimple{..} -> do
       [v,c] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
+      scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
+      unless (length scs == 6) $ error "error in simple scores"
       let ws = ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
-      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple v c scores gapOpen (wordWord a) (wordWord b)
+      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple v c scs gapOpen (wordWord a) (wordWord b)
                               )
                     ) bs
       mapM_ (printAlignment 0) ts
@@ -160,9 +163,10 @@ main = do
       mapM_ (printAlignment (-2)) ts
     ThreeWaySimple{..} -> do
       [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
+      scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
       let ws = ws'
       let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
-      let ts = map (\(a,b,c) -> ( [a,b,c], alignThreeSimple vwl cns scores gapOpen (wordWord a) (wordWord b) (wordWord c)
+      let ts = map (\(a,b,c) -> ( [a,b,c], alignThreeSimple vwl cns scs gapOpen (wordWord a) (wordWord b) (wordWord c)
                                 )
                     ) bs
       mapM_ (printAlignment 0) ts
@@ -180,9 +184,10 @@ main = do
       mapM_ (printAlignment (-2)) ts
     FourWaySimple{..} -> do
       [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
+      scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
       let ws = ws'
       let bs = blockWith block $ [ (a,b,c,d) | (a:as) <- tails ws, (b:bs) <- tails as, (c:cs) <- tails bs, d <- cs ]
-      let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFourSimple vwl cns scores gapOpen (wordWord a) (wordWord b) (wordWord c) (wordWord d)
+      let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFourSimple vwl cns scs gapOpen (wordWord a) (wordWord b) (wordWord c) (wordWord d)
                                   )
                     ) bs
       mapM_ (printAlignment 0) ts
