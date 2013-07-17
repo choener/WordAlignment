@@ -131,7 +131,7 @@ main = do
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
-                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       let ts = map (\(a,b) -> ( [a,b], alignTwo defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
                                                 (wordWord a) (wordWord b)
@@ -153,7 +153,8 @@ main = do
       let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
-                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c) -> [a,b,c]) $ bs
+                    --else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c) -> [a,b,c]) $ bs
+                    else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       let ts = map (\(a,b,c) -> ( [a,b,c], alignThree defaultScore gapOpen (getScores3 ss (wordLang a) (wordLang b) (wordLang c))
                                                 (wordWord a) (wordWord b) (wordWord c)
@@ -174,7 +175,8 @@ main = do
       let bs = blockWith block $ [ (a,b,c,d) | (a:as) <- tails ws, (b:bs) <- tails as, (c:cs) <- tails bs, d <- cs ]
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
-                    else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c,d) -> [a,b,c,d]) $ bs
+                    --else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c,d) -> [a,b,c,d]) $ bs
+                    else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFour defaultScore gapOpen (getScores4 ss (wordLang a) (wordLang b) (wordLang c) (wordLang d))
                                                 (wordWord a) (wordWord b) (wordWord c) (wordWord d)
