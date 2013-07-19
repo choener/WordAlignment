@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -17,6 +18,7 @@ import Data.Ord
 import Data.Strict.Tuple
 import Data.Vector (fromList)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashTable.IO as H
 import qualified Data.List as L
@@ -27,6 +29,8 @@ import qualified Data.Vector.Unboxed as VU
 import System.Console.CmdArgs
 import Text.Printf
 import Control.Monad (unless)
+import Debug.Trace (trace)
+import System.IO.Unsafe (unsafePerformIO)
 
 import Linguistics.TwoWay
 import Linguistics.ThreeWay
@@ -129,9 +133,12 @@ main = do
     TwoWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let chkLs = S.fromList . map wordLang $ ws
+      {-
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
                     else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    -}
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       let ts = map (\(a,b) -> ( [a,b], alignTwo defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
                                                 (wordWord a) (wordWord b)
@@ -151,15 +158,18 @@ main = do
     ThreeWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
+      let chkLs = S.fromList . map wordLang $ ws
+      {-
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
                     --else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c) -> [a,b,c]) $ bs
                     else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    -}
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
-      let ts = map (\(a,b,c) -> ( [a,b,c], alignThree defaultScore gapOpen (getScores3 ss (wordLang a) (wordLang b) (wordLang c))
+      let ts = ss `seq` map (\(a,b,c) -> ( [a,b,c], alignThree defaultScore gapOpen (getScores3 ss (wordLang a) (wordLang b) (wordLang c))
                                                 (wordWord a) (wordWord b) (wordWord c)
-                                )
-                    ) bs
+                                         )
+                            ) bs
       mapM_ (printAlignment (-2)) ts
     ThreeWaySimple{..} -> do
       [vwl,cns] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
@@ -173,10 +183,13 @@ main = do
     FourWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b,c,d) | (a:as) <- tails ws, (b:bs) <- tails as, (c:cs) <- tails bs, d <- cs ]
+      let chkLs = S.fromList . map wordLang $ ws
+      {-
       let chkLs = if block==Nothing
                     then S.fromList . map wordLang $ ws
                     --else S.fromList . map head . group . map wordLang . concatMap (\(a,b,c,d) -> [a,b,c,d]) $ bs
                     else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
+                    -}
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
       let ts = map (\(a,b,c,d) -> ( [a,b,c,d], alignFour defaultScore gapOpen (getScores4 ss (wordLang a) (wordLang b) (wordLang c) (wordLang d))
                                                 (wordWord a) (wordWord b) (wordWord c) (wordWord d)
@@ -240,13 +253,23 @@ blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 
 getScores2 :: Mapping -> Lang -> Lang -> Scores
-getScores2 ss a b = lliid ss M.! (a:!:b)
+getScores2 ss a b
+  | Just z <- M.lookup (a:!:b) (lliid ss) = z
+  | Just z <- M.lookup (b:!:a) (lliid ss) = z
+  | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
+                (unsafePerformIO H.new)
+{-
+getScores2 ss a b = maybe err id $ M.lookup (a:!:b) (lliid ss) where   --  lliid ss M.! (a:!:b)
+  err = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
+        (unsafePerformIO H.new)
+-}
 
 getScores3 :: Mapping -> Lang -> Lang -> Lang -> (Scores,Scores,Scores)
-getScores3 ss a b c = (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
+getScores3 ss a b c = (getScores2 ss a b, getScores2 ss a c, getScores2 ss b c)  -- (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
 
 getScores4 :: Mapping -> Lang -> Lang -> Lang -> Lang -> (Scores,Scores,Scores,Scores,Scores,Scores)
-getScores4 ss a b c d = (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (a:!:d), lliid ss M.! (b:!:c), lliid ss M.! (b:!:d), lliid ss M.! (c:!:d))
+getScores4 ss a b c d = (getScores2 ss a b, getScores2 ss a c, getScores2 ss a d, getScores2 ss b c, getScores2 ss b d, getScores2 ss c d)
+-- (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (a:!:d), lliid ss M.! (b:!:c), lliid ss M.! (b:!:d), lliid ss M.! (c:!:d))
 
 printAlignment :: Double -> ([Word], (Double, [[String]])) -> IO ()
 printAlignment k (ws,(s,[])) = do
