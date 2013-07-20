@@ -255,7 +255,7 @@ blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
   | Just z <- M.lookup (a:!:b) (lliid ss) = z
-  | Just z <- M.lookup (b:!:a) (lliid ss) = z
+--  | Just z <- M.lookup (b:!:a) (lliid ss) = z
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 (unsafePerformIO H.new)
 {-

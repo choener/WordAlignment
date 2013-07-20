@@ -86,7 +86,9 @@ instance Hashable (Pair Bigram Bigram) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
 lines2mapping :: [Line] -> Mapping
-lines2mapping = foldl' mkMapping emptyMapping . groupBy ((==) `on` ((^._1) &&& (^._2)))
+lines2mapping = foldl' mkMapping emptyMapping . groupBy ((==) `on` ((^._1) &&& (^._2))) . dupLines where
+  dupLines xs = let xs' = map (\(l1,l2,b1,b2,d) -> (l2,l1,b2,b1,d)) . filter (\l -> l^._1 /= l^._2) $ xs
+                in  xs ++ xs'
 
 emptyMapping = let b = Bigram "" ""
                in Mapping (M.singleton b b) M.empty
