@@ -1,3 +1,4 @@
+{-
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -86,4 +87,5 @@ backtrack4 (i1 :: VU.Vector Char) (i2 :: VU.Vector Char) (i3 :: VU.Vector Char) 
     w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) tbl g -- (g :: (Z:.PointL:.PointL:.PointL:.PointL) -> Id (S.Stream Id (String,String,String,String)))
     (Z:.(_,g)) = gFourWay (sScore <** sAlign4) w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
 {-# NOINLINE backtrack4 #-}
+-}
 

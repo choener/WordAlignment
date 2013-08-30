@@ -4,7 +4,9 @@
 
 {-# OPTIONS_GHC -fno-liberate-case #-}
 
-module Linguistics.FourWay.Bigram where
+module Linguistics.FourWay.Bigram 
+  ( fourWay
+  ) where
 
 import Data.Array.Repa.Index
 import qualified Data.Vector as V

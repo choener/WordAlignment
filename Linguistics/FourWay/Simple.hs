@@ -4,7 +4,9 @@
 
 {-# OPTIONS_GHC -fno-liberate-case #-}
 
-module Linguistics.FourWay.Simple where
+module Linguistics.FourWay.Simple
+  ( fourWay
+  ) where
 
 import Data.Array.Repa.Index
 import qualified Data.Vector as V
@@ -134,6 +136,8 @@ backtrack vowels consonants scores gapOpen i1 i2 i3 i4 tbl = unId . S.toList . u
   (Z:.(_,g)) = gFourWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) (chr i3) (chr i4) Empty Empty Empty Empty
 {-# INLINE backtrack #-}
 
+{-
 test s = fourWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' s' s' where
   s' = V.fromList $ L.map (B.pack . (:[])) $ s
+-}
 

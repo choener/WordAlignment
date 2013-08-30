@@ -1,3 +1,4 @@
+{-
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -81,4 +82,5 @@ fillTable4 (Z:.(MTbl _ tbl, f)) = do
   forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> forM_ [0 .. n3] $ \k3 -> forM_ [0 .. n4] $ \k4 -> do
     (f $ Z:.pointL 0 k1:.pointL 0 k2:.pointL 0 k3:.pointL 0 k4) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2:.pointL 0 k3:.pointL 0 k4)
 {-# INLINE fillTable4 #-}
+-}
 

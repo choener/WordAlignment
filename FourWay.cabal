@@ -77,9 +77,9 @@ executable WordAlign
       -funfolding-use-threshold100
       -funfolding-keeness-factor100
       -- -fnew-codegen
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+--      -fllvm
+--      -optlo-O3 -optlo-std-compile-opts
+--      -fllvm-tbaa
 
 
 
