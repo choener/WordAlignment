@@ -21,6 +21,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import System.IO.Unsafe (unsafePerformIO)
+import GHC.Exts
 
 import ADP.Fusion
 import ADP.Fusion.Chr
@@ -56,8 +57,9 @@ sAlign = STwoWay
   }
 {-# INLINE sAlign #-}
 
+--twoWay :: VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> V.Vector ByteString -> V.Vector ByteString -> (Double
 twoWay vowels consonants scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  ws = unsafePerformIO (twoWayFill vowels consonants scores gapOpen i1 i2)
+  ws = unsafePerformIO $ twoWayFill vowels consonants scores gapOpen i1 i2
   n1 = V.length i1
   n2 = V.length i2
   bt = backtrack vowels consonants scores gapOpen i1 i2 ws
@@ -78,7 +80,7 @@ twoWayFill vowels consonants scores gapOpen i1 i2 = do
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
   fillTable2 $ gTwoWay (sScore vowels consonants scores gapOpen) w (chr i1) (chr i2) Empty Empty
   freeze t'
-{-# INLINE twoWayFill #-}
+{-# NOINLINE twoWayFill #-}
 
 backtrack
   :: VU.Vector Char
@@ -95,8 +97,8 @@ backtrack vowels consonants scores gapOpen i1 i2 tbl = unId . S.toList . unId $ 
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) Empty Empty
-{-# INLINE backtrack #-}
+{-# NOINLINE backtrack #-}
 
-test s = twoWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' where
-  s' = V.fromList $ L.map (B.pack . (:[])) $ s
+--test s = twoWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' where
+--  s' = V.fromList $ L.map (B.pack . (:[])) $ s
 

@@ -113,7 +113,7 @@ fourWayFill vowels consonants scores gapOpen i1 i2 i3 i4 = do
   let w = mTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) t'
   fillTable4 $ gFourWay (sScore vowels consonants scores gapOpen) w (chr i1) (chr i2) (chr i3) (chr i4) Empty Empty Empty Empty
   freeze t'
-{-# INLINE fourWayFill #-}
+{-# NOINLINE fourWayFill #-}
 
 backtrack
   :: VU.Vector Char
@@ -134,7 +134,7 @@ backtrack vowels consonants scores gapOpen i1 i2 i3 i4 tbl = unId . S.toList . u
   w :: DefBtTbl Id (Z:.PointL:.PointL:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gFourWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) (chr i3) (chr i4) Empty Empty Empty Empty
-{-# INLINE backtrack #-}
+{-# NOINLINE backtrack #-}
 
 {-
 test s = fourWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' s' s' where

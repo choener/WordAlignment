@@ -64,6 +64,7 @@ type Aligned = ( [ByteString], [ByteString], [ByteString] )
     let phfs = S.concatMapM snd . S.filter ((hfs==) . fst) $ xs
     hs phfs
   go funL funR (x,ys) c = (funL x c, ys >>= return . S.map (\y -> funR y c))
+{-# INLINE (<**) #-}
 
 fillTable3 (Z:.(MTbl _ tbl, f)) = do
   let (_,Z:.PointL(0:.n1):.PointL(0:.n2):.PointL(0:.n3)) = boundsM tbl

@@ -87,7 +87,7 @@ twoWayFill dS gapOpen scores i1 i2 = do
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
   fillTable2 $ gTwoWay (sScore dS gapOpen scores) w (chrLeft i1) (chrLeft i2) Empty Empty
   freeze t'
-{-# INLINE twoWayFill #-}
+{-# NOINLINE twoWayFill #-}
 
 backtrack
   :: Double
@@ -103,4 +103,5 @@ backtrack dS gapOpen scores i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) Empty Empty
+{-# NOINLINE backtrack #-}
 

@@ -94,7 +94,7 @@ threeWayFill dS gapOpen scores i1 i2 i3 = do
   let w = mTbl (Z:.EmptyT:.EmptyT:.EmptyT) t'
   fillTable3 $ gThreeWay (sScore dS gapOpen scores) w (chrLeft i1) (chrLeft i2) (chrLeft i3) Empty Empty Empty
   freeze t'
-{-# INLINE threeWayFill #-}
+{-# NOINLINE threeWayFill #-}
 
 backtrack
   :: Double
@@ -112,4 +112,5 @@ backtrack dS gapOpen scores i1 i2 i3 tbl = unId . S.toList . unId $ g $ Z:.point
   w :: DefBtTbl Id (Z:.PointL:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gThreeWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) (chrLeft i3) Empty Empty Empty
+{-# NOINLINE backtrack #-}
 

@@ -92,7 +92,7 @@ threeWayFill vowels consonants scores gapOpen i1 i2 i3 = do
   let w = mTbl (Z:.EmptyT:.EmptyT:.EmptyT) t'
   fillTable3 $ gThreeWay (sScore vowels consonants scores gapOpen) w (chr i1) (chr i2) (chr i3) Empty Empty Empty
   freeze t'
-{-# INLINE threeWayFill #-}
+{-# NOINLINE threeWayFill #-}
 
 backtrack
   :: VU.Vector Char
@@ -111,8 +111,8 @@ backtrack vowels consonants scores gapOpen i1 i2 i3 tbl = unId . S.toList . unId
   w :: DefBtTbl Id (Z:.PointL:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gThreeWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) (chr i3) Empty Empty Empty
-{-# INLINE backtrack #-}
+{-# NOINLINE backtrack #-}
 
-test s = threeWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' s' where
-  s' = V.fromList $ L.map (B.pack . (:[])) $ s
+--test s = threeWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' s' where
+--  s' = V.fromList $ L.map (B.pack . (:[])) $ s
 

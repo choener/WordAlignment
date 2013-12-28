@@ -1,4 +1,4 @@
-name:           FourWay
+name:           WordAlignment
 version:        0.0.0.1
 author:         Christian Hoener zu Siederdissen, Nancy Retzlaff, Lydia Steiner, Peter F. Stadler, 2013
 copyright:      Christian Hoener zu Siederdissen, 2013
@@ -44,9 +44,8 @@ library
     unordered-containers >= 0.2.3 ,
     vector         >= 0.10    ,
     QuickCheck     >= 2.5     ,
-    PrimitiveArray >= 0.5.1
--- ,
---    ADPfusion      >= 0.2
+    PrimitiveArray >= 0.5.1   ,
+    ADPfusion      >= 0.2
   exposed-modules:
 --    Linguistics.FourWay
 --    Linguistics.Tools
@@ -85,5 +84,5 @@ executable WordAlign
 
 --source-repository head
 --  type: git
---  location: git://github.com/choener/WordAlign
+--  location: git://github.com/choener/WordAlignment
 

@@ -116,7 +116,7 @@ fourWayFill dS gapOpen scores i1 i2 i3 i4 = do
   let w = mTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) t'
   fillTable4 $ gFourWay (sScore dS gapOpen scores ) w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
   freeze t'
-{-# INLINE fourWayFill #-}
+{-# NOINLINE fourWayFill #-}
 
 backtrack
   :: Double
@@ -136,5 +136,5 @@ backtrack dS gapOpen scores i1 i2 i3 i4 tbl = unId . S.toList . unId $ g $ Z:.po
   w :: DefBtTbl Id (Z:.PointL:.PointL:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gFourWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) (chrLeft i3) (chrLeft i4) Empty Empty Empty Empty
-{-# INLINE backtrack #-}
+{-# NOINLINE backtrack #-}
 
