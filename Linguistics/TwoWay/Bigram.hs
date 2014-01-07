@@ -8,33 +8,34 @@ module Linguistics.TwoWay.Bigram
   ( twoWay
   ) where
 
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.ByteString.Char8 (ByteString)
-import Data.Strict.Tuple (Pair (..))
-import Data.Vector.Fusion.Util (Id(..))
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.ByteString.Char8 (ByteString)
+import           Data.Strict.Tuple (Pair (..))
+import           Data.Vector.Fusion.Util (Id(..))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.HashTable.IO as H
 import qualified Data.List as L
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
-import System.IO.Unsafe (unsafePerformIO)
+import           System.IO.Unsafe (unsafePerformIO)
 
-import ADP.Fusion
-import ADP.Fusion.Chr
-import ADP.Fusion.Empty
-import ADP.Fusion.Table
-import Data.Array.Repa.Index.Points
-import Data.PrimitiveArray as PA
-import Data.PrimitiveArray.Zero as PA
+import           ADP.Fusion
+import           ADP.Fusion.Chr
+import           ADP.Fusion.Empty
+import           ADP.Fusion.Table
+import           Data.Array.Repa.Index.Points
+import           Data.PrimitiveArray as PA
+import           Data.PrimitiveArray.Zero as PA
+import           NLP.Alphabet.MultiChar
 
-import Linguistics.Bigram
-import Linguistics.Common
-import Linguistics.TwoWay.Common
+import           Linguistics.Bigram
+import           Linguistics.Common
+import           Linguistics.TwoWay.Common
 
 
 
-sScore :: Monad m => Double -> Double -> Scores -> STwoWay m Double Double (Maybe ByteString,ByteString) ()
+sScore :: Monad m => Double -> Double -> Scores -> STwoWay m Double Double (Maybe InternedMultiChar,InternedMultiChar) ()
 sScore dS gapOpen s = STwoWay
   { loop_step = \ww (Z:.():.(mc,c))     -> ww + gapOpen
   , step_loop = \ww (Z:.(mc,c):.())     -> ww + gapOpen
@@ -51,7 +52,7 @@ sScore dS gapOpen s = STwoWay
 
 -- | Backtrack the alignment
 
-sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) (Maybe ByteString,ByteString) ()
+sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) (Maybe InternedMultiChar,InternedMultiChar) ()
 sAlign = STwoWay
   { loop_step = \(w1,w2) (Z:.():.(_,c)) -> ( w1 ++ ["-"], w2 ++ [c]   ) -- (w1++padd "" c, w2++prnt c "")
   , step_loop = \(w1,w2) (Z:.(_,c):.()) -> ( w1 ++ [c]  , w2 ++ ["-"] ) -- (w1++prnt c "", w2++padd "" c)
@@ -77,8 +78,8 @@ twoWayFill
   :: Double
   -> Double
   -> Scores
-  -> V.Vector ByteString
-  -> V.Vector ByteString
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
   -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
 twoWayFill dS gapOpen scores i1 i2 = do
   let n1 = V.length i1
@@ -93,8 +94,8 @@ backtrack
   :: Double
   -> Double
   -> Scores
-  -> V.Vector ByteString
-  -> V.Vector ByteString
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
   -> PA.Unboxed (Z:.PointL:.PointL) Double
   -> [Aligned]
 backtrack dS gapOpen scores i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where

@@ -1,12 +1,12 @@
 
 module Linguistics.TwoWay
-  ( twoWaySimple
-  , twoWayBigram
+  ( twoWayBigram
+  , twoWaySimple
   ) where
 
+import qualified Linguistics.TwoWay.Bigram as Bigram
 import qualified Linguistics.TwoWay.Simple as Simple
---import qualified Linguistics.TwoWay.Bigram as Bigram
 
+twoWayBigram = Bigram.twoWay
 twoWaySimple = Simple.twoWay
-twoWayBigram = undefined -- Bigram.twoWay
 

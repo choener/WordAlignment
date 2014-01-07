@@ -18,44 +18,49 @@
 
 module Linguistics.Bigram where
 
-import Control.Applicative
-import Control.Arrow
-import Control.DeepSeq
-import Control.Lens
-import Data.ByteString (ByteString)
-import Data.Function
-import Data.Hashable
-import Data.List
-import Data.Strict.Tuple
-import GHC.Generics (Generic)
+import           Control.Applicative
+import           Control.Arrow
+import           Control.DeepSeq
+import           Control.Lens
+import           Data.ByteString (ByteString)
+import           Data.Function
+import           Data.Hashable
+import           Data.Interned
+import           Data.List
+import           Data.Strict.Tuple
+import           GHC.Generics (Generic)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
 import qualified Data.Attoparsec.ByteString.Lazy as ABL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
+import qualified Data.ByteString.Short as BS
 import qualified Data.HashTable.IO as H
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import System.IO.Unsafe
+import           System.IO.Unsafe
+
+import           NLP.Alphabet.MultiChar
 
 
 
 data Bigram = Bigram
-  { peekChar :: {-# UNPACK #-} !ByteString
-  , hitChar  :: {-# UNPACK #-} !ByteString
+  { peekChar :: {-# UNPACK #-} !InternedMultiChar
+  , hitChar  :: {-# UNPACK #-} !InternedMultiChar
   }
   deriving (Show,Eq,Ord,Generic)
 
 instance Hashable Bigram where
-  hashWithSalt s (Bigram p h) = hashWithSalt s (p,h)
+  hashWithSalt s (Bigram p h) = hashWithSalt s (uninternMultiChar p, uninternMultiChar h)
 
 instance NFData Bigram where
-  rnf (Bigram !a !b) = ()
+  rnf !(Bigram a b) = ()
 
 instance Hashable (Pair Int Int) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
+-- | Try to read the first line to figure out if there is a default score there
 
 withDefault :: Double -> [BL.ByteString] -> (Double,[BL.ByteString])
 withDefault d [] = (d,[])
@@ -69,12 +74,12 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
   where
     go  = (\(l1,b1) (l2,b2) d -> (l1,l2,b1,b2,d)) <$> big <*> big <*> AB.double -- <?> "one bigram score line"
     big = (\l p h -> (l,Bigram p h)) <$> wrd <*> wrd <*> wrd -- <?> "on bigram"
-    wrd = B.copy <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrd = (intern . MultiChar . BS.toShort) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
 
-type Lang = ByteString
+type Lang = InternedMultiChar
 type Line = (Lang, Lang, Bigram, Bigram, Double)
-type Scores = H.BasicHashTable {- M.Map -} (Bigram:!:Bigram) Double
+type Scores = H.BasicHashTable (Bigram:!:Bigram) Double
 
 data Mapping = Mapping
   { bigrams :: !(M.Map Bigram Bigram)
@@ -117,20 +122,17 @@ mkMapping !(Mapping bs ll) xs@(x:_)
            , let k2 = bs' M.! (y^._4)
            , let d = y ^._5
            ]
-    {-
-    ys = M.fromList $ [ ((k1:!:k2),d)
-           | y <- xs
-           , let k1 = bs' M.! (y^._3)
-           , let k2 = bs' M.! (y^._4)
-           , let d = y ^._5
-           ] -}
 
-generateLookups :: S.Set ByteString -> Double -> BL.ByteString -> Mapping
+-- | Given a set of acceptable languages, a default score, and the lazy
+-- bytestring of scores, create the 'Mapping' of languages and scores.
+
+generateLookups :: S.Set InternedMultiChar -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls
   inLangSet l
     | S.null langs = True
-    | (l^._1) `S.member` langs && (l^._2) `S.member` langs = True
+    |  (l^._1) `S.member` langs
+    && (l^._2) `S.member` langs = True
     | otherwise = False
 

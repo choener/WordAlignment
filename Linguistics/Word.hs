@@ -35,8 +35,8 @@ import NLP.Alphabet.MultiChar
 
 data Word = Word
   { wordID     :: {-# UNPACK #-} !Int
-  , wordLang   :: {-# UNPACK #-} !InternedByteString
-  , wordClass  :: {-# UNPACK #-} !InternedByteString
+  , wordLang   :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
+  , wordClass  :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
   , wordLength :: {-# UNPACK #-} !Int
   , wordWord   :: {-# UNPACK #-} !(V.Vector InternedMultiChar)
   }
@@ -52,8 +52,8 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
   where
     go = Word <$> AB.decimal
               <*  AB.many1 AB.space
-              <*> (intern <$> wrd)
-              <*> (intern <$> wrd)
+              <*> (wW <$> wrd)
+              <*> (wW <$> wrd)
               <*> AB.decimal
               <*  AB.many1 AB.space
               <*> ((V.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))

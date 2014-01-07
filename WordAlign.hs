@@ -38,8 +38,8 @@ import Linguistics.TwoWay
 {- we test interning with TwoWay alignments only
 import Linguistics.ThreeWay
 import Linguistics.FourWay
-import Linguistics.Bigram
 -}
+import Linguistics.Bigram
 import Linguistics.Common
 import Linguistics.Word
 
@@ -138,7 +138,6 @@ main = do
       let c4 = l * (l-1) * (l-2) * (l-3) `div` 4
       let t4 :: Double = fromIntegral c4 / 5000 / 60 / 60 -- TODO fix time constant
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
-    {-
     TwoWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
@@ -154,7 +153,6 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment (-2)) ts
-    -}
     TwoWaySimple{..} -> do
       [v,c] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
       scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
@@ -218,10 +216,10 @@ main = do
       mapM_ (printAlignment 0) ts
       -}
 
-{-
-alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
-alignTwo sDef sGapOpen scores x y = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List)) $ twoWayBigram sDef sGapOpen scores x y
--}
+alignTwo :: Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
+alignTwo sDef sGapOpen scores x y
+  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List))
+  $ twoWayBigram sDef sGapOpen scores x y
 
 alignTwoSimple
   :: VU.Vector Char
@@ -267,13 +265,13 @@ alignFourSimple v c scores sGapOpen w x y z = second (map (alignPretty . tup4Lis
 blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 
-{-
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
   | Just z <- M.lookup (a:!:b) (lliid ss) = z
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 (unsafePerformIO H.new)
 
+{-
 getScores3 :: Mapping -> Lang -> Lang -> Lang -> (Scores,Scores,Scores)
 getScores3 ss a b c = (getScores2 ss a b, getScores2 ss a c, getScores2 ss b c)  -- (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
 
