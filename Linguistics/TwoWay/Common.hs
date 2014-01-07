@@ -2,19 +2,19 @@
 
 module Linguistics.TwoWay.Common where
 
-import Control.Monad
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.ByteString (ByteString)
-import Data.Vector.Fusion.Stream.Monadic (Stream (..))
+import           Control.Monad
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.ByteString (ByteString)
+import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
-import Data.PrimitiveArray (boundsM, writeM)
-
-import Data.Array.Repa.Index.Points
-import ADP.Fusion
-import ADP.Fusion.Multi
-import ADP.Fusion.None
+import           ADP.Fusion
+import           ADP.Fusion.Multi
+import           ADP.Fusion.None
+import           Data.Array.Repa.Index.Points
+import           Data.PrimitiveArray (boundsM, writeM)
+import           NLP.Alphabet.MultiChar
 
 
 
@@ -43,7 +43,7 @@ gTwoWay sTwoWay {-non-terminals:-} ww {-terminals:-} c1 c2 empty1 empty2 =
 
 -- | Type of backtracked results
 
-type Aligned = ( [ByteString], [ByteString] )
+type Aligned = ( [InternedMultiChar], [InternedMultiChar] )
 
 -- | Algebra product operation
 

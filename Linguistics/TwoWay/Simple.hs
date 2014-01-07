@@ -9,10 +9,11 @@ module Linguistics.TwoWay.Simple
   ( twoWay
   ) where
 
-import Data.Array.Repa.Index
-import Data.Array.Repa.Shape
-import Data.ByteString.Char8 (ByteString)
-import Data.Vector.Fusion.Util (Id(..))
+import           Data.Array.Repa.Index
+import           Data.Array.Repa.Shape
+import           Data.ByteString.Char8 (ByteString)
+import           Data.Vector.Fusion.Util (Id(..))
+import           GHC.Exts
 import qualified Data.ByteString.Char8 as B
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -20,8 +21,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
-import System.IO.Unsafe (unsafePerformIO)
-import GHC.Exts
+import           System.IO.Unsafe (unsafePerformIO)
 
 import ADP.Fusion
 import ADP.Fusion.Chr
@@ -30,6 +30,7 @@ import ADP.Fusion.Table
 import Data.Array.Repa.Index.Points
 import Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Zero as PA
+import NLP.Alphabet.MultiChar
 
 import Linguistics.Common
 import Linguistics.Scoring.Simple
@@ -37,7 +38,7 @@ import Linguistics.TwoWay.Common
 
 
 
-sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double ByteString ()
+sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double InternedMultiChar ()
 sScore !vowels !consonants !scores !gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
   , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
@@ -47,7 +48,7 @@ sScore !vowels !consonants !scores !gapOpen = STwoWay
   }
 {-# INLINE sScore #-}
 
-sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) ByteString ()
+sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) InternedMultiChar ()
 sAlign = STwoWay
   { loop_step = \(w1,w2) (Z:.():.c) -> ( w1 ++ ["-"], w2 ++ [c]   )
   , step_loop = \(w1,w2) (Z:.c:.()) -> ( w1 ++ [c]  , w2 ++ ["-"] )
@@ -70,8 +71,8 @@ twoWayFill
   -> VU.Vector Char
   -> [Double]
   -> Double
-  -> V.Vector ByteString
-  -> V.Vector ByteString
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
   -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
 twoWayFill vowels consonants scores gapOpen i1 i2 = do
   let n1 = V.length i1
@@ -87,8 +88,8 @@ backtrack
   -> VU.Vector Char
   -> [Double]
   -> Double
-  -> V.Vector ByteString
-  -> V.Vector ByteString
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
   -> PA.Unboxed (Z:.PointL:.PointL) Double
   -> [Aligned]
 backtrack vowels consonants scores gapOpen i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where

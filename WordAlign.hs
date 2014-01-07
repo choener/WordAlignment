@@ -6,17 +6,19 @@
 
 module Main where
 
-import Control.Arrow
-import Control.Monad (when)
-import Control.Parallel.Strategies
-import Data.ByteString (ByteString)
-import Data.ByteString.Char8 (unpack)
-import Data.Function
-import Data.List (intersperse)
-import Data.List (tails,genericLength,genericTake,genericDrop,group)
-import Data.Ord
-import Data.Strict.Tuple
-import Data.Vector (fromList)
+import           Control.Arrow
+import           Control.Monad (unless)
+import           Control.Monad (when)
+import           Control.Parallel.Strategies
+import           Data.ByteString (ByteString)
+import           Data.ByteString.Char8 (unpack)
+import           Data.Function
+import           Data.List (intersperse)
+import           Data.List (tails,genericLength,genericTake,genericDrop,group)
+import           Data.Ord
+import           Data.Strict.Tuple
+import           Data.Vector (fromList)
+import           Debug.Trace (trace)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -26,18 +28,20 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
-import System.Console.CmdArgs
-import Text.Printf
-import Control.Monad (unless)
-import Debug.Trace (trace)
-import System.IO.Unsafe (unsafePerformIO)
+import           System.Console.CmdArgs
+import           System.IO.Unsafe (unsafePerformIO)
+import           Text.Printf
+
+import           NLP.Alphabet.MultiChar
 
 import Linguistics.TwoWay
+{- we test interning with TwoWay alignments only
 import Linguistics.ThreeWay
 import Linguistics.FourWay
 import Linguistics.Bigram
-import Linguistics.Word
+-}
 import Linguistics.Common
+import Linguistics.Word
 
 data Config
   = TwoWay
@@ -52,6 +56,7 @@ data Config
     , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
+  {- NLA
   | ThreeWay
     { scoreFile :: String
     , defaultScore :: Double
@@ -76,6 +81,7 @@ data Config
     , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
+  -}
   | Info
     {
     }
@@ -93,6 +99,7 @@ twowaySimple = TwoWaySimple
   , vowelConsonantFile = "vowel-consonant.txt" &= help "a file defining what is a vowel and what is a consonant"
   }
 
+{- NLA
 threeway = ThreeWay
   {
   }
@@ -108,12 +115,13 @@ fourway = FourWay
 fourwaySimple = FourWaySimple
   {
   }
+-}
 
 info = Info
   {
   }
 
-config = [twoway,twowaySimple,threeway,threewaySimple,fourway,fourwaySimple,info]
+config = [twoway,twowaySimple, {- threeway,threewaySimple,fourway,fourwaySimple, -} info]
   &= program "WordAlign"
   &= summary "WordAlign v.0.0.1"
 
@@ -130,6 +138,7 @@ main = do
       let c4 = l * (l-1) * (l-2) * (l-3) `div` 4
       let t4 :: Double = fromIntegral c4 / 5000 / 60 / 60 -- TODO fix time constant
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
+    {-
     TwoWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
@@ -145,6 +154,7 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment (-2)) ts
+    -}
     TwoWaySimple{..} -> do
       [v,c] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
       scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
@@ -155,6 +165,7 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment 0) ts
+    {-
     ThreeWay{..} -> do
       let ws = map addWordDelims ws'
       let bs = blockWith block $ [ (a,b,c) | (a:as) <- tails ws, (b:bs) <- tails as, c <- bs ]
@@ -205,21 +216,24 @@ main = do
                                   )
                     ) bs
       mapM_ (printAlignment 0) ts
+      -}
 
-
+{-
 alignTwo :: Double -> Double -> Scores -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
 alignTwo sDef sGapOpen scores x y = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List)) $ twoWayBigram sDef sGapOpen scores x y
+-}
 
 alignTwoSimple
   :: VU.Vector Char
   -> VU.Vector Char
   -> [Double]
   -> Double
-  -> V.Vector ByteString
-  -> V.Vector ByteString
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
   -> (Double, [[String]])
 alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
 
+{-
 alignThree :: Double -> Double -> (Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])
 alignThree sDef sGapOpen scores x y z = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup3List)) $ threeWayBigram sDef sGapOpen scores x y z
 
@@ -248,21 +262,17 @@ alignFourSimple
   -> V.Vector ByteString
   -> (Double, [[String]])
 alignFourSimple v c scores sGapOpen w x y z = second (map (alignPretty . tup4List)) $ fourWaySimple v c scores sGapOpen w x y z
+-}
 
 blockWith Nothing      xs = xs
 blockWith (Just (l,k)) xs = genericTake l . genericDrop (l * (k-1)) $ xs
 
+{-
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
   | Just z <- M.lookup (a:!:b) (lliid ss) = z
---  | Just z <- M.lookup (b:!:a) (lliid ss) = z
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 (unsafePerformIO H.new)
-{-
-getScores2 ss a b = maybe err id $ M.lookup (a:!:b) (lliid ss) where   --  lliid ss M.! (a:!:b)
-  err = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
-        (unsafePerformIO H.new)
--}
 
 getScores3 :: Mapping -> Lang -> Lang -> Lang -> (Scores,Scores,Scores)
 getScores3 ss a b c = (getScores2 ss a b, getScores2 ss a c, getScores2 ss b c)  -- (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (b:!:c))
@@ -270,6 +280,7 @@ getScores3 ss a b c = (getScores2 ss a b, getScores2 ss a c, getScores2 ss b c) 
 getScores4 :: Mapping -> Lang -> Lang -> Lang -> Lang -> (Scores,Scores,Scores,Scores,Scores,Scores)
 getScores4 ss a b c d = (getScores2 ss a b, getScores2 ss a c, getScores2 ss a d, getScores2 ss b c, getScores2 ss b d, getScores2 ss c d)
 -- (lliid ss M.! (a:!:b), lliid ss M.! (a:!:c), lliid ss M.! (a:!:d), lliid ss M.! (b:!:c), lliid ss M.! (b:!:d), lliid ss M.! (c:!:d))
+-}
 
 printAlignment :: Double -> ([Word], (Double, [[String]])) -> IO ()
 printAlignment k (ws,(s,[])) = do
@@ -287,3 +298,4 @@ printAlignment k (ws,(s,(x:xs))) = do
 tup2List (a,b) = [a,b]
 tup3List (a,b,c) = [a,b,c]
 tup4List (a,b,c,d) = [a,b,c,d]
+

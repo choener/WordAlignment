@@ -4,18 +4,21 @@
 
 module Linguistics.Common where
 
-import Data.ByteString (ByteString)
+import           Data.ByteString (ByteString)
+import           Data.Char
+import           Data.List (transpose)
+import qualified Data.ByteString.Short as S
 import qualified Data.Text as T
-import Text.Printf
 import qualified Data.Text.Encoding as T
-import Data.Char
-import Data.List (transpose)
+import           Text.Printf
+
+import           NLP.Alphabet.MultiChar
 
 
 
 -- | Actually align something prettily
 
-alignPretty :: [[ByteString]] -> [String]
+alignPretty :: [[InternedMultiChar]] -> [String]
 alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose $ xss where
   f zs x = printAligned x zs
 
@@ -25,7 +28,7 @@ printAligned = printAlignedPad ' '
 
 -- | Print with special padding character
 
-printAlignedPad :: Char -> ByteString -> [ByteString] -> String
+printAlignedPad :: Char -> InternedMultiChar -> [InternedMultiChar] -> String
 printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
   pad :: Int
   pad = (1+) . maximum $ 0 : map (\x -> printLength x - printLength c) zs
@@ -35,7 +38,7 @@ printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
 -- NOTE 'isMark' selects unicode symbols that modify a character, thereby not
 -- increasing the length of the /printed/ string.
 
-printLength :: ByteString -> Int
+printLength :: InternedMultiChar -> Int
 printLength = length . filter isAN . toUtf8String where
   isAN c = not (isMark c) -- isAlphaNum c || c `elem` [ '\\', '\'', '^', '$', '-', '\'' ]
 
@@ -48,7 +51,10 @@ printLength = length . filter isAN . toUtf8String where
 -}
 
 
-toUtf8String :: ByteString -> String
-toUtf8String = T.unpack . T.decodeUtf8
+toUtf8String :: InternedMultiChar -> String
+toUtf8String = T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
+
+conv = S.fromShort . unMultiChar . uninternMultiChar
+{-# INLINE conv #-}
 
