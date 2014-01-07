@@ -52,7 +52,7 @@ data Bigram = Bigram
   deriving (Show,Eq,Ord,Generic)
 
 instance Hashable Bigram where
-  hashWithSalt s (Bigram p h) = hashWithSalt s (uninternMultiChar p, uninternMultiChar h)
+  hashWithSalt s (Bigram p h) = hashWithSalt s (p,h) -- (uninternMultiChar p, uninternMultiChar h)
 
 instance NFData Bigram where
   rnf !(Bigram a b) = ()

@@ -42,6 +42,7 @@ import Linguistics.FourWay
 import Linguistics.Bigram
 import Linguistics.Common
 import Linguistics.Word
+import Linguistics.Scoring.SimpleParser
 
 data Config
   = TwoWay
@@ -53,7 +54,6 @@ data Config
   | TwoWaySimple
     { scoreFile :: String
     , gapOpen :: Double
-    , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
   {- NLA
@@ -66,7 +66,6 @@ data Config
   | ThreeWaySimple
     { scoreFile :: String
     , gapOpen :: Double
-    , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
   | FourWay
@@ -78,7 +77,6 @@ data Config
   | FourWaySimple
     { scoreFile :: String
     , gapOpen :: Double
-    , vowelConsonantFile :: String
     , block :: Maybe (Integer,Integer)
     }
   -}
@@ -96,7 +94,6 @@ twoway = TwoWay
 
 twowaySimple = TwoWaySimple
   { scoreFile = def &= help ""
-  , vowelConsonantFile = "vowel-consonant.txt" &= help "a file defining what is a vowel and what is a consonant"
   }
 
 {- NLA
@@ -154,12 +151,11 @@ main = do
                     ) bs
       mapM_ (printAlignment (-2)) ts
     TwoWaySimple{..} -> do
-      [v,c] <- readFile vowelConsonantFile >>= return . map VU.fromList . lines
-      scs <- if null scoreFile then return [3,1,1,0,0,-1] else (readFile scoreFile >>= return . map read . words)
-      unless (length scs == 6) $ error "error in simple scores"
+      simpleScoring <- if null scoreFile then return $ error "scorefile missing"
+                                         else simpleScoreFromFile scoreFile
       let ws = ws'
       let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
-      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple v c scs gapOpen (wordWord a) (wordWord b)
+      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
                               )
                     ) bs
       mapM_ (printAlignment 0) ts
@@ -222,14 +218,11 @@ alignTwo sDef sGapOpen scores x y
   $ twoWayBigram sDef sGapOpen scores x y
 
 alignTwoSimple
-  :: VU.Vector Char
-  -> VU.Vector Char
-  -> [Double]
-  -> Double
+  :: SimpleScoring
   -> V.Vector InternedMultiChar
   -> V.Vector InternedMultiChar
   -> (Double, [[String]])
-alignTwoSimple v c scores sGapOpen x y = second (map (alignPretty . tup2List)) $ twoWaySimple v c scores sGapOpen x y
+alignTwoSimple simpleScoring x y = second (map (alignPretty . tup2List)) $ twoWaySimple simpleScoring x y
 
 {-
 alignThree :: Double -> Double -> (Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])

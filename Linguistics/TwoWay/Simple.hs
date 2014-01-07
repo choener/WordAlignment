@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
@@ -22,6 +23,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe (unsafePerformIO)
+import qualified Data.HashTable.IO as H
 
 import ADP.Fusion
 import ADP.Fusion.Chr
@@ -34,15 +36,18 @@ import NLP.Alphabet.MultiChar
 
 import Linguistics.Common
 import Linguistics.Scoring.Simple
+import Linguistics.Scoring.SimpleParser (SimpleScoring(..))
 import Linguistics.TwoWay.Common
 
 
 
-sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double InternedMultiChar ()
-sScore !vowels !consonants !scores !gapOpen = STwoWay
-  { loop_step = \ww (Z:.():.c)     -> ww + gapOpen
-  , step_loop = \ww (Z:.c:.())     -> ww + gapOpen
-  , step_step = \ww (Z:.c:.d ) -> ww + scoreMatch vowels consonants scores gapOpen c d
+--sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double InternedMultiChar ()
+sScore :: Monad m => SimpleScoring -> STwoWay m Double Double InternedMultiChar ()
+sScore SimpleScoring {..} = STwoWay -- !vowels !consonants !scores !gapOpen = STwoWay
+  { loop_step = \ww (Z:.():.c)     -> ww + gapScore
+  , step_loop = \ww (Z:.c:.())     -> ww + gapScore
+--  , step_step = \ww (Z:.c:.d ) -> ww + scoreMatch vowels consonants scores gapOpen c d
+  , step_step = \ww (Z:.c:.d ) -> ww + (maybe defaultScore id . unsafePerformIO $ H.lookup simpleScore (c,d))
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   }
@@ -59,45 +64,52 @@ sAlign = STwoWay
 {-# INLINE sAlign #-}
 
 --twoWay :: VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> V.Vector ByteString -> V.Vector ByteString -> (Double
-twoWay vowels consonants scores gapOpen i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  ws = unsafePerformIO $ twoWayFill vowels consonants scores gapOpen i1 i2
+twoWay simpleScoring i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
+  ws = unsafePerformIO $ twoWayFill simpleScoring i1 i2
   n1 = V.length i1
   n2 = V.length i2
-  bt = backtrack vowels consonants scores gapOpen i1 i2 ws
+  bt = backtrack simpleScoring i1 i2 ws
 {-# NOINLINE twoWay #-}
 
 twoWayFill
+  {-
   :: VU.Vector Char
   -> VU.Vector Char
   -> [Double]
   -> Double
+  -}
+  :: SimpleScoring
   -> V.Vector InternedMultiChar
   -> V.Vector InternedMultiChar
   -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
-twoWayFill vowels consonants scores gapOpen i1 i2 = do
+twoWayFill simpleScoring i1 i2 = do
   let n1 = V.length i1
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
   let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScore vowels consonants scores gapOpen) w (chr i1) (chr i2) Empty Empty
+  fillTable2 $ gTwoWay (sScore simpleScoring) w (chr i1) (chr i2) Empty Empty
   freeze t'
 {-# NOINLINE twoWayFill #-}
 
 backtrack
+  {-
   :: VU.Vector Char
   -> VU.Vector Char
   -> [Double]
   -> Double
+  -}
+  :: SimpleScoring
   -> V.Vector InternedMultiChar
   -> V.Vector InternedMultiChar
   -> PA.Unboxed (Z:.PointL:.PointL) Double
   -> [Aligned]
-backtrack vowels consonants scores gapOpen i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
+backtrack simpleScoring i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
-  (Z:.(_,g)) = gTwoWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) Empty Empty
+  --(Z:.(_,g)) = gTwoWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) Empty Empty
+  (Z:.(_,g)) = gTwoWay (sScore simpleScoring <** sAlign) w (chr i1) (chr i2) Empty Empty
 {-# NOINLINE backtrack #-}
 
 --test s = twoWay (VU.fromList "aeiou") (VU.fromList $ ['a' .. 'z'] L.\\ "aeiou") [3,1,1,0,0,-1] (-1) s' s' where
