@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -33,6 +34,9 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Text.Printf
 
 import           NLP.Alphabet.MultiChar
+import           NLP.Scoring.SimpleUnigram
+import           NLP.Scoring.SimpleUnigram.Default
+import           NLP.Scoring.SimpleUnigram.Import
 
 import Linguistics.TwoWay
 {- we test interning with TwoWay alignments only
@@ -42,7 +46,6 @@ import Linguistics.FourWay
 import Linguistics.Bigram
 import Linguistics.Common
 import Linguistics.Word
-import Linguistics.Scoring.SimpleParser
 
 data Config
   = TwoWay

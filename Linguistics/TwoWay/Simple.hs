@@ -33,21 +33,18 @@ import Data.Array.Repa.Index.Points
 import Data.PrimitiveArray as PA
 import Data.PrimitiveArray.Zero as PA
 import NLP.Alphabet.MultiChar
+import NLP.Scoring.SimpleUnigram
 
 import Linguistics.Common
-import Linguistics.Scoring.Simple
-import Linguistics.Scoring.SimpleParser (SimpleScoring(..))
 import Linguistics.TwoWay.Common
 
 
 
 sScore :: Monad m => SimpleScoring -> STwoWay m Double Double InternedMultiChar ()
-sScore SimpleScoring {..} = STwoWay -- !vowels !consonants !scores !gapOpen = STwoWay
+sScore ss@SimpleScoring{..} = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapScore
   , step_loop = \ww (Z:.c:.())     -> ww + gapScore
-  , step_step = \ww (Z:.c:.d ) -> ww + (maybe (if c==d then defMatch else defMismatch)
-                                              id
-                                              . unsafePerformIO $ H.lookup simpleScore (c,d))
+  , step_step = \ww (Z:.c:.d ) -> ww + scoreUnigram ss c d
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   }

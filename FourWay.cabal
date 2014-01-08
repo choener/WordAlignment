@@ -53,19 +53,25 @@ library
     PrimitiveArray            >= 0.5.1
   exposed-modules:
 --    Linguistics.FourWay
---    Linguistics.Tools
---    Linguistics.FourWay.Forward
 --    Linguistics.FourWay.Backward
 --    Linguistics.FourWay.Common
+--    Linguistics.FourWay.Forward
 --    Linguistics.ThreeWay
---    Linguistics.TwoWay
+--    Linguistics.ThreeWay.Bigram
+--    Linguistics.ThreeWay.Common
+--    Linguistics.ThreeWay.Simple
+    Linguistics.Bigram
+    Linguistics.Common
+    Linguistics.TwoWay
+    Linguistics.TwoWay.Bigram
+    Linguistics.TwoWay.Common
+    Linguistics.TwoWay.Simple
     Linguistics.Word
   ghc-options:
     -fsimpl-tick-factor=900
   if flag(Opt)
     ghc-options:
       -O2
---      -funbox-strict-fields
 
 executable WordAlign
   build-depends:
@@ -78,7 +84,6 @@ executable WordAlign
   if flag(Opt)
     ghc-options:
       -O2
---      -funbox-strict-fields
       -funfolding-use-threshold100
       -funfolding-keeness-factor100
       -- -fnew-codegen

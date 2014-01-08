@@ -1,19 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | The new simple scoring system is based on pairs of unigrams. This parser
--- reads the configuration file.
---
--- Example for such a file:
---
--- Set Vowel  a e i o u
--- Set Liquid l r
--- Eq Vowel 2
--- InSet Liquid Liquid 1
--- Gap       -3
--- GapOpen   -5
--- GapExtend -2
--- Default   -5
+-- | This module defines a simple scoring scheme based on pairs of unigrams.
 
 module Linguistics.Scoring.SimpleParser where
 
@@ -32,9 +20,23 @@ import NLP.Alphabet.MultiChar
 
 
 
+-- | Score 'MultiChar's @x@ and @y@ based on the simple scoring system: (i)
+-- lookup (x,y) and use the score if found; (ii) if (x,y) is not in the
+-- database, then return the default matching 'defMatch' score if @x==y@,
+-- otherwise return the default mismatch 'defMismatch' score.
+
+scoreUnigram :: SimpleScoring -> InternedMultiChar -> InternedMultiChar -> Double
+scoreUnigram SimpleScoring {..} x y =
+  maybe (if x==y then defMatch else defMismatch)
+  id
+  (unsafePerformIO $ H.lookup simpleScore (x,y))
+{-# INLINE scoreUnigram #-}
+
 data SimpleScoring = SimpleScoring
   { simpleScore  :: !(H.BasicHashTable (InternedMultiChar,InternedMultiChar) Double)
   , gapScore     :: !Double
+  , gapOpen      :: !Double
+  , gapExtend    :: !Double
   , defMatch     :: !Double
   , defMismatch  :: !Double
   }
@@ -89,3 +91,4 @@ genSimpleScoring l = SimpleScoring t g dm di
                   in  go sets
 
 simpleScoreFromFile f = BL.readFile f >>= return . genSimpleScoring
+
