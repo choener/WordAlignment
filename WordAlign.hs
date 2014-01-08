@@ -50,11 +50,12 @@ data Config
     , defaultScore :: Double
     , gapOpen :: Double
     , block :: Maybe (Integer,Integer)
+    , selfAlign :: Bool
     }
   | TwoWaySimple
     { scoreFile :: String
-    , gapOpen :: Double
     , block :: Maybe (Integer,Integer)
+    , selfAlign :: Bool
     }
   {- NLA
   | ThreeWay
@@ -90,6 +91,7 @@ twoway = TwoWay
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
   , gapOpen = (-1) &= help "cost to open a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
+  , selfAlign = False &= help "align each word with itself as well"
   } &= help "Align two words at a time for all ordered word combinations"
 
 twowaySimple = TwoWaySimple
@@ -137,7 +139,7 @@ main = do
       printf "%d  %.1f    %d  %.1f    %d  %.1f\n" c2 t2 c3 t3 c4 t4
     TwoWay{..} -> do
       let ws = map addWordDelims ws'
-      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
       let chkLs = S.fromList . map wordLang $ ws
       {-
       let chkLs = if block==Nothing
@@ -154,7 +156,7 @@ main = do
       simpleScoring <- if null scoreFile then return $ error "scorefile missing"
                                          else simpleScoreFromFile scoreFile
       let ws = ws'
-      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- as ]
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
       let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
                               )
                     ) bs
