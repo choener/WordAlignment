@@ -41,13 +41,13 @@ import Linguistics.TwoWay.Common
 
 
 
---sScore :: Monad m => VU.Vector Char -> VU.Vector Char -> [Double] -> Double -> STwoWay m Double Double InternedMultiChar ()
 sScore :: Monad m => SimpleScoring -> STwoWay m Double Double InternedMultiChar ()
 sScore SimpleScoring {..} = STwoWay -- !vowels !consonants !scores !gapOpen = STwoWay
   { loop_step = \ww (Z:.():.c)     -> ww + gapScore
   , step_loop = \ww (Z:.c:.())     -> ww + gapScore
---  , step_step = \ww (Z:.c:.d ) -> ww + scoreMatch vowels consonants scores gapOpen c d
-  , step_step = \ww (Z:.c:.d ) -> ww + (maybe defaultScore id . unsafePerformIO $ H.lookup simpleScore (c,d))
+  , step_step = \ww (Z:.c:.d ) -> ww + (maybe (if c==d then defMatch else defMismatch)
+                                              id
+                                              . unsafePerformIO $ H.lookup simpleScore (c,d))
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   }
@@ -72,12 +72,6 @@ twoWay simpleScoring i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
 {-# NOINLINE twoWay #-}
 
 twoWayFill
-  {-
-  :: VU.Vector Char
-  -> VU.Vector Char
-  -> [Double]
-  -> Double
-  -}
   :: SimpleScoring
   -> V.Vector InternedMultiChar
   -> V.Vector InternedMultiChar
@@ -92,12 +86,6 @@ twoWayFill simpleScoring i1 i2 = do
 {-# NOINLINE twoWayFill #-}
 
 backtrack
-  {-
-  :: VU.Vector Char
-  -> VU.Vector Char
-  -> [Double]
-  -> Double
-  -}
   :: SimpleScoring
   -> V.Vector InternedMultiChar
   -> V.Vector InternedMultiChar
@@ -108,7 +96,6 @@ backtrack simpleScoring i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 
   n2 = V.length i2
   w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
-  --(Z:.(_,g)) = gTwoWay (sScore vowels consonants scores gapOpen <** sAlign) w (chr i1) (chr i2) Empty Empty
   (Z:.(_,g)) = gTwoWay (sScore simpleScoring <** sAlign) w (chr i1) (chr i2) Empty Empty
 {-# NOINLINE backtrack #-}
 

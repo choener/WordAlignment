@@ -35,7 +35,8 @@ import NLP.Alphabet.MultiChar
 data SimpleScoring = SimpleScoring
   { simpleScore  :: !(H.BasicHashTable (InternedMultiChar,InternedMultiChar) Double)
   , gapScore     :: !Double
-  , defaultScore :: !Double
+  , defMatch     :: !Double
+  , defMismatch  :: !Double
   }
   deriving (Show)
 
@@ -46,25 +47,27 @@ data ParsedLine
   | PLgap Double
   | PLgapopen Double
   | PLgapextend Double
-  | PLdefault Double
+  | PLdefmatch Double
+  | PLdefmismatch Double
   deriving (Show,Eq,Ord)
 
 parseLine l = case ABL.eitherResult (ABL.parse go l) of
                 Left  err -> error err
                 Right p   -> p
-  where go =   PLset       <$ "Set"       <*> wd <*> mc `AB.sepBy1` AB.skipSpace -- AB.skipWhile AB.isHorizontalSpace
-           <|> PLeq        <$ "Eq"        <*> wd <*> nm
-           <|> PLinset     <$ "InSet"     <*> wd <*> wd <*> nm
-           <|> PLgap       <$ "Gap"       <*> nm
-           <|> PLgapopen   <$ "GapOpen"   <*> nm
-           <|> PLgapextend <$ "GapExtend" <*> nm
-           <|> PLdefault   <$ "Default"   <*> nm
+  where go =   PLset         <$ "Set"       <*> wd <*> mc `AB.sepBy1` AB.skipSpace -- AB.skipWhile AB.isHorizontalSpace
+           <|> PLeq          <$ "Eq"        <*> wd <*> nm
+           <|> PLinset       <$ "InSet"     <*> wd <*> wd <*> nm
+           <|> PLgap         <$ "Gap"       <*> nm
+           <|> PLgapopen     <$ "GapOpen"   <*> nm
+           <|> PLgapextend   <$ "GapExtend" <*> nm
+           <|> PLdefmatch    <$ "Match"     <*> nm
+           <|> PLdefmismatch <$ "Mismatch"  <*> nm
         wd = AB.skipSpace *> AB.takeWhile1 (not . AB.isHorizontalSpace)
         mc = fromByteString <$> wd
         nm = AB.skipSpace *> AB.double
 
 genSimpleScoring :: BL.ByteString -> SimpleScoring
-genSimpleScoring l = SimpleScoring t g d
+genSimpleScoring l = SimpleScoring t g dm di
   where
     t    = unsafePerformIO $ H.fromListWithSizeHint (Prelude.length ys) ys
     ls   = BL.lines l
@@ -73,7 +76,8 @@ genSimpleScoring l = SimpleScoring t g d
     sets = [s  | s@(PLset _ _)     <- xs]
     eqs  = [e  | e@(PLeq _ _)      <- xs]
     iss  = [i  | i@(PLinset _ _ _) <- xs]
-    [d]  = [d  | PLdefault d       <- xs]
+    [dm] = [dm | PLdefmatch dm     <- xs]
+    [di] = [di | PLdefmismatch di  <- xs]
     [g]  = [g  | PLgap g           <- xs]
     [go] = [go | PLgapopen go      <- xs]
     [ge] = [ge | PLgapextend ge    <- xs]

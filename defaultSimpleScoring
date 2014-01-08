@@ -1,6 +1,6 @@
 Set Conso  b c d f g h j k m n p q s t v w x y z
 Set Liquid l r
-Set Vowel  a e i o u
+Set Vowel  a e i o u   a\' e\' i\' o\' u\'
 Eq Conso  4
 Eq Liquid 3
 Eq Vowel  2
@@ -13,7 +13,8 @@ InSet   Liquid   Vowel    -1
 InSet   Vowel    Conso    -999999
 InSet   Vowel    Liquid   -1
 InSet   Vowel    Vowel     0
-Gap       -4
-GapOpen   -4
-GapExtend -4
-Default   -999999
+Gap         -4
+GapOpen     -4
+GapExtend   -4
+Match        1
+Mismatch    -999999
