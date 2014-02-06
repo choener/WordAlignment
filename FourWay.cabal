@@ -50,7 +50,7 @@ library
     vector                    >= 0.10     ,
     ADPfusion                 >= 0.2      ,
     NaturalLanguageAlphabets  >= 0.0.0.2  ,
-    PrimitiveArray            >= 0.5.1
+    PrimitiveArray            >= 0.5.3
   exposed-modules:
 --    Linguistics.FourWay
 --    Linguistics.FourWay.Backward
