@@ -35,8 +35,8 @@ import NLP.Alphabet.MultiChar
 
 data Word = Word
   { wordID     :: {-# UNPACK #-} !Int
-  , wordLang   :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
   , wordClass  :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
+  , wordLang   :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
   , wordLength :: {-# UNPACK #-} !Int
   , wordWord   :: {-# UNPACK #-} !(V.Vector InternedMultiChar)
   }
