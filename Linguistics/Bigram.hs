@@ -22,6 +22,7 @@ import           Control.Applicative
 import           Control.Arrow
 import           Control.DeepSeq
 import           Control.Lens
+import           Data.Attoparsec.ByteString.Lazy ((<?>))
 import           Data.ByteString (ByteString)
 import           Data.Function
 import           Data.Hashable
@@ -72,10 +73,11 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
                 Left  err -> error err
                 Right p   -> force p
   where
-    go  = (\(l1,b1) (l2,b2) d -> (l1,l2,b1,b2,d)) <$> big <*> big <*> AB.double -- <?> "one bigram score line"
-    big = (\l p h -> (l,Bigram p h)) <$> wrd <*> wrd <*> wrd -- <?> "on bigram"
+    go     = (,,,,) <$> lang <*> lang <*> bigram <*> bigram <*> score <?> "go"
+    lang   = wrd <?> "lang"
+    bigram = Bigram <$> wrd <*> wrd <?> "bigram"
+    score  = AB.double <?> "score"
     wrd = (intern . MultiChar . BS.toShort) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
-
 
 type Lang = InternedMultiChar
 type Line = (Lang, Lang, Bigram, Bigram, Double)
