@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
@@ -37,12 +38,22 @@ import           Linguistics.TwoWay.Common
 
 sScore :: Monad m => Double -> Double -> Scores -> STwoWay m Double Double (Maybe InternedMultiChar,InternedMultiChar) ()
 sScore dS gapOpen s = STwoWay
-  { loop_step = \ww (Z:.():.(mc,c))     -> ww + gapOpen
-  , step_loop = \ww (Z:.(mc,c):.())     -> ww + gapOpen
+  { loop_step = \ww (Z:.():.(mc,c))     -> if | c=="$"    -> -500000
+                                              | otherwise -> ww + gapOpen
+  , step_loop = \ww (Z:.(mc,c):.())     -> if | c=="$"    -> -500000
+                                              | otherwise -> ww + gapOpen
+  , step_step = \ww (Z:.(mc,c):.(nd,d)) -> if | c=="^" && d=="$" -> -500000
+                                              | c=="$" && d=="^" -> -500000
+                                              | otherwise        -> case (mc,nd) of
+                                                  (Nothing  , Nothing ) -> 0
+                                                  (Just mc' , Just nd') -> ww + lkup mc' c nd' d
+                                                  _                     -> -500000
+  {-
   , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
                                              (Nothing  , Nothing ) -> 0
                                              (Just mc' , Just nd') -> ww + lkup mc' c nd' d
                                              _                     -> -500000
+                                             -}
   , nil_nil   = const 0
   , h         = S.foldl' max (-500000)
   } where
