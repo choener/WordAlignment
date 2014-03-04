@@ -1,0 +1,34 @@
+Grammar: MD
+N: M
+N: D
+T: a
+M -> bi    <<< M a
+M -> uni   <<< D a
+D -> gopen <<< M
+D -> gext  <<< D
+//
+Grammar: Mdone
+N: M
+E: empty
+M -> nil <<< empty
+//
+Grammar: Ddone
+N: D
+E: empty
+D -> nil <<< empty
+//
+Grammar: MtoD
+N: M
+N: D
+T: a
+M -> uni   <<< D a
+//
+Grammar: Dloop
+N: M
+N: D
+D -> gopen <<< M
+D -> gext  <<< D
+//
+Product:
+MD >< MD  +  Mdone * 2  +  Ddone * 2  -  MtoD * 2  -  Dloop * 2
+//
