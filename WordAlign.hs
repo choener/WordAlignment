@@ -38,7 +38,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Default
 import           NLP.Scoring.SimpleUnigram.Import
 
-import Linguistics.TwoWay
+--import Linguistics.TwoWay
 {- we test interning with TwoWay alignments only
 import Linguistics.ThreeWay
 import Linguistics.FourWay
@@ -46,12 +46,14 @@ import Linguistics.FourWay
 import Linguistics.Bigram
 import Linguistics.Common
 import Linguistics.Word
+import Linguistics.TwoWay.AdvancedBigram
 
 data Config
   = TwoWay
     { scoreFile :: String
     , defaultScore :: Double
     , gapOpen :: Double
+    , gapExtend :: Double
     , block :: Maybe (Integer,Integer)
     , selfAlign :: Bool
     }
@@ -93,6 +95,7 @@ twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
   , gapOpen = (-1) &= help "cost to open a gap"
+  , gapExtend = (-1) &= help "cost to extend a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
   , selfAlign = False &= help "align each word with itself as well"
   } &= help "Align two words at a time for all ordered word combinations"
@@ -150,20 +153,20 @@ main = do
                     else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
                     -}
       ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
-      let ts = map (\(a,b) -> ( [a,b], alignTwo defaultScore gapOpen (getScores2 ss (wordLang a) (wordLang b))
+      let ts = map (\(a,b) -> ( [a,b], alignTwo gapOpen gapExtend defaultScore (getScores2 ss (wordLang a) (wordLang b))
                                                 (wordWord a) (wordWord b)
                               )
                     ) bs
       mapM_ (printAlignment (-2)) ts
-    TwoWaySimple{..} -> do
-      simpleScoring <- if null scoreFile then return $ error "scorefile missing"
-                                         else simpleScoreFromFile scoreFile
-      let ws = ws'
-      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
-      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
-                              )
-                    ) bs
-      mapM_ (printAlignment 0) ts
+--    TwoWaySimple{..} -> do
+--      simpleScoring <- if null scoreFile then return $ error "scorefile missing"
+--                                         else simpleScoreFromFile scoreFile
+--      let ws = ws'
+--      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
+--      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
+--                              )
+--                    ) bs
+--      mapM_ (printAlignment 0) ts
     {-
     ThreeWay{..} -> do
       let ws = map addWordDelims ws'
@@ -217,17 +220,18 @@ main = do
       mapM_ (printAlignment 0) ts
       -}
 
-alignTwo :: Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
-alignTwo sDef sGapOpen scores x y
-  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List))
-  $ twoWayBigram sDef sGapOpen scores x y
+alignTwo :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
+alignTwo gapOpen gapExtend defaultScore scores x y
+--  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List))
+  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^"))))
+  $ runBigram gapOpen gapExtend defaultScore scores 1 x y
 
-alignTwoSimple
-  :: SimpleScoring
-  -> V.Vector InternedMultiChar
-  -> V.Vector InternedMultiChar
-  -> (Double, [[String]])
-alignTwoSimple simpleScoring x y = second (map (alignPretty . tup2List)) $ twoWaySimple simpleScoring x y
+--alignTwoSimple
+--  :: SimpleScoring
+--  -> V.Vector InternedMultiChar
+--  -> V.Vector InternedMultiChar
+--  -> (Double, [[String]])
+--alignTwoSimple simpleScoring x y = second (map (alignPretty . tup2List)) $ twoWaySimple simpleScoring x y
 
 {-
 alignThree :: Double -> Double -> (Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])

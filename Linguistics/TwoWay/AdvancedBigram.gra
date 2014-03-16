@@ -26,6 +26,7 @@ N: M
 N: D
 T: u
 M -> uni   <<< D u
+D -> gext  <<< D
 //
 
 Grammar: Dloop
@@ -36,5 +37,5 @@ D -> gext  <<< D
 //
 
 Product: BigramGrammar
-MD >< MD  +  Mdone * 2  +  Mdone >< Ddone  +  Ddone >< Mdone  -  MtoD * 2  -  Dloop >< Dloop
+MD >< MD  +  Mdone * 2  +  Mdone >< Ddone  +  Ddone >< Mdone  -  MtoD >< MtoD  -  Dloop >< Dloop
 //

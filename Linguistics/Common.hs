@@ -6,7 +6,7 @@ module Linguistics.Common where
 
 import           Data.ByteString (ByteString)
 import           Data.Char
-import           Data.List (transpose)
+import           Data.List (transpose,reverse)
 import qualified Data.ByteString.Short as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -19,7 +19,7 @@ import           NLP.Alphabet.MultiChar
 -- | Actually align something prettily
 
 alignPretty :: [[InternedMultiChar]] -> [String]
-alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose $ xss where
+alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose . map reverse $ xss where
   f zs x = printAligned x zs
 
 -- | Prettyprint ``characters'', which are actually small bytestrings.

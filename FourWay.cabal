@@ -23,6 +23,10 @@ Flag Opt
   description: use the ghc optimizer
   default:     True
 
+Flag llvm
+  description: use llvm backend
+  default: True
+
 library
   build-depends:
     base                      >= 4 && < 5 ,
@@ -77,23 +81,24 @@ library
     ghc-options:
       -O2
 
--- executable WordAlign
---   build-depends:
---     cmdargs   >= 0.10 ,
---     parallel  >= 3.2
---   main-is:
---     WordAlign.hs
---   ghc-options:
---     -fsimpl-tick-factor=900
---   if flag(Opt)
---     ghc-options:
---       -O2
---       -funfolding-use-threshold100
---       -funfolding-keeness-factor100
---       -- -fnew-codegen
--- --      -fllvm
--- --      -optlo-O3 -optlo-std-compile-opts
--- --      -fllvm-tbaa
+executable WordAlign
+  build-depends:
+    cmdargs   >= 0.10 ,
+    parallel  >= 3.2
+  main-is:
+    WordAlign.hs
+  ghc-options:
+    -fsimpl-tick-factor=900
+  if flag(Opt)
+    ghc-options:
+      -O2
+      -funfolding-use-threshold100
+      -funfolding-keeness-factor100
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 
 
