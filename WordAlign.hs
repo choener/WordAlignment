@@ -94,7 +94,7 @@ data Config
 twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
   , defaultScore = (-42) &= help "score to use for unknown bigram matches"
-  , gapOpen = (-1) &= help "cost to open a gap"
+  , gapOpen = (-5) &= help "cost to open a gap"
   , gapExtend = (-1) &= help "cost to extend a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
   , selfAlign = False &= help "align each word with itself as well"
