@@ -83,49 +83,51 @@ forward as bs = do
   let bb = chr bs
   let aP = chrLeft as
   let bP = chrLeft bs
-  !s' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
-  !t' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
-  !u' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
-  let s = mTblD (Z:.EmptyOk:.EmptyOk) s'
-  let t = mTblD (Z:.EmptyOk:.EmptyOk) t'
-  let u = mTblD (Z:.EmptyOk:.EmptyOk) u'
-  fillTable $ gBigramGrammar bigram s t u u aP bP Empty Empty aa bb
-  ss <- PA.freeze s'
-  tt <- PA.freeze t'
-  uu <- PA.freeze u'
+  !tDM' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
+  !tMD' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
+  !tMM' <- PA.newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 aL:.pointL 0 bL) (-999999)
+  let tDM = mTblD (Z:.EmptyOk:.EmptyOk) tDM'
+  let tMD = mTblD (Z:.EmptyOk:.EmptyOk) tMD'
+  let tMM = mTblD (Z:.EmptyOk:.EmptyOk) tMM'
+  let tDD = undefined `asTypeOf` tDM
+  fillTable $ gBigramGrammar bigram tDD tDM tMD tMM aP bP Empty Empty aa bb
+  ss <- PA.freeze tDM'
+  tt <- PA.freeze tMD'
+  uu <- PA.freeze tMM'
   return (ss,tt,uu)
 {-# NOINLINE forward #-}
 
-fillTable ( (MTbl _ s,f), (MTbl _ t,g), (MTbl _ u,h) ) = do
-  let (_,Z:.PointL (_:.aL):.PointL (_:.bL)) = boundsM t
+fillTable ( (MTbl _ tDM,fDM), (MTbl _ tMD,fMD), (MTbl _ tMM,fMM) ) = do
+  let (_,Z:.PointL (_:.aL):.PointL (_:.bL)) = boundsM tMM
   forM_ [0 .. aL] $ \a -> forM_ [0 .. bL] $ \b -> do
     let ix = Z:.pointL 0 a:.pointL 0 b
-    (f ix) >>= PA.writeM s ix
-    (g ix) >>= PA.writeM t ix
-    (h ix) >>= PA.writeM u ix
+    (fDM ix) >>= PA.writeM tDM ix
+    (fMD ix) >>= PA.writeM tMD ix
+    (fMM ix) >>= PA.writeM tMM ix
 {-# INLINE fillTable #-}
 
 backtrack :: V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Tbl,Tbl,Tbl) -> [[IMS]]
-backtrack as bs (s',t',u') = unId . SM.toList . unId . h $ Z:.pointL 0 aL:.pointL 0 bL where
+backtrack as bs (tDM',tMD',tMM') = unId . SM.toList . unId . fMM $ Z:.pointL 0 aL:.pointL 0 bL where
   aL = V.length as
   bL = V.length bs
   aa = chr as
   bb = chr bs
   aP = chrLeft as
   bP = chrLeft bs
-  s = btTblD (Z:.EmptyOk:.EmptyOk) s' f
-  t = btTblD (Z:.EmptyOk:.EmptyOk) t' g
-  u = btTblD (Z:.EmptyOk:.EmptyOk) u' h
-  ((_,f),(_,g),(_,h)) = gBigramGrammar (bigram <** pretty) s t u u aP bP Empty Empty aa bb
+  tDM = btTblD (Z:.EmptyOk:.EmptyOk) tDM' fDM
+  tMD = btTblD (Z:.EmptyOk:.EmptyOk) tMD' fMD
+  tMM = btTblD (Z:.EmptyOk:.EmptyOk) tMM' fMM
+  tDD = undefined `asTypeOf` tDM
+  ((_,fDM),(_,fMD),(_,fMM)) = gBigramGrammar (bigram <** pretty) tDD tDM tMD tMM aP bP Empty Empty aa bb
 {-# NOINLINE backtrack #-}
 
 runBigram :: Int -> IMS -> IMS -> (Double,[[IMS]])
-runBigram k as bs = (u PA.! (Z:.pointL 0 aL:.pointL 0 bL), take k b) where
+runBigram k as bs = (tMM PA.! (Z:.pointL 0 aL:.pointL 0 bL), take k b) where
   aa = V.fromList as
   bb = V.fromList bs
   aL = V.length aa
   bL = V.length bb
-  (s,t,u) = runST $ forward aa bb
-  b = backtrack aa bb (s,t,u)
+  (tDM,tMD,tMM) = runST $ forward aa bb
+  b = backtrack aa bb (tDM,tMD,tMM)
 {-# NOINLINE runBigram #-}
 
