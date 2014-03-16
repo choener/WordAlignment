@@ -1,5 +1,5 @@
 name:           WordAlignment
-version:        0.0.0.2
+version:        0.0.1.0
 author:         Christian Hoener zu Siederdissen, Nancy Retzlaff, Lydia Steiner, Peter F. Stadler, 2013
 copyright:      Christian Hoener zu Siederdissen, 2013
 homepage:       http://www.tbi.univie.ac.at/~choener/
@@ -26,6 +26,7 @@ Flag Opt
 library
   build-depends:
     base                      >= 4 && < 5 ,
+    ADPfusion                 >= 0.3      ,
     attoparsec                >= 0.10     ,
     bytestring                            ,
     containers                            ,
@@ -38,19 +39,21 @@ library
     hashtables                >= 1.1      ,
     intern                    >= 0.9      ,
     lens                      >= 3.9      ,
+    NaturalLanguageAlphabets  >= 0.0.0.2  ,
     primitive                 >= 0.5      ,
+    PrimitiveArray            >= 0.5.4    ,
     QuickCheck                >= 2.5      ,
     repa                      >= 3.2      ,
     strict                    >= 0.3.2    ,
     stringable                >= 0.1.2    ,
+    template-haskell                      ,
     text                      >= 0.11     ,
     transformers                          ,
     tuple-th                  >= 0.2.4    ,
     unordered-containers      >= 0.2.3    ,
-    vector                    >= 0.10     ,
-    ADPfusion                 >= 0.2      ,
-    NaturalLanguageAlphabets  >= 0.0.0.2  ,
-    PrimitiveArray            >= 0.5.3
+    FormalGrammars            >= 0.0.0.3  ,
+    GrammarProducts           >= 0.0.0.5  ,
+    vector                    >= 0.10
   exposed-modules:
 --    Linguistics.FourWay
 --    Linguistics.FourWay.Backward
@@ -62,11 +65,12 @@ library
 --    Linguistics.ThreeWay.Simple
     Linguistics.Bigram
     Linguistics.Common
-    Linguistics.TwoWay
-    Linguistics.TwoWay.Bigram
-    Linguistics.TwoWay.Common
-    Linguistics.TwoWay.Simple
+--    Linguistics.TwoWay
+--    Linguistics.TwoWay.Bigram
+--    Linguistics.TwoWay.Common
+--    Linguistics.TwoWay.Simple
     Linguistics.Word
+    Linguistics.TwoWay.AdvancedBigram
   ghc-options:
     -fsimpl-tick-factor=900
   if flag(Opt)
