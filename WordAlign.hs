@@ -38,7 +38,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Default
 import           NLP.Scoring.SimpleUnigram.Import
 
---import Linguistics.TwoWay
+import Linguistics.TwoWay
 {- we test interning with TwoWay alignments only
 import Linguistics.ThreeWay
 import Linguistics.FourWay
@@ -158,15 +158,15 @@ main = do
                               )
                     ) bs
       mapM_ (printAlignment (-2)) ts
---    TwoWaySimple{..} -> do
---      simpleScoring <- if null scoreFile then return $ error "scorefile missing"
---                                         else simpleScoreFromFile scoreFile
---      let ws = ws'
---      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
---      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
---                              )
---                    ) bs
---      mapM_ (printAlignment 0) ts
+    TwoWaySimple{..} -> do
+      simpleScoring <- if null scoreFile then return $ error "scorefile missing"
+                                         else simpleScoreFromFile scoreFile
+      let ws = ws'
+      let bs = blockWith block $ [ (a,b) | (a:as) <- tails ws, b <- if selfAlign then (a:as) else as ]
+      let ts = map (\(a,b) -> ( [a,b], alignTwoSimple simpleScoring (wordWord a) (wordWord b)
+                              )
+                    ) bs
+      mapM_ (printAlignment 0) ts
     {-
     ThreeWay{..} -> do
       let ws = map addWordDelims ws'
@@ -222,16 +222,15 @@ main = do
 
 alignTwo :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
 alignTwo gapOpen gapExtend defaultScore scores x y
---  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^")) . tup2List))
   = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^"))))
   $ runBigram gapOpen gapExtend defaultScore scores 1 x y
 
---alignTwoSimple
---  :: SimpleScoring
---  -> V.Vector InternedMultiChar
---  -> V.Vector InternedMultiChar
---  -> (Double, [[String]])
---alignTwoSimple simpleScoring x y = second (map (alignPretty . tup2List)) $ twoWaySimple simpleScoring x y
+alignTwoSimple
+  :: SimpleScoring
+  -> V.Vector InternedMultiChar
+  -> V.Vector InternedMultiChar
+  -> (Double, [[String]])
+alignTwoSimple simpleScoring x y = second (map alignPretty) $ twoWaySimple simpleScoring x y
 
 {-
 alignThree :: Double -> Double -> (Scores,Scores,Scores) -> V.Vector ByteString -> V.Vector ByteString -> V.Vector ByteString -> (Double, [[String]])

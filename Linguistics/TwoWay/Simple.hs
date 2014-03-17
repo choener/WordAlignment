@@ -52,10 +52,10 @@ sScore ss@SimpleScoring{..} = STwoWay
 
 sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) InternedMultiChar ()
 sAlign = STwoWay
-  { loop_step = \(w1,w2) (Z:.():.c) -> ( w1 ++ ["-"], w2 ++ [c]   )
-  , step_loop = \(w1,w2) (Z:.c:.()) -> ( w1 ++ [c]  , w2 ++ ["-"] )
-  , step_step = \(w1,w2) (Z:.a:.b) ->  ( w1 ++ [a]  , w2 ++ [b]   )
-  , nil_nil   = const ([],[])
+  { loop_step = \[w1,w2] (Z:.():.c) -> [ "-" : w1 , c   : w2 ]
+  , step_loop = \[w1,w2] (Z:.c:.()) -> [ c   : w1 , "-" : w2 ]
+  , step_step = \[w1,w2] (Z:.a:.b) ->  [ a   : w1 , b   : w2 ]
+  , nil_nil   = const [[],[]]
   , h         = return . id
   }
 {-# INLINE sAlign #-}
@@ -77,7 +77,7 @@ twoWayFill simpleScoring i1 i2 = do
   let n1 = V.length i1
   let n2 = V.length i2
   !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
-  let w = mTbl (Z:.EmptyT:.EmptyT) t'
+  let w = mTblD (Z:.EmptyOk:.EmptyOk) t'
   fillTable2 $ gTwoWay (sScore simpleScoring) w (chr i1) (chr i2) Empty Empty
   freeze t'
 {-# NOINLINE twoWayFill #-}
@@ -91,8 +91,7 @@ backtrack
 backtrack simpleScoring i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
   n1 = V.length i1
   n2 = V.length i2
-  w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
-  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
+  w = btTblD (Z:.EmptyOk:.EmptyOk) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore simpleScoring <** sAlign) w (chr i1) (chr i2) Empty Empty
 {-# NOINLINE backtrack #-}
 

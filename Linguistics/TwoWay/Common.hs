@@ -34,16 +34,16 @@ data STwoWay _m _x _r c empty = STwoWay
 
 gTwoWay sTwoWay {-non-terminals:-} ww {-terminals:-} c1 c2 empty1 empty2 =
   (Z:.
-  ( ww ,  loop_step sTwoWay  <<< ww % (T:!None:!c2)  |||
-          step_loop sTwoWay  <<< ww % (T:!c1:!None)  |||
-          step_step sTwoWay  <<< ww % (T:!c1:!c2)    |||
-          nil_nil   sTwoWay  <<< (T:!empty1:!empty2) ... h sTwoWay )
+  ( ww ,  loop_step sTwoWay  <<< ww % (M:>None:>c2)  |||
+          step_loop sTwoWay  <<< ww % (M:>c1:>None)  |||
+          step_step sTwoWay  <<< ww % (M:>c1:>c2)    |||
+          nil_nil   sTwoWay  <<< (M:>empty1:>empty2) ... h sTwoWay )
   )
 {-# INLINE gTwoWay #-}
 
 -- | Type of backtracked results
 
-type Aligned = ( [InternedMultiChar], [InternedMultiChar] )
+type Aligned = [[InternedMultiChar]]
 
 -- | Algebra product operation
 
