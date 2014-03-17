@@ -222,7 +222,7 @@ main = do
 
 alignTwo :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
 alignTwo gapOpen gapExtend defaultScore scores x y
-  = second (map (alignPretty . map (filter (\c -> c/= "$" && c/="^"))))
+  = second (map alignPretty) -- . filter (any (\c -> c/= "$" && c/= "^")))
   $ runBigram gapOpen gapExtend defaultScore scores 1 x y
 
 alignTwoSimple
