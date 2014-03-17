@@ -61,22 +61,31 @@ bigram gapopen gapextend defaultScore scores = SigBigramGrammar
 lkup defaultScore scores pa a pb b = maybe defaultScore id . unsafePerformIO $ H.lookup scores (Bigram pa a :!: Bigram pb b)
 {-# INLINE lkup #-}
 
+-- | Score the alignment of two bigrams.
+
 scoreBiBi defaultScore scores a b
   | (Nothing,_  ) <- a, (Nothing,_  ) <- b = 0
   | (Just ap,a' ) <- a, (Just bp,b' ) <- b = lkup defaultScore scores ap a' bp b'
-  | (_      ,"$") <- a, (_      ,"^") <- b = 0
-  | otherwise                            = -999999
+  | (_      ,"$") <- a, (_      ,"^") <- b = -999999
+  | (_      ,"^") <- a, (_      ,"$") <- b = -999999
+  | otherwise                              = -999999
 {-# INLINE scoreBiBi #-}
 
+-- | Score the end of a gap region, when we restart aligning by having a bigram
+-- "a,b" on top of a unigram "-,c", with b/c aligned.
+
 scoreBiUni defaultScore scores a b
-  | (Just ap,a' ) <- a = lkup defaultScore scores ap a' "-" b
-  | (_      ,"$") <- a, "^" <- b = 0
-  | otherwise         = -999999
+  | (Just ap,a' ) <- a           = lkup defaultScore scores ap a' "-" b
+  | (_      ,"$") <- a, "^" <- b = -999999
+  | otherwise                    = -999999
 {-# INLINE scoreBiUni #-}
 
+-- | Just like 'scoreBiUni'.
+
 scoreUniBi defaultScore scores a b
-  | (Just bp,b') <- b = lkup defaultScore scores "-" a bp b'
-  | otherwise         = -999999
+  | (Just bp,b' ) <- b           = lkup defaultScore scores "-" a bp b'
+  | (_      ,"$") <- a, "^" <- b = -999999
+  | otherwise                    = -999999
 {-# INLINE scoreUniBi #-}
 
 type IMS = [InternedMultiChar]
