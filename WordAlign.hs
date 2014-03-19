@@ -51,7 +51,8 @@ import Linguistics.TwoWay.AdvancedBigram
 data Config
   = TwoWay
     { scoreFile :: String
-    , defaultScore :: Double
+    , bigramDef :: Double
+    , unibiDef  :: Double
     , gapOpen :: Double
     , gapExtend :: Double
     , block :: Maybe (Integer,Integer)
@@ -93,7 +94,8 @@ data Config
 
 twoway = TwoWay
   { scoreFile = "" &= help "the file to read the scores from"
-  , defaultScore = (-42) &= help "score to use for unknown bigram matches"
+  , bigramDef = (-20) &= help "score to use for unknown bigram matches"
+  , unibiDef  = (-5) &= help "score to close a gap if the closing characters are unknown"
   , gapOpen = (-5) &= help "cost to open a gap"
   , gapExtend = (-1) &= help "cost to extend a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
@@ -152,8 +154,8 @@ main = do
                     then S.fromList . map wordLang $ ws
                     else S.fromLIst . map wordLang $ ws -- S.fromList . map head . group . map wordLang . concatMap (\(a,b) -> [a,b]) $ bs
                     -}
-      ss <- BL.readFile scoreFile >>= return . generateLookups chkLs defaultScore
-      let ts = map (\(a,b) -> ( [a,b], alignTwo gapOpen gapExtend defaultScore (getScores2 ss (wordLang a) (wordLang b))
+      ss <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
+      let ts = map (\(a,b) -> ( [a,b], alignTwo (BigramScores {gapOpen = gapOpen, gapExtend = gapExtend, bigramDef = bigramDef, unigramDef = -999999, biUniDef = unibiDef, scores = getScores2 ss (wordLang a) (wordLang b)})
                                                 (wordWord a) (wordWord b)
                               )
                     ) bs
@@ -220,10 +222,10 @@ main = do
       mapM_ (printAlignment 0) ts
       -}
 
-alignTwo :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
-alignTwo gapOpen gapExtend defaultScore scores x y
+alignTwo :: BigramScores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double, [[String]])
+alignTwo scores x y
   = second (map alignPretty) -- . filter (any (\c -> c/= "$" && c/= "^")))
-  $ runBigram gapOpen gapExtend defaultScore scores 1 x y
+  $ runBigram scores 1 x y
 
 alignTwoSimple
   :: SimpleScoring

@@ -37,5 +37,5 @@ D -> gext  <<< D
 //
 
 Product: BigramGrammar
-MD >< MD  +  Mdone * 2  +  Mdone >< Ddone  +  Ddone >< Mdone  -  MtoD >< MtoD  -  Dloop >< Dloop
+MD >< MD  +  Mdone * 2  -  MtoD >< MtoD  -  Dloop >< Dloop
 //

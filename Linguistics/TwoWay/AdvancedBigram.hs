@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,30 +43,39 @@ import           Linguistics.Bigram
 
 makeAlgebraProductH ['h] ''SigBigramGrammar
 
-bigram :: Monad m => Double -> Double -> Double -> Scores -> SigBigramGrammar m Double Double (Maybe InternedMultiChar, InternedMultiChar) () InternedMultiChar ()
-bigram gapopen gapextend defaultScore scores = SigBigramGrammar
-  { biBi     = \ x (Z:.a :.b ) -> x + scoreBiBi defaultScore scores a b
-  , biGext   = \ x (Z:.a :.()) -> x + gapextend
-  , biGopen  = \ x (Z:.a :.()) -> x + gapopen
-  , biUni    = \ x (Z:.a :.b ) -> x + scoreBiUni defaultScore scores a b
-  , gextBi   = \ x (Z:.():.b ) -> x + gapextend
-  , gopenBi  = \ x (Z:.():.b ) -> x + gapopen
+data BigramScores = BigramScores
+  { gapOpen    :: !Double
+  , gapExtend  :: !Double
+  , bigramDef  :: !Double -- score for non-existing bigram
+  , unigramDef :: !Double -- score for non-existing unigram ???
+  , biUniDef   :: !Double -- score for non-existing bi over unigram
+  , scores     :: !Scores
+  }
+
+bigram :: Monad m => BigramScores -> SigBigramGrammar m Double Double (Maybe InternedMultiChar, InternedMultiChar) () InternedMultiChar ()
+bigram s@BigramScores{..} = SigBigramGrammar
+  { biBi     = \ x (Z:.a :.b ) -> x + scoreBiBi s a b
+  , biGext   = \ x (Z:.a :.()) -> x + gapExtend
+  , biGopen  = \ x (Z:.a :.()) -> x + gapOpen
+  , biUni    = \ x (Z:.a :.b ) -> x + scoreBiUni s a b
+  , gextBi   = \ x (Z:.():.b ) -> x + gapExtend
+  , gopenBi  = \ x (Z:.():.b ) -> x + gapOpen
   , gopenUni = \ x (Z:.():.b ) -> x - 999999 -- TODO do we want to keep this rule?
   , nilNil   = \   (Z:.():.()) -> 0
-  , uniBi    = \ x (Z:.a :.b ) -> x + scoreUniBi defaultScore scores a b
+  , uniBi    = \ x (Z:.a :.b ) -> x + scoreUniBi s a b
   , uniGopen = \ x (Z:.a :.()) -> x - 999999 -- TODO do we want to keep this rule?
   , h        = SM.foldl' max (-999999)
   }
 {-# INLINE bigram #-}
 
-lkup defaultScore scores pa a pb b = maybe defaultScore id . unsafePerformIO $ H.lookup scores (Bigram pa a :!: Bigram pb b)
+lkup BigramScores{..} pa a pb b = maybe bigramDef id . unsafePerformIO $ H.lookup scores (Bigram pa a :!: Bigram pb b)
 {-# INLINE lkup #-}
 
 -- | Score the alignment of two bigrams.
 
-scoreBiBi defaultScore scores a b
+scoreBiBi scores a b
   | (Nothing,_  ) <- a, (Nothing,_  ) <- b = 0
-  | (Just ap,a' ) <- a, (Just bp,b' ) <- b = lkup defaultScore scores ap a' bp b'
+  | (Just ap,a' ) <- a, (Just bp,b' ) <- b = lkup scores ap a' bp b'
   | (_      ,"$") <- a, (_      ,"^") <- b = -999999
   | (_      ,"^") <- a, (_      ,"$") <- b = -999999
   | otherwise                              = -999999
@@ -74,17 +84,21 @@ scoreBiBi defaultScore scores a b
 -- | Score the end of a gap region, when we restart aligning by having a bigram
 -- "a,b" on top of a unigram "-,c", with b/c aligned.
 
-scoreBiUni defaultScore scores a b
-  | (Just ap,a' ) <- a           = lkup defaultScore scores ap a' "-" b
+scoreBiUni BigramScores{..} a b
+  | (Just ap,a' ) <- a           = maybe biUniDef id
+                                 . maybe (fmap (gapExtend +) . unsafePerformIO $ H.lookup scores (Bigram "@" a' :!: Bigram "@" b)) Just
+                                 . unsafePerformIO $ H.lookup scores (Bigram ap a' :!: Bigram "-" b)
   | (_      ,"$") <- a, "^" <- b = -999999
   | otherwise                    = -999999
 {-# INLINE scoreBiUni #-}
 
 -- | Just like 'scoreBiUni'.
 
-scoreUniBi defaultScore scores a b
-  | (Just bp,b' ) <- b           = lkup defaultScore scores "-" a bp b'
-  | (_      ,"$") <- a, "^" <- b = -999999
+scoreUniBi BigramScores{..} a b
+  | (Just bp,b' ) <- b           = maybe biUniDef id
+                                 . maybe (fmap (gapExtend +) . unsafePerformIO $ H.lookup scores (Bigram "@" a :!: Bigram "@" b')) Just
+                                 . unsafePerformIO $ H.lookup scores (Bigram "-" a :!: Bigram bp b')
+  | "^"      <- a, (_, "$") <- b = -999999
   | otherwise                    = -999999
 {-# INLINE scoreUniBi #-}
 
@@ -93,25 +107,25 @@ type IMS = [InternedMultiChar]
 fss = fromString . printf "%5.2f"
 {-# iNLINE fss #-}
 
-pretty :: Monad m => Double -> Double -> Double -> Scores -> SigBigramGrammar m [IMS] (SM.Stream m [IMS]) (Maybe InternedMultiChar, InternedMultiChar) () InternedMultiChar ()
-pretty gapOpen gapExtend defaultScore scores = SigBigramGrammar
-  { biBi     = \ [x,y,s] (Z:.a :.b ) -> [snd a :x,snd b :y,(fss $ scoreBiBi defaultScore scores a b)  : s]
-  , biGext   = \ [x,y,s] (Z:.a :.()) -> [snd a :x,"-"   :y,(fss $ gapExtend)                          : s]
-  , biGopen  = \ [x,y,s] (Z:.a :.()) -> [snd a :x,"-"   :y,(fss $ gapOpen)                            : s]
-  , biUni    = \ [x,y,s] (Z:.a :.b ) -> [snd a :x,b     :y,(fss $ scoreBiUni defaultScore scores a b) : s]
-  , gextBi   = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,snd b :y,(fss $ gapExtend)                          : s]
-  , gopenBi  = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,snd b :y,(fss $ gapOpen)                            : s]
-  , gopenUni = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,b     :y,(fss $ -999999)                            : s]
+pretty :: Monad m => BigramScores -> SigBigramGrammar m [IMS] (SM.Stream m [IMS]) (Maybe InternedMultiChar, InternedMultiChar) () InternedMultiChar ()
+pretty bs@BigramScores{..} = SigBigramGrammar
+  { biBi     = \ [x,y,s] (Z:.a :.b ) -> [snd a :x,snd b :y,(fss $ scoreBiBi bs a b)  : s]
+  , biGext   = \ [x,y,s] (Z:.a :.()) -> [snd a :x,"-"   :y,(fss $ gapExtend)         : s]
+  , biGopen  = \ [x,y,s] (Z:.a :.()) -> [snd a :x,"-"   :y,(fss $ gapOpen)           : s]
+  , biUni    = \ [x,y,s] (Z:.a :.b ) -> [snd a :x,b     :y,(fss $ scoreBiUni bs a b) : s]
+  , gextBi   = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,snd b :y,(fss $ gapExtend)         : s]
+  , gopenBi  = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,snd b :y,(fss $ gapOpen)           : s]
+  , gopenUni = \ [x,y,s] (Z:.():.b ) -> ["-"   :x,b     :y,(fss $ -999999)           : s]
   , nilNil   = \         (Z:.():.()) -> [[],[],[]]
-  , uniBi    = \ [x,y,s] (Z:.a :.b ) -> [a     :x,snd b :y,(fss $ scoreUniBi defaultScore scores a b) : s]
-  , uniGopen = \ [x,y,s] (Z:.a :.()) -> [a     :x,"-"   :y,(fss $ -999999)                            : s]
+  , uniBi    = \ [x,y,s] (Z:.a :.b ) -> [a     :x,snd b :y,(fss $ scoreUniBi bs a b) : s]
+  , uniGopen = \ [x,y,s] (Z:.a :.()) -> [a     :x,"-"   :y,(fss $ -999999)           : s]
   , h        = return . id
   }
 
 type Tbl = Unboxed (Z:.PointL:.PointL) Double
 
-forward :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> ST s (Tbl,Tbl,Tbl)
-forward gapOpen gapExtend defaultScore scores as bs = do
+forward :: BigramScores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> ST s (Tbl,Tbl,Tbl)
+forward scores as bs = do
   let aL = V.length as
   let bL = V.length bs
   let aa = chr as
@@ -124,7 +138,7 @@ forward gapOpen gapExtend defaultScore scores as bs = do
   let tDM = mTblD (Z:.EmptyOk:.EmptyOk) tDM'
   let tMD = mTblD (Z:.EmptyOk:.EmptyOk) tMD'
   let tMM = mTblD (Z:.EmptyOk:.EmptyOk) tMM'
-  fillTable $ gBigramGrammar (bigram gapOpen gapExtend defaultScore scores) tDM tMD tMM aP bP Empty Empty aa bb
+  fillTable $ gBigramGrammar (bigram scores) tDM tMD tMM aP bP Empty Empty aa bb
   ss <- PA.freeze tDM'
   tt <- PA.freeze tMD'
   uu <- PA.freeze tMM'
@@ -140,8 +154,8 @@ fillTable ( (MTbl _ tDM,fDM), (MTbl _ tMD,fMD), (MTbl _ tMM,fMM) ) = do
     (fMM ix) >>= PA.writeM tMM ix
 {-# INLINE fillTable #-}
 
-backtrack :: Double -> Double -> Double -> Scores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Tbl,Tbl,Tbl) -> [[IMS]]
-backtrack gapOpen gapExtend defaultScore scores as bs (tDM',tMD',tMM') = unId . SM.toList . unId . f $ Z:.pointL 0 aL:.pointL 0 bL where
+backtrack :: BigramScores -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Tbl,Tbl,Tbl) -> [[IMS]]
+backtrack scores as bs (tDM',tMD',tMM') = unId . SM.toList . unId . f $ Z:.pointL 0 aL:.pointL 0 bL where
   aL = V.length as
   bL = V.length bs
   aa = chr as
@@ -156,15 +170,15 @@ backtrack gapOpen gapExtend defaultScore scores as bs (tDM',tMD',tMM') = unId . 
   f = if | mx==tDM' PA.! ix -> fDM
          | mx==tMD' PA.! ix -> fMD
          | mx==tMM' PA.! ix -> fMM
-  ((_,fDM),(_,fMD),(_,fMM)) = gBigramGrammar (bigram gapOpen gapExtend defaultScore scores <** pretty gapOpen gapExtend defaultScore scores) tDM tMD tMM aP bP Empty Empty aa bb
+  ((_,fDM),(_,fMD),(_,fMM)) = gBigramGrammar (bigram scores <** pretty scores) tDM tMD tMM aP bP Empty Empty aa bb
 {-# NOINLINE backtrack #-}
 
-runBigram :: Double -> Double -> Double -> Scores -> Int -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double,[[IMS]])
-runBigram gapOpen gapExtend defaultScore scores k as bs = (maximum $ map (PA.!ix) [tDM,tMD,tMM] , take k b) where
+runBigram :: BigramScores -> Int -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double,[[IMS]])
+runBigram scores k as bs = (maximum $ map (PA.!ix) [tDM,tMD,tMM] , take k b) where
   ix = (Z:.pointL 0 aL:.pointL 0 bL)
   aL = V.length as
   bL = V.length bs
-  (tDM,tMD,tMM) = runST $ forward gapOpen gapExtend defaultScore scores as bs
-  b = backtrack gapOpen gapExtend defaultScore scores as bs (tDM,tMD,tMM)
+  (tDM,tMD,tMM) = runST $ forward scores as bs
+  b = backtrack scores as bs (tDM,tMD,tMM)
 {-# NOINLINE runBigram #-}
 
