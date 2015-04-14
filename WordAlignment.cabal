@@ -1,0 +1,110 @@
+name:           WordAlignment
+version:        0.0.2.0
+author:         Christian Hoener zu Siederdissen, 2013-2015
+copyright:      Christian Hoener zu Siederdissen, 2013-2015
+homepage:       http://www.bioinf.uni-leipzig.de/~choener
+maintainer:     choener@bioinf.uni-leipzig.de
+category:       Linguistics
+license:        GPL-3
+license-file:   LICENSE
+build-type:     Simple
+stability:      experimental
+cabal-version:  >= 1.6.0
+synopsis:
+                Bigram word alignments in 2-4 dimensions.
+description:
+                The library provides fast dynamic programming algorithms to
+                align 2-4 words using bigram scoring.
+
+Extra-Source-Files:
+  README.md
+
+Flag Opt
+  description:  use the ghc optimizer (can be set False to speed up compilation)
+  default:      True
+  manual:       True
+
+Flag llvm
+  description:  use llvm backend (use, if possible!)
+  default:      False
+  manual:       True
+
+library
+  build-depends: base                      >= 4.7 && < 4.9
+               , ADPfusion                 == 0.4.*
+               , attoparsec                >= 0.10
+               , bytestring
+               , containers
+               , control-monad-omega       >= 0.3
+               , deepseq                   >= 1.3
+               , dlist                     >= 0.6
+               , file-embed                >= 0.0.6
+               , FormalGrammars            == 0.2.*
+               , ghc-prim
+               , GrammarProducts           == 0.1.*
+               , hashable                  >= 1.1
+               , hashtables                >= 1.1
+               , intern                    >= 0.9
+               , lens                      >= 3.9
+               , NaturalLanguageAlphabets  == 0.0.0.*
+               , primitive                 >= 0.5
+               , PrimitiveArray            == 0.6.*
+               , QuickCheck                >= 2.7
+               , repa                      >= 3.2
+               , strict                    >= 0.3.2
+               , stringable                >= 0.1.2
+               , template-haskell
+               , text                      >= 0.11
+               , transformers
+               , tuple-th                  >= 0.2.4
+               , unordered-containers      >= 0.2.3
+               , vector                    >= 0.10
+
+  exposed-modules:
+--    Linguistics.FourWay
+--    Linguistics.FourWay.Backward
+--    Linguistics.FourWay.Common
+--    Linguistics.FourWay.Forward
+--    Linguistics.ThreeWay
+--    Linguistics.ThreeWay.Bigram
+--    Linguistics.ThreeWay.Common
+--    Linguistics.ThreeWay.Simple
+    Linguistics.Bigram
+    Linguistics.Common
+--    Linguistics.TwoWay
+--    Linguistics.TwoWay.Bigram
+--    Linguistics.TwoWay.Common
+--    Linguistics.TwoWay.Simple
+    Linguistics.Word
+    Linguistics.TwoWay.AdvancedBigram
+  ghc-options:
+    -fsimpl-tick-factor=900
+  if flag(Opt)
+    ghc-options:
+      -O2
+
+executable WordAlign
+  build-depends:
+    cmdargs   >= 0.10 ,
+    parallel  >= 3.2
+  main-is:
+    WordAlign.hs
+  ghc-options:
+    -fsimpl-tick-factor=900
+  if flag(Opt)
+    ghc-options:
+      -O2
+      -funfolding-use-threshold100
+      -funfolding-keeness-factor100
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
+
+
+
+--source-repository head
+--  type: git
+--  location: git://github.com/choener/WordAlignment
+
