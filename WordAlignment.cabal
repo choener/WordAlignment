@@ -9,7 +9,7 @@ license:        GPL-3
 license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
-cabal-version:  >= 1.6.0
+cabal-version:  >= 1.10.0
 synopsis:
                 Bigram word alignments in 2-4 dimensions.
 description:
@@ -46,7 +46,7 @@ library
                , hashtables                >= 1.1
                , intern                    >= 0.9
                , lens                      >= 3.9
-               , NaturalLanguageAlphabets  == 0.0.0.*
+               , NaturalLanguageAlphabets  == 0.0.1.*
                , primitive                 >= 0.5
                , PrimitiveArray            == 0.6.*
                , QuickCheck                >= 2.7
@@ -77,6 +77,11 @@ library
 --    Linguistics.TwoWay.Simple
     Linguistics.Word
     Linguistics.TwoWay.AdvancedBigram
+  default-language:
+    Haskell2010
+  default-extensions: BangPatterns
+                    , FlexibleContexts
+                    , TypeFamilies
   ghc-options:
     -fsimpl-tick-factor=900
   if flag(Opt)

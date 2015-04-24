@@ -19,6 +19,7 @@ import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
 import qualified Data.Vector as V
+import Prelude hiding (Word)
 
 import NLP.Alphabet.MultiChar
 

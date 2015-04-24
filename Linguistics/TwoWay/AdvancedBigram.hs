@@ -27,10 +27,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Text.Printf
 
 import           ADP.Fusion
-import           Data.Array.Repa.Index
-import           Data.Array.Repa.Index.Points
 import           Data.PrimitiveArray as PA hiding (map)
-import           Data.PrimitiveArray.Zero as PA
 import           FormalLanguage.CFG
 import           FormalLanguage.GrammarProduct
 import           FormalLanguage.GrammarProduct.QQ
@@ -42,6 +39,8 @@ import           Linguistics.Bigram
 [grammarProductF|Linguistics/TwoWay/AdvancedBigram.gra|]
 
 makeAlgebraProductH ['h] ''SigBigramGrammar
+
+{-
 
 data BigramScores = BigramScores
   { gapOpen    :: !Double
@@ -165,20 +164,21 @@ backtrack scores as bs (tDM',tMD',tMM') = unId . SM.toList . unId . f $ Z:.point
   tDM = btTblD (Z:.EmptyOk:.EmptyOk) tDM' fDM
   tMD = btTblD (Z:.EmptyOk:.EmptyOk) tMD' fMD
   tMM = btTblD (Z:.EmptyOk:.EmptyOk) tMM' fMM
-  ix = (Z:.pointL 0 aL:.pointL 0 bL)
+  ix = (Z:.PointL aL:.PointL bL)
   mx = maximum $ map (PA.!ix) [tDM',tMD',tMM']
   f = if | mx==tDM' PA.! ix -> fDM
          | mx==tMD' PA.! ix -> fMD
          | mx==tMM' PA.! ix -> fMM
-  ((_,fDM),(_,fMD),(_,fMM)) = gBigramGrammar (bigram scores <** pretty scores) tDM tMD tMM aP bP Empty Empty aa bb
+  ((_,fDM),(_,fMD),(_,fMM)) = gBigramGrammar (bigram scores <** pretty scores) tDM tMD tMM aP bP aa bb
 {-# NOINLINE backtrack #-}
 
 runBigram :: BigramScores -> Int -> V.Vector InternedMultiChar -> V.Vector InternedMultiChar -> (Double,[[IMS]])
 runBigram scores k as bs = (maximum $ map (PA.!ix) [tDM,tMD,tMM] , take k b) where
-  ix = (Z:.pointL 0 aL:.pointL 0 bL)
+  ix = (Z:.PointL aL:.PointL bL)
   aL = V.length as
   bL = V.length bs
   (tDM,tMD,tMM) = runST $ forward scores as bs
   b = backtrack scores as bs (tDM,tMD,tMM)
 {-# NOINLINE runBigram #-}
+-}
 

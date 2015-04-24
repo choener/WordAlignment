@@ -3,6 +3,7 @@ N: M
 N: D
 T: b
 T: u
+S: M
 M -> bi    <<< M b
 M -> uni   <<< D u
 D -> gopen <<< M
@@ -11,20 +12,22 @@ D -> gext  <<< D
 
 Grammar: Mdone
 N: M
-T: empty
-M -> nil <<< empty
+S: M
+M -> nil <<< e
 //
 
 Grammar: Ddone
 N: D
-T: empty
-D -> nil <<< empty
+N: M
+S: M
+D -> nil <<< e
 //
 
 Grammar: MtoD
 N: M
 N: D
 T: u
+S: M
 M -> uni   <<< D u
 D -> gext  <<< D
 //
@@ -32,6 +35,7 @@ D -> gext  <<< D
 Grammar: Dloop
 N: M
 N: D
+S: M
 D -> gopen <<< M
 D -> gext  <<< D
 //
@@ -39,3 +43,5 @@ D -> gext  <<< D
 Product: BigramGrammar
 MD >< MD  +  Mdone * 2  -  MtoD >< MtoD  -  Dloop >< Dloop
 //
+
+Emit: BigramGrammar
