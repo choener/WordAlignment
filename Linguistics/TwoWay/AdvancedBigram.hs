@@ -40,7 +40,6 @@ import           Linguistics.Bigram
 
 makeAlgebraProductH ['h] ''SigBigramGrammar
 
-{-
 
 data BigramScores = BigramScores
   { gapOpen    :: !Double
@@ -51,6 +50,7 @@ data BigramScores = BigramScores
   , scores     :: !Scores
   }
 
+{-
 bigram :: Monad m => BigramScores -> SigBigramGrammar m Double Double (Maybe InternedMultiChar, InternedMultiChar) () InternedMultiChar ()
 bigram s@BigramScores{..} = SigBigramGrammar
   { biBi     = \ x (Z:.a :.b ) -> x + scoreBiBi s a b
@@ -66,6 +66,7 @@ bigram s@BigramScores{..} = SigBigramGrammar
   , h        = SM.foldl' max (-999999)
   }
 {-# INLINE bigram #-}
+-}
 
 lkup BigramScores{..} pa a pb b = maybe bigramDef id . unsafePerformIO $ H.lookup scores (Bigram pa a :!: Bigram pb b)
 {-# INLINE lkup #-}
@@ -80,6 +81,7 @@ scoreBiBi scores a b
   | otherwise                              = -999999
 {-# INLINE scoreBiBi #-}
 
+{-
 -- | Score the end of a gap region, when we restart aligning by having a bigram
 -- "a,b" on top of a unigram "-,c", with b/c aligned.
 

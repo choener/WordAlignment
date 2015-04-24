@@ -59,6 +59,7 @@ library
                , tuple-th                  >= 0.2.4
                , unordered-containers      >= 0.2.3
                , vector                    >= 0.10
+               , AlignmentAlgorithms       == 0.0.1.*
 
   exposed-modules:
 --    Linguistics.FourWay
@@ -72,16 +73,18 @@ library
     Linguistics.Bigram
     Linguistics.Common
 --    Linguistics.TwoWay
---    Linguistics.TwoWay.Bigram
---    Linguistics.TwoWay.Common
---    Linguistics.TwoWay.Simple
+    Linguistics.TwoWay.Bigram
+    Linguistics.TwoWay.Common
+    Linguistics.TwoWay.Simple
     Linguistics.Word
-    Linguistics.TwoWay.AdvancedBigram
+--    Linguistics.TwoWay.AdvancedBigram
   default-language:
     Haskell2010
   default-extensions: BangPatterns
                     , FlexibleContexts
                     , TypeFamilies
+                    , TemplateHaskell
+                    , QuasiQuotes
   ghc-options:
     -fsimpl-tick-factor=900
   if flag(Opt)
@@ -89,11 +92,23 @@ library
       -O2
 
 executable WordAlign
-  build-depends:
-    cmdargs   >= 0.10 ,
-    parallel  >= 3.2
+  build-depends: base
+               , cmdargs   == 0.10.*
+               , parallel  >= 3.2     && < 3.3
+               , NaturalLanguageAlphabets
+               , intern
+               , containers
+               , WordAlignment
+               , bytestring
+               , strict
+               , hashtables
   main-is:
     WordAlign.hs
+  hs-source-dirs:
+    src
+  default-language:
+    Haskell2010
+  default-extensions:
   ghc-options:
     -fsimpl-tick-factor=900
   if flag(Opt)

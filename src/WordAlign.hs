@@ -7,6 +7,111 @@
 
 module Main where
 
+import           Control.Arrow ((***))
+import           System.Console.CmdArgs
+import qualified Data.ByteString.Lazy.Char8 as BL
+import           Control.Monad (forM_)
+import           Data.Sequence (Seq)
+import qualified Data.Map.Strict as M
+import           Text.Printf
+import           Data.Strict.Tuple
+import qualified Data.HashTable.IO as H
+import           System.IO.Unsafe (unsafePerformIO)
+import           Debug.Trace (trace)
+import qualified Data.Set as S
+import           Data.List (sortBy,groupBy)
+import           Data.Function (on)
+
+import           NLP.Scoring.SimpleUnigram
+import           NLP.Scoring.SimpleUnigram.Import
+
+import           Linguistics.Word (parseWord,Word(..),addWordDelims)
+import           Linguistics.TwoWay.Simple
+import qualified Linguistics.TwoWay.Bigram as BI
+import           Linguistics.Bigram
+import           Linguistics.Common
+
+
+
+data Config
+  = TwoWaySimple
+    { scoreFile :: String
+    , block :: Maybe (Integer,Integer)
+    }
+  | TwoWay
+    { scoreFile :: String
+    , bigramDef :: Double
+    , unibiDef  :: Double
+    , gapOpen :: Double
+    , gapExtend :: Double
+    , block :: Maybe (Integer,Integer)
+    }
+  | Info
+  deriving (Show,Data,Typeable)
+
+twowaySimple = TwoWaySimple
+  { scoreFile = def &= help ""
+  , block     = Nothing
+  }
+
+twoway = TwoWay
+  { scoreFile = "" &= help "the file to read the scores from"
+  , bigramDef = (-20) &= help "score to use for unknown bigram matches"
+  , unibiDef  = (-5) &= help "score to close a gap if the closing characters are unknown"
+  , gapOpen = (-5) &= help "cost to open a gap"
+  , gapExtend = (-1) &= help "cost to extend a gap"
+  , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
+  } &= help "Align two words at a time for all ordered word combinations"
+
+info = Info
+  {
+  }
+
+config = [twowaySimple, twoway, info]
+  &= program "WordAlign"
+  &= summary "WordAlign v.0.0.1"
+
+main = do
+  o <- cmdArgs $ modes config
+  ws' <- BL.getContents >>= return . map parseWord . BL.lines
+  case o of
+    TwoWaySimple{..} -> do
+      scoring <- simpleScoreFromFile scoreFile
+      forM_ ws' $ \x -> forM_ ws' $ \y -> do
+        let (d,xs) = alignGlobal scoring 1 (wordWord x) (wordWord y)
+        mapM_ (prettyAli2 d) xs
+    TwoWay{..} -> do
+      let ws = map addWordDelims ws'
+      let chkLs = S.fromList . map wordLang $ ws
+      scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
+      let gs = groupBy ((==)    `on` (wordLang *** wordLang))
+             . sortBy  (compare `on` (wordLang *** wordLang))
+             $ [ (x,y) | x <- ws, y <- ws ]
+      forM_ gs $ \g -> do
+        let (x,y) = head g
+        let sco = getScores2 scoring (wordLang x) (wordLang y)
+        forM_ g $ \(x,y) -> do
+          let (d,xs) = BI.alignGlobal 0 0 sco 1 (wordWord x) (wordWord y)
+          print d
+          print xs
+
+getScores2 :: Mapping -> Lang -> Lang -> Scores
+getScores2 ss a b
+  | Just z <- M.lookup (a:!:b) (lliid ss) = z
+  | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
+                (unsafePerformIO H.new)
+
+prettyAli2 :: Double -> (Seq (IMC,IMC)) -> IO ()
+prettyAli2 d s = do
+  print d
+  forM_ s $ \(x,_) -> do
+    putStr $ show x
+  putStrLn ""
+  forM_ s $ \(_,y) -> do
+    putStr $ show y
+  putStrLn ""
+
+{-
 import           Control.Arrow
 import           Control.Monad (unless)
 import           Control.Monad (when)
@@ -38,7 +143,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Default
 import           NLP.Scoring.SimpleUnigram.Import
 
-import Linguistics.TwoWay
+import Linguistics.TwoWay.Simple
 {- we test interning with TwoWay alignments only
 import Linguistics.ThreeWay
 import Linguistics.FourWay
@@ -299,4 +404,6 @@ printAlignment k (ws,(s,(x:xs))) = do
 tup2List (a,b) = [a,b]
 tup3List (a,b,c) = [a,b,c]
 tup4List (a,b,c,d) = [a,b,c,d]
+
+-}
 

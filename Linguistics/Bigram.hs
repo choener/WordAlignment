@@ -54,12 +54,16 @@ data Bigram = Bigram
 
 instance Hashable Bigram where
   hashWithSalt s (Bigram p h) = hashWithSalt s (p,h) -- (uninternMultiChar p, uninternMultiChar h)
+  hash           (Bigram p h) = hash (hash p , hash h)
+  {-# Inline hashWithSalt #-}
+  {-# Inline hash         #-}
 
 instance NFData Bigram where
   rnf !(Bigram a b) = ()
 
 instance Hashable (Pair Int Int) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
+  {-# Inline hashWithSalt #-}
 
 -- | Try to read the first line to figure out if there is a default score there
 

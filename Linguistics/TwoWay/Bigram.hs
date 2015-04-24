@@ -2,15 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-# OPTIONS_GHC -fno-liberate-case #-}
 
-module Linguistics.TwoWay.Bigram
-  ( twoWay
-  ) where
+module Linguistics.TwoWay.Bigram where
 
-import           Data.Array.Repa.Index
-import           Data.Array.Repa.Shape
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Strict.Tuple (Pair (..))
 import           Data.Vector.Fusion.Util (Id(..))
@@ -18,49 +15,79 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.HashTable.IO as H
 import qualified Data.List as L
 import qualified Data.Vector as V
-import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Vector (Vector)
+import           Data.Sequence (Seq)
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Fusion.Stream as S
 import           System.IO.Unsafe (unsafePerformIO)
 
-import           ADP.Fusion
-import           ADP.Fusion.Chr
-import           ADP.Fusion.Empty
-import           ADP.Fusion.Table
-import           Data.Array.Repa.Index.Points
-import           Data.PrimitiveArray as PA
-import           Data.PrimitiveArray.Zero as PA
-import           NLP.Alphabet.MultiChar
+import ADP.Fusion
+import Data.PrimitiveArray
+import NLP.Alphabet.MultiChar
+import NLP.Scoring.SimpleUnigram
+import DP.Alignment.Global.Tapes2
+
+import Linguistics.Common
 
 import           Linguistics.Bigram
 import           Linguistics.Common
 import           Linguistics.TwoWay.Common
 
 
+type IMC = InternedMultiChar
+type IMCp = (InternedMultiChar, InternedMultiChar)
+type SigT m x r = SigGlobal m x r IMCp IMCp
 
-sScore :: Monad m => Double -> Double -> Scores -> STwoWay m Double Double (Maybe InternedMultiChar,InternedMultiChar) ()
-sScore dS gapOpen s = STwoWay
-  { loop_step = \ww (Z:.():.(mc,c))     -> if | c=="$"    -> -500000
-                                              | otherwise -> ww + gapOpen
-  , step_loop = \ww (Z:.(mc,c):.())     -> if | c=="$"    -> -500000
-                                              | otherwise -> ww + gapOpen
-  , step_step = \ww (Z:.(mc,c):.(nd,d)) -> if | c=="^" && d=="$" -> -500000
-                                              | c=="$" && d=="^" -> -500000
+
+
+sScore :: Monad m => Double -> Double -> Scores -> SigT m Double Double
+sScore dS gapopen s = SigGlobal
+  { delin = \ww (Z:.c     :._     ) -> ww + gapopen
+  , indel = \ww (Z:._     :.c     ) -> ww + gapopen
+  , align = \ww (Z:.(lp,l):.(up,u)) -> ww + lkup up u lp l
+  , done = const 0
+  , h         = SM.foldl' max (-888888)
+  } where
+    lkup mc' c nd' d = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
+    {-# INLINE lkup #-}
+{-# INLINE sScore #-}
+{-
+sScore dS gapOpen s = SigGlobal
+  { indel = \ww (Z:.():.(mc,c))     -> if | c=="$"    -> -500000
+                                          | otherwise -> ww + gapOpen
+  , delin = \ww (Z:.(mc,c):.())     -> if | c=="$"    -> -500000
+                                          | otherwise -> ww + gapOpen
+  , align = \ww (Z:.(mc,c):.(nd,d)) -> if | c=="^" && d=="$" -> -500000
+                                          | c=="$" && d=="^" -> -500000
                                               | otherwise        -> case (mc,nd) of
                                                   (Nothing  , Nothing ) -> 0
                                                   (Just mc' , Just nd') -> ww + lkup mc' c nd' d
                                                   _                     -> -500000
-  {-
-  , step_step = \ww (Z:.(mc,c):.(nd,d)) -> case (mc,nd) of
-                                             (Nothing  , Nothing ) -> 0
-                                             (Just mc' , Just nd') -> ww + lkup mc' c nd' d
-                                             _                     -> -500000
-                                             -}
-  , nil_nil   = const 0
+  , done   = const 0
   , h         = S.foldl' max (-500000)
   } where
     lkup mc' c nd' d = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
     {-# INLINE lkup #-}
 {-# INLINE sScore #-}
+-}
 
+sPretty = pretty ("-","-") ("-","-")
+{-# Inline sPretty #-}
+
+alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[Seq (IMCp,IMCp)])
+alignGlobal ds gapopen scoring k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+  i1 = V.zip i1' (V.tail i1') ; i2 = V.zip i2' (V.tail i2')
+  n1 = V.length i1 ; n2 = V.length i2
+  t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
+  !(Z:.t) = mutateTablesDefault $ 
+              gGlobal (sScore ds gapopen scoring)
+                (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
+                (chr i1) (chr i2)
+  d = unId $ axiom t
+  !(Z:.b) = gGlobal (sScore ds gapopen scoring <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+{-# NoInline alignGlobal #-}
+
+{-
 -- | Backtrack the alignment
 
 sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) (Maybe InternedMultiChar,InternedMultiChar) ()
@@ -116,4 +143,6 @@ backtrack dS gapOpen scores i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0
   w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
   (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) Empty Empty
 {-# NOINLINE backtrack #-}
+
+-}
 

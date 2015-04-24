@@ -1,3 +1,7 @@
+{-
+Provides 'b'igram and 'u'nigram extension of an alignment in the 'M'atch case,
+as well as opening and extending a gap in the 'D'eletion case.
+-}
 Grammar: MD
 N: M
 N: D
@@ -10,18 +14,23 @@ D -> gopen <<< M
 D -> gext  <<< D
 //
 
+{-
+Terminates the recursion on epsilon (e), termination follows only in the match case?
+-}
 Grammar: Mdone
 N: M
 S: M
 M -> nil <<< e
 //
 
+{-
 Grammar: Ddone
 N: D
 N: M
 S: M
 D -> nil <<< e
 //
+-}
 
 Grammar: MtoD
 N: M

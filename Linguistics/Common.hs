@@ -55,6 +55,6 @@ toUtf8String :: InternedMultiChar -> String
 toUtf8String = T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
 
-conv = S.fromShort . unMultiChar . uninternMultiChar
+conv = S.fromShort . getMultiChar . uninternMultiChar
 {-# INLINE conv #-}
 

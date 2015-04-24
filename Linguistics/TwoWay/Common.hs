@@ -3,21 +3,22 @@
 module Linguistics.TwoWay.Common where
 
 import           Control.Monad
-import           Data.Array.Repa.Index
-import           Data.Array.Repa.Shape
 import           Data.ByteString (ByteString)
 import           Data.Vector.Fusion.Stream.Monadic (Stream (..))
 import qualified Data.Vector.Fusion.Stream.Monadic as S
 
 import           ADP.Fusion
-import           ADP.Fusion.Multi
-import           ADP.Fusion.None
-import           Data.Array.Repa.Index.Points
-import           Data.PrimitiveArray (boundsM, writeM)
+import           Data.PrimitiveArray
 import           NLP.Alphabet.MultiChar
+import           FormalLanguage
 
 
 
+
+
+
+
+{-
 -- * Signature
 
 data STwoWay _m _x _r c empty = STwoWay
@@ -67,4 +68,5 @@ fillTable2 (Z:.(MTbl _ tbl, f)) = do
   forM_ [0 .. n1] $ \k1 -> forM_ [0 .. n2] $ \k2 -> do
     (f $ Z:.pointL 0 k1:.pointL 0 k2) >>= writeM tbl (Z:.pointL 0 k1:.pointL 0 k2)
 {-# INLINE fillTable2 #-}
+-}
 
