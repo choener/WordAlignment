@@ -41,14 +41,16 @@ import qualified Data.HashTable.IO as H
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           System.IO.Unsafe
+import qualified Data.Stringable as SA
 
+import           NLP.Alphabet.IMMC
 import           NLP.Alphabet.MultiChar
 
 
 
 data Bigram = Bigram
-  { peekChar :: {-# UNPACK #-} !InternedMultiChar
-  , hitChar  :: {-# UNPACK #-} !InternedMultiChar
+  { peekChar :: {-# UNPACK #-} !IMMC
+  , hitChar  :: {-# UNPACK #-} !IMMC
   }
   deriving (Show,Eq,Ord,Generic)
 
@@ -81,9 +83,9 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
     lang   = wrd <?> "lang"
     bigram = Bigram <$> wrd <*> wrd <?> "bigram"
     score  = AB.double <?> "score"
-    wrd = (intern . MultiChar . BS.toShort) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrd = (immc . intern . MultiChar . BS.toShort) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
-type Lang = InternedMultiChar
+type Lang = IMMC
 type Line = (Lang, Lang, Bigram, Bigram, Double)
 type Scores = H.BasicHashTable (Bigram:!:Bigram) Double
 
@@ -132,7 +134,7 @@ mkMapping !(Mapping bs ll) xs@(x:_)
 -- | Given a set of acceptable languages, a default score, and the lazy
 -- bytestring of scores, create the 'Mapping' of languages and scores.
 
-generateLookups :: S.Set InternedMultiChar -> Double -> BL.ByteString -> Mapping
+generateLookups :: S.Set IMMC -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls

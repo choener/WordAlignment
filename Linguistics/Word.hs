@@ -18,10 +18,11 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
-import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
 import Prelude hiding (Word)
 
 import NLP.Alphabet.MultiChar
+import NLP.Alphabet.IMMC
 
 
 -- | A single word we want to align to another word. It comes with an id (here
@@ -36,10 +37,10 @@ import NLP.Alphabet.MultiChar
 
 data Word = Word
   { wordID     :: {-# UNPACK #-} !Int
-  , wordClass  :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
-  , wordLang   :: {-# UNPACK #-} !InternedMultiChar -- InternedByteString
+  , wordClass  :: {-# UNPACK #-} !IMMC -- InternedByteString
+  , wordLang   :: {-# UNPACK #-} !IMMC -- InternedByteString
   , wordLength :: {-# UNPACK #-} !Int
-  , wordWord   :: {-# UNPACK #-} !(V.Vector InternedMultiChar)
+  , wordWord   :: {-# UNPACK #-} !(VU.Vector IMMC)
   }
   deriving (Show,Eq,Ord)
 
@@ -57,19 +58,19 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*> (wW <$> wrd)
               <*> AB.decimal
               <*  AB.many1 AB.space
-              <*> ((V.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
+              <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
-    wW   = intern . MultiChar . S.toShort
+    wW   = immc . intern . MultiChar . S.toShort
 
 addWordDelims :: Word -> Word
 addWordDelims w
-  | V.length ww >= 2 && V.head ww == "^" && V.last ww == "$" = w
-  | otherwise = w { wordWord = "^" `V.cons` wordWord w `V.snoc` "$" }
+  | VU.length ww >= 2 && VU.head ww == "^" && VU.last ww == "$" = w
+  | otherwise = w { wordWord = "^" `VU.cons` wordWord w `VU.snoc` "$" }
   where ww = wordWord w
 
 removeWordDelims :: Word -> Word
 removeWordDelims w
-  | V.length ww >= 2 && V.head ww == "^" && V.last ww == "$" = w { wordWord = V.init . V.tail $ wordWord w }
+  | VU.length ww >= 2 && VU.head ww == "^" && VU.last ww == "$" = w { wordWord = VU.init . VU.tail $ wordWord w }
   | otherwise = w
   where ww = wordWord w
 

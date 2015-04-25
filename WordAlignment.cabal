@@ -60,6 +60,7 @@ library
                , unordered-containers      >= 0.2.3
                , vector                    >= 0.10
                , AlignmentAlgorithms       == 0.0.1.*
+               , stringable                >= 0.1
 
   exposed-modules:
 --    Linguistics.FourWay

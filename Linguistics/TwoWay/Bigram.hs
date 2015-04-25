@@ -14,8 +14,10 @@ import           Data.Vector.Fusion.Util (Id(..))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.HashTable.IO as H
 import qualified Data.List as L
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
+--import qualified Data.Vector as V
+--import           Data.Vector (Vector)
+import           Data.Vector.Unboxed (Vector)
+import qualified Data.Vector.Unboxed as VU
 import           Data.Sequence (Seq)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
@@ -24,6 +26,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import ADP.Fusion
 import Data.PrimitiveArray
 import NLP.Alphabet.MultiChar
+import NLP.Alphabet.IMMC
 import NLP.Scoring.SimpleUnigram
 import DP.Alignment.Global.Tapes2
 
@@ -34,8 +37,8 @@ import           Linguistics.Common
 import           Linguistics.TwoWay.Common
 
 
-type IMC = InternedMultiChar
-type IMCp = (InternedMultiChar, InternedMultiChar)
+type IMC = IMMC
+type IMCp = (IMMC, IMMC)
 type SigT m x r = SigGlobal m x r IMCp IMCp
 
 
@@ -76,8 +79,8 @@ sPretty = pretty ("-","-") ("-","-")
 
 alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[Seq (IMCp,IMCp)])
 alignGlobal ds gapopen scoring k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
-  i1 = V.zip i1' (V.tail i1') ; i2 = V.zip i2' (V.tail i2')
-  n1 = V.length i1 ; n2 = V.length i2
+  i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
+  n1 = VU.length i1 ; n2 = VU.length i2
   t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
   !(Z:.t) = mutateTablesDefault $ 
               gGlobal (sScore ds gapopen scoring)

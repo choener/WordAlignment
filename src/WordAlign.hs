@@ -8,20 +8,21 @@
 module Main where
 
 import           Control.Arrow ((***))
-import           System.Console.CmdArgs
-import qualified Data.ByteString.Lazy.Char8 as BL
 import           Control.Monad (forM_)
-import           Data.Sequence (Seq)
-import qualified Data.Map.Strict as M
-import           Text.Printf
-import           Data.Strict.Tuple
-import qualified Data.HashTable.IO as H
-import           System.IO.Unsafe (unsafePerformIO)
-import           Debug.Trace (trace)
-import qualified Data.Set as S
-import           Data.List (sortBy,groupBy)
 import           Data.Function (on)
+import           Data.List (sortBy,groupBy)
+import           Data.Sequence (Seq)
+import           Data.Strict.Tuple
+import           Debug.Trace (trace)
+import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.HashTable.IO as H
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
+import           System.Console.CmdArgs
+import           System.IO.Unsafe (unsafePerformIO)
+import           Text.Printf
 
+import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 
@@ -101,7 +102,7 @@ getScores2 ss a b
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 (unsafePerformIO H.new)
 
-prettyAli2 :: Double -> (Seq (IMC,IMC)) -> IO ()
+prettyAli2 :: Double -> (Seq (IMMC,IMMC)) -> IO ()
 prettyAli2 d s = do
   print d
   forM_ s $ \(x,_) -> do

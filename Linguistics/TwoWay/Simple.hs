@@ -16,11 +16,12 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Vector as V
-import           Data.Vector (Vector)
+--import qualified Data.Vector as V
+--import           Data.Vector (Vector)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
+import           Data.Vector.Unboxed (Vector)
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.HashTable.IO as H
 import           Data.Sequence (Seq)
@@ -28,6 +29,7 @@ import           Data.Sequence (Seq)
 import ADP.Fusion
 import Data.PrimitiveArray
 import NLP.Alphabet.MultiChar
+import NLP.Alphabet.IMMC
 import NLP.Scoring.SimpleUnigram
 import DP.Alignment.Global.Tapes2
 
@@ -36,7 +38,7 @@ import Linguistics.Common
 
 
 type IMC = InternedMultiChar
-type SigT m x r = SigGlobal m x r IMC IMC
+type SigT m x r = SigGlobal m x r IMMC IMMC
 
 sScore :: Monad m => SimpleScoring -> SigT m Double Double
 sScore ss@SimpleScoring{..} = SigGlobal
@@ -51,9 +53,9 @@ sScore ss@SimpleScoring{..} = SigGlobal
 sPretty = pretty "-" "-"
 {-# Inline sPretty #-}
 
-alignGlobal :: SimpleScoring -> Int -> Vector IMC -> Vector IMC -> (Double,[Seq (IMC,IMC)])
+alignGlobal :: SimpleScoring -> Int -> Vector IMMC -> Vector IMMC -> (Double,[Seq (IMMC,IMMC)])
 alignGlobal scoring k i1 i2 = (d, take k . S.toList . unId $ axiom b) where
-  n1 = V.length i1 ; n2 = V.length i2
+  n1 = VU.length i1 ; n2 = VU.length i2
   t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
   !(Z:.t) = mutateTablesDefault $ 
               gGlobal (sScore scoring)

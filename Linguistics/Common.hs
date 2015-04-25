@@ -11,14 +11,15 @@ import qualified Data.ByteString.Short as S
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Text.Printf
+import           Data.Stringable (toString)
 
-import           NLP.Alphabet.MultiChar
+import           NLP.Alphabet.IMMC
 
 
 
 -- | Actually align something prettily
 
-alignPretty :: [[InternedMultiChar]] -> [String]
+alignPretty :: [[IMMC]] -> [String]
 alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose . map reverse $ xss where
   f zs x = printAligned x zs
 
@@ -28,7 +29,7 @@ printAligned = printAlignedPad ' '
 
 -- | Print with special padding character
 
-printAlignedPad :: Char -> InternedMultiChar -> [InternedMultiChar] -> String
+printAlignedPad :: Char -> IMMC -> [IMMC] -> String
 printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
   pad :: Int
   pad = (1+) . maximum $ 0 : map (\x -> printLength x - printLength c) zs
@@ -38,7 +39,7 @@ printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
 -- NOTE 'isMark' selects unicode symbols that modify a character, thereby not
 -- increasing the length of the /printed/ string.
 
-printLength :: InternedMultiChar -> Int
+printLength :: IMMC -> Int
 printLength = length . filter isAN . toUtf8String where
   isAN c = not (isMark c) -- isAlphaNum c || c `elem` [ '\\', '\'', '^', '$', '-', '\'' ]
 
@@ -51,10 +52,10 @@ printLength = length . filter isAN . toUtf8String where
 -}
 
 
-toUtf8String :: InternedMultiChar -> String
-toUtf8String = T.unpack . T.decodeUtf8 . conv
+toUtf8String :: IMMC -> String
+toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
 
-conv = S.fromShort . getMultiChar . uninternMultiChar
-{-# INLINE conv #-}
+--conv = S.fromShort . getMultiChar . uninternMultiChar
+--{-# INLINE conv #-}
 
