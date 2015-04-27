@@ -83,7 +83,7 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
     lang   = wrd <?> "lang"
     bigram = Bigram <$> wrd <*> wrd <?> "bigram"
     score  = AB.double <?> "score"
-    wrd = (immc . intern . MultiChar . BS.toShort) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrd = (immc . SA.fromByteString) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
 type Lang = IMMC
 type Line = (Lang, Lang, Bigram, Bigram, Double)

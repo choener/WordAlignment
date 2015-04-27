@@ -19,7 +19,8 @@ import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
 import qualified Data.Vector.Unboxed as VU
-import Prelude hiding (Word)
+import           Prelude hiding (Word)
+import           Data.Stringable
 
 import NLP.Alphabet.MultiChar
 import NLP.Alphabet.IMMC
@@ -60,7 +61,7 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*  AB.many1 AB.space
               <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
-    wW   = immc . intern . MultiChar . S.toShort
+    wW   = immc . fromByteString
 
 addWordDelims :: Word -> Word
 addWordDelims w
