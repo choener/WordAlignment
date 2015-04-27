@@ -112,6 +112,7 @@ executable WordAlign
   default-extensions:
   ghc-options:
     -fsimpl-tick-factor=900
+    -rtsopts
   if flag(Opt)
     ghc-options:
       -O2

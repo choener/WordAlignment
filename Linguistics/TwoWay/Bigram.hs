@@ -74,11 +74,11 @@ sScore dS gapOpen s = SigGlobal
 {-# INLINE sScore #-}
 -}
 
-sPretty = pretty ("-","-") ("-","-")
+sPretty = prettyF ("-","-") ("-","-")
 {-# Inline sPretty #-}
 
-alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[Seq (IMCp,IMCp)])
-alignGlobal ds gapopen scoring k i1' i2' = (d, take k . S.toList . unId $ axiom b) where
+alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[(IMCp,IMCp)]])
+alignGlobal ds gapopen scoring k i1' i2' = (d, take k . L.map runPrettyF . S.toList . unId $ axiom b) where
   i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
   n1 = VU.length i1 ; n2 = VU.length i2
   t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
