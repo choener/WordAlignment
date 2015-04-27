@@ -51,8 +51,8 @@ sScore dS gapopen s = SigGlobal
   , done = const 0
   , h         = SM.foldl' max (-888888)
   } where
-    lkup mc' c nd' d = maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
-    {-# INLINE lkup #-}
+    lkup mc' c nd' d = {-# SCC "lkup" #-} maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
+    {- INLINE lkup #-}
 {-# INLINE sScore #-}
 {-
 sScore dS gapOpen s = SigGlobal
@@ -78,17 +78,37 @@ sPretty = prettyF ("-","-") ("-","-")
 {-# Inline sPretty #-}
 
 alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[(IMCp,IMCp)]])
-alignGlobal ds gapopen scoring k i1' i2' = (d, take k . L.map runPrettyF . S.toList . unId $ axiom b) where
+alignGlobal ds gapopen scoring k i1' i2' = (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
   i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
   n1 = VU.length i1 ; n2 = VU.length i2
+  {-
   t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
   !(Z:.t) = mutateTablesDefault $ 
               gGlobal (sScore ds gapopen scoring)
                 (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
                 (chr i1) (chr i2)
+  -}
+  !(Z:.t) = alignGlobalForward ds gapopen scoring i1 i2
   d = unId $ axiom t
+  {-
   !(Z:.b) = gGlobal (sScore ds gapopen scoring <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+  -}
+  bs = alignGlobalBacktrack ds gapopen scoring i1 i2 t
 {-# NoInline alignGlobal #-}
+
+alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Double
+alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ 
+  gGlobal (sScore ds gapopen scoring)
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
+    (chr i1) (chr i2)
+  where n1 = VU.length i1
+        n2 = VU.length i2
+{-# NoInline alignGlobalForward #-}
+
+alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL:.PointL) Double -> [[(IMCp,IMCp)]]
+alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runPrettyF . S.toList . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore ds gapopen scoring <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+{-# NoInline alignGlobalBacktrack #-}
 
 {-
 -- | Backtrack the alignment
