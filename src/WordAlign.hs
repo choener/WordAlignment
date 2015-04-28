@@ -102,7 +102,7 @@ getScores2 ss a b
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 (unsafePerformIO H.new)
 
-prettyAli2 :: Double -> (Seq (IMMC,IMMC)) -> IO ()
+prettyAli2 :: Double -> [(IMMC,IMMC)] -> IO ()
 prettyAli2 d s = do
   print d
   forM_ s $ \(x,_) -> do

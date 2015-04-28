@@ -50,11 +50,11 @@ sScore ss@SimpleScoring{..} = SigGlobal
   }
 {-# Inline sScore #-}
 
-sPretty = pretty "-" "-"
+sPretty = prettyF "-" "-"
 {-# Inline sPretty #-}
 
-alignGlobal :: SimpleScoring -> Int -> Vector IMMC -> Vector IMMC -> (Double,[Seq (IMMC,IMMC)])
-alignGlobal scoring k i1 i2 = (d, take k . S.toList . unId $ axiom b) where
+alignGlobal :: SimpleScoring -> Int -> Vector IMMC -> Vector IMMC -> (Double,[[(IMMC,IMMC)]])
+alignGlobal scoring k i1 i2 = (d, take k . L.map runPrettyF . unId $ axiom b) where
   n1 = VU.length i1 ; n2 = VU.length i2
   t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
   !(Z:.t) = mutateTablesDefault $ 
@@ -62,7 +62,7 @@ alignGlobal scoring k i1 i2 = (d, take k . S.toList . unId $ axiom b) where
                 (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
                 (chr i1) (chr i2)
   d = unId $ axiom t
-  !(Z:.b) = gGlobal (sScore scoring <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+  !(Z:.b) = gGlobal (sScore scoring <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobal #-}
 
 -- | Decoupling the forward phase for CORE observation.

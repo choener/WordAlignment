@@ -106,8 +106,8 @@ alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTable
 {-# NoInline alignGlobalForward #-}
 
 alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL:.PointL) Double -> [[(IMCp,IMCp)]]
-alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runPrettyF . S.toList . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore ds gapopen scoring <** sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runPrettyF . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 
 {-
