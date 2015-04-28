@@ -50,20 +50,30 @@ sScore ss@SimpleScoring{..} = SigGlobal
   }
 {-# Inline sScore #-}
 
-sPretty = prettyF "-" "-"
-{-# Inline sPretty #-}
+sBacktrack = backtrack "-" "-"
+{-# Inline sBacktrack #-}
 
 alignGlobal :: SimpleScoring -> Int -> Vector IMMC -> Vector IMMC -> (Double,[[(IMMC,IMMC)]])
-alignGlobal scoring k i1 i2 = (d, take k . L.map runPrettyF . unId $ axiom b) where
+alignGlobal scoring k i1 i2 = (d, take k bs) where
   n1 = VU.length i1 ; n2 = VU.length i2
-  t :: ITbl Id Unboxed (Z:.PointL:.PointL) Double
-  !(Z:.t) = mutateTablesDefault $ 
-              gGlobal (sScore scoring)
-                (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
-                (chr i1) (chr i2)
+  !(Z:.t) = alignGlobalForward scoring i1 i2
   d = unId $ axiom t
-  !(Z:.b) = gGlobal (sScore scoring <|| sPretty) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+  bs = alignGlobalBacktrack scoring i1 i2 t
 {-# NoInline alignGlobal #-}
+
+alignGlobalForward :: SimpleScoring -> Vector IMMC -> Vector IMMC -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Double
+alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
+  gGlobal (sScore scoring)
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
+    (chr i1) (chr i2)
+  where n1 = VU.length i1
+        n2 = VU.length i2
+{-# NoInline alignGlobalForward #-}
+
+alignGlobalBacktrack :: SimpleScoring -> Vector IMMC -> Vector IMMC -> ITbl Id Unboxed (Z:.PointL:.PointL) Double -> [[(IMMC,IMMC)]]
+alignGlobalBacktrack scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore scoring <|| sBacktrack) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+{-# NoInline alignGlobalBacktrack #-}
 
 -- | Decoupling the forward phase for CORE observation.
 
