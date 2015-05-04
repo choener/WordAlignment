@@ -25,6 +25,7 @@ import           Data.Vector.Unboxed (Vector)
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.HashTable.IO as H
 import           Data.Sequence (Seq)
+import           Data.FMList (FMList)
 
 import ADP.Fusion
 import Data.PrimitiveArray
@@ -50,6 +51,7 @@ sScore ss@SimpleScoring{..} = SigGlobal
   }
 {-# Inline sScore #-}
 
+sBacktrack :: Monad m => SigT m (FMList (IMMC,IMMC)) [FMList (IMMC,IMMC)]
 sBacktrack = backtrack "-" "-"
 {-# Inline sBacktrack #-}
 
@@ -64,7 +66,7 @@ alignGlobal scoring k i1 i2 = (d, take k bs) where
 alignGlobalForward :: SimpleScoring -> Vector IMMC -> Vector IMMC -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Double
 alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
   gGlobal (sScore scoring)
-    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
     (chr i1) (chr i2)
   where n1 = VU.length i1
         n2 = VU.length i2

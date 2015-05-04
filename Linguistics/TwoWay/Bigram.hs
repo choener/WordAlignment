@@ -22,6 +22,7 @@ import           Data.Sequence (Seq)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
 import           System.IO.Unsafe (unsafePerformIO)
+import           Data.FMList (FMList)
 
 import ADP.Fusion
 import Data.PrimitiveArray
@@ -74,6 +75,7 @@ sScore dS gapOpen s = SigGlobal
 {-# INLINE sScore #-}
 -}
 
+sBacktrack :: Monad m => SigT m (FMList (IMCp,IMCp)) [FMList (IMCp,IMCp)]
 sBacktrack = backtrack ("-","-") ("-","-")
 {-# Inline sBacktrack #-}
 
@@ -89,7 +91,7 @@ alignGlobal ds gapopen scoring k i1' i2' = (d, take k bs) where -- . L.map runPr
 alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Double
 alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ 
   gGlobal (sScore ds gapopen scoring)
-    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n2:.PointL n1) (-999999) []))
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
     (chr i1) (chr i2)
   where n1 = VU.length i1
         n2 = VU.length i2
