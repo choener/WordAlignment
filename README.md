@@ -1,8 +1,9 @@
+[![Build Status](https://travis-ci.org/choener/WordAlignment.svg?branch=master)](https://travis-ci.org/choener/WordAlignment)
 
-# Scoring of n-way alignments
+# Word alignments in natural languages
 
 This library and program are designed for the alignment of *words* in human
-language. each word is encoded in a particular way (as the mapping between
+languages. Each word is encoded in a particular way (as the mapping between
 characters and their /meaning/ (?) is not well-defined enough).
 
 As user, you send a list to stdin that is formatted as follows (with all fields
@@ -121,6 +122,9 @@ two-way: 5.000 - 10.000 alignments / second, on a Core i5
 
 
 
-## Contact Information
+#### Contact
 
+Christian Hoener zu Siederdissen
+choener@bioinf.uni-leipzig.de
+Leipzig University, Leipzig, Germany
 
