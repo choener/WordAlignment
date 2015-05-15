@@ -16,14 +16,11 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
---import qualified Data.Vector as V
---import           Data.Vector (Vector)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
 import           Data.Vector.Unboxed (Vector)
 import           System.IO.Unsafe (unsafePerformIO)
-import qualified Data.HashTable.IO as H
 import           Data.Sequence (Seq)
 import           Data.FMList (FMList)
 

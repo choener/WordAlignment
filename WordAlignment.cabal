@@ -11,8 +11,8 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-synopsis:
-                Bigram word alignments in 2-4 dimensions.
+tested-with:    GHC == 7.8.4, GHC == 7.10.1
+synopsis:       Bigram word alignments in 2-4 dimensions.
 description:
                 The library provides fast dynamic programming algorithms to
                 align 2-4 words using bigram scoring.
@@ -33,30 +33,25 @@ Flag llvm
 
 library
   build-depends: base                       >= 4.7      && < 4.9
-               , ADPfusion                  == 0.4.0.*
+               , ADPfusion                  >= 0.4.0.2  && < 0.4.1
                , AlignmentAlgorithms        == 0.0.1.*
                , attoparsec                 >= 0.10
                , bytestring
                , containers
                , control-monad-omega        >= 0.3
                , deepseq                    >= 1.3
-               , dlist                      >= 0.6
                , file-embed                 >= 0.0.6
                , fmlist                     >= 0.9      && < 0.10
                , FormalGrammars             == 0.2.0.*
                , ghc-prim
                , GrammarProducts            == 0.1.0.*
                , hashable                   >= 1.1
-               , hashtables                 >= 1.1
                , intern                     >= 0.9
                , lens                       >= 3.9
                , NaturalLanguageAlphabets   == 0.0.2.*
                , primitive                  >= 0.5
                , PrimitiveArray             == 0.6.*
-               , QuickCheck                 >= 2.7
-               , repa                       >= 3.2
                , strict                     >= 0.3.2
-               , stringable                 >= 0.1
                , stringable                 >= 0.1.2
                , template-haskell
                , text                       >= 0.11
@@ -108,12 +103,12 @@ executable WordAlign
                , bytestring
                , cmdargs                    == 0.10.*
                , containers
-               , hashtables
                , intern
                , NaturalLanguageAlphabets
                , parallel                   >= 3.2      && < 3.3
                , strict
                , WordAlignment
+               , unordered-containers
   main-is:
     WordAlign.hs
   hs-source-dirs:

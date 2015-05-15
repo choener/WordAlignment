@@ -9,22 +9,21 @@ import           Data.Sequence (Seq)
 import           Data.Strict.Tuple
 import           Debug.Trace (trace)
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.HashTable.IO as H
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           System.Console.CmdArgs
-import           System.IO.Unsafe (unsafePerformIO)
 import           Text.Printf
 
 import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 
-import           Linguistics.Word (parseWord,Word(..),addWordDelims)
-import           Linguistics.TwoWay.Simple
-import qualified Linguistics.TwoWay.Bigram as BI
 import           Linguistics.Bigram
 import           Linguistics.Common
+import           Linguistics.TwoWay.Simple
+import           Linguistics.Word (parseWord,Word(..),addWordDelims)
+import qualified Linguistics.TwoWay.Bigram as BI
 
 
 
@@ -86,7 +85,7 @@ main = do
         let (x,y) = head g
         let sco = getScores2 scoring (wordLang x) (wordLang y)
         forM_ g $ \(x,y) -> do
-          let (d,xs) = BI.alignGlobal 0 0 sco 1 (wordWord x) (wordWord y)
+          let (d,xs) = BI.alignGlobal 0 0 sco 0 {- 1 -} (wordWord x) (wordWord y)
           print d
           print xs
 
@@ -94,7 +93,7 @@ getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
   | Just z <- M.lookup (a:!:b) (lliid ss) = z
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
-                (unsafePerformIO H.new)
+                HM.empty
 
 prettyAli2 :: Double -> [(IMMC,IMMC)] -> IO ()
 prettyAli2 d s = do

@@ -12,7 +12,7 @@ import           Data.ByteString.Char8 (ByteString)
 import           Data.Strict.Tuple (Pair (..))
 import           Data.Vector.Fusion.Util (Id(..))
 import qualified Data.ByteString.Char8 as B
-import qualified Data.HashTable.IO as H
+--import qualified Data.HashTable.IO as H
 import qualified Data.List as L
 --import qualified Data.Vector as V
 --import           Data.Vector (Vector)
@@ -21,8 +21,9 @@ import qualified Data.Vector.Unboxed as VU
 import           Data.Sequence (Seq)
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Fusion.Stream as S
-import           System.IO.Unsafe (unsafePerformIO)
+--import           System.IO.Unsafe (unsafePerformIO)
 import           Data.FMList (FMList)
+import qualified Data.HashMap.Strict as HM
 
 import ADP.Fusion
 import Data.PrimitiveArray
@@ -52,7 +53,8 @@ sScore dS gapopen s = SigGlobal
   , done = const 0
   , h         = SM.foldl' max (-888888)
   } where
-    lkup mc' c nd' d = {-# SCC "lkup" #-} maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
+    lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault dS (Bigram mc' c :!: Bigram nd' d) s
+--    lkup mc' c nd' d = {-# SCC "lkup" #-} maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
     {- INLINE lkup #-}
 {-# INLINE sScore #-}
 {-

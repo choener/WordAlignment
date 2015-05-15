@@ -30,11 +30,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as BS
-import qualified Data.HashTable.IO as H
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Stringable as SA
-import           System.IO.Unsafe
 
 import           NLP.Alphabet.IMMC
 import           NLP.Alphabet.MultiChar
@@ -80,7 +79,7 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
 
 type Lang = IMMC
 type Line = (Lang, Lang, Bigram, Bigram, Double)
-type Scores = H.BasicHashTable (Bigram:!:Bigram) Double
+type Scores = HM.HashMap (Bigram:!:Bigram) Double
 
 data Mapping = Mapping
   { bigrams :: !(M.Map Bigram Bigram)
@@ -108,15 +107,9 @@ mkMapping !(Mapping bs ll) xs@(x:_)
   where
     nom = filter (`M.notMember` bs) $ map (^._3) xs ++ map (^._4) xs
     bs' = bs `M.union` (M.fromList $ map (\a -> (a,a)) nom)
-    ll' = M.insertWith theUnion (x^._1 :!: x^._2) ys ll
-    theUnion :: Scores -> Scores -> Scores
-    theUnion a b = unsafePerformIO $ do
-      a' <- H.toList a
-      b' <- H.toList b
-      H.fromList $ a' ++ b'
+    ll' = M.insertWith HM.union (x^._1 :!: x^._2) ys ll
     ys :: Scores
-    ys = unsafePerformIO $ do
-          H.fromListWithSizeHint (length xs)
+    ys = HM.fromList
            [ ((k1:!:k2),d)
            | y <- xs
            , let k1 = bs' M.! (y^._3)
