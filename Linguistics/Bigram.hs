@@ -1,10 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE BangPatterns #-}
 
 -- | Map between 'String's that represent characters and their 'Int'-based
 -- representation.
@@ -40,8 +33,8 @@ import qualified Data.ByteString.Short as BS
 import qualified Data.HashTable.IO as H
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import           System.IO.Unsafe
 import qualified Data.Stringable as SA
+import           System.IO.Unsafe
 
 import           NLP.Alphabet.IMMC
 import           NLP.Alphabet.MultiChar

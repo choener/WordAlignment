@@ -35,7 +35,7 @@ import Linguistics.Common
 
 import           Linguistics.Bigram
 import           Linguistics.Common
-import           Linguistics.TwoWay.Common
+--import           Linguistics.TwoWay.Common
 
 
 type IMC = IMMC
