@@ -1,5 +1,5 @@
 name:           WordAlignment
-version:        0.0.2.0
+version:        0.0.3.0
 author:         Christian Hoener zu Siederdissen, 2013-2015
 copyright:      Christian Hoener zu Siederdissen, 2013-2015
 homepage:       https://github.com/choener/WordAlignment
@@ -34,7 +34,7 @@ Flag llvm
 library
   build-depends: base                       >= 4.7      && < 4.9
                , ADPfusion                  >= 0.4.0.2  && < 0.4.1
-               , AlignmentAlgorithms        == 0.0.1.*
+               , AlignmentAlgorithms        == 0.0.2.*
                , attoparsec                 >= 0.10
                , bytestring
                , containers
@@ -42,9 +42,9 @@ library
                , deepseq                    >= 1.3
                , file-embed                 >= 0.0.6
                , fmlist                     >= 0.9      && < 0.10
-               , FormalGrammars             == 0.2.0.*
+               , FormalGrammars             == 0.2.1.*
                , ghc-prim
-               , GrammarProducts            == 0.1.0.*
+               , GrammarProducts            == 0.1.1.*
                , hashable                   >= 1.1
                , intern                     >= 0.9
                , lens                       >= 3.9
