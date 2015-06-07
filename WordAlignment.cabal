@@ -17,9 +17,13 @@ description:
                 The library provides fast dynamic programming algorithms to
                 align 2-4 words using bigram scoring.
 
+
+
 Extra-Source-Files:
   README.md
   changelog.md
+
+
 
 Flag opt
   description:  use the ghc optimizer (can be set False to speed up compilation)
@@ -31,35 +35,36 @@ Flag llvm
   default:      False
   manual:       True
 
+
+
 library
   build-depends: base                       >= 4.7      && < 4.9
                , ADPfusion                  >= 0.4.0.2  && < 0.4.1
-               , AlignmentAlgorithms        == 0.0.2.*
-               , attoparsec                 >= 0.10
+               , AlignmentAlgorithms        >= 0.0.2    && < 0.0.3
+               , attoparsec                 >= 0.10     && < 0.11
                , bytestring
                , containers
-               , control-monad-omega        >= 0.3
-               , deepseq                    >= 1.3
-               , file-embed                 >= 0.0.6
+               , control-monad-omega        >= 0.3      && < 0.4
+               , deepseq                    >= 1.3      && < 1.5
+               , file-embed                 >= 0.0.6    && < 0.1
                , fmlist                     >= 0.9      && < 0.10
-               , FormalGrammars             == 0.2.1.*
+               , FormalGrammars             >= 0.2.1    && < 0.2.2
                , ghc-prim
-               , GrammarProducts            == 0.1.1.*
-               , hashable                   >= 1.1
-               , intern                     >= 0.9
-               , lens                       >= 3.9
-               , NaturalLanguageAlphabets   == 0.0.2.*
-               , primitive                  >= 0.5
-               , PrimitiveArray             == 0.6.*
-               , strict                     >= 0.3.2
-               , stringable                 >= 0.1.2
+               , GrammarProducts            >= 0.1.1    && < 0.1.2
+               , hashable                   >= 1.1      && < 1.2
+               , intern                     >= 0.9      && < 0.10
+               , lens                       >= 4.0      && < 4.12
+               , NaturalLanguageAlphabets   >= 0.0.2    && < 0.0.3
+               , primitive                  >= 0.5      && < 0.7
+               , PrimitiveArray             >= 0.6      && < 0.7
+               , strict                     >= 0.3.2    && < 0.3.3
+               , stringable                 >= 0.1.2    && < 0.1.3
                , template-haskell
-               , text                       >= 0.11
+               , text                       >= 1.0      && < 1.3
                , transformers
-               , tuple-th                   >= 0.2.4
-               , unordered-containers       >= 0.2.3
-               , vector                     >= 0.10
-
+               , tuple-th                   >= 0.2.4    && < 0.2.5
+               , unordered-containers       >= 0.2.3    && < 0.2.4
+               , vector                     >= 0.10     && < 0.11
   exposed-modules:
     Linguistics.Bigram
     Linguistics.Common
@@ -95,6 +100,11 @@ library
   if flag(Opt)
     ghc-options:
       -O2
+  if flag(llvm)
+    ghc-options:
+      -fllvm
+      -optlo-O3 -optlo-std-compile-opts
+      -fllvm-tbaa
 
 
 
