@@ -39,7 +39,7 @@ Flag llvm
 
 library
   build-depends: base                       >= 4.7      && < 4.9
-               , ADPfusion                  >= 0.4.0.2  && < 0.4.1
+               , ADPfusion                  >= 0.4.0.2  && < 0.4.2
                , AlignmentAlgorithms        >= 0.0.2    && < 0.0.3
                , attoparsec                 >= 0.10     && < 0.14
                , bytestring
