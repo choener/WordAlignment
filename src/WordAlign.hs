@@ -4,7 +4,7 @@ module Main where
 import           Control.Arrow ((***))
 import           Control.Monad (forM_)
 import           Data.Function (on)
-import           Data.List (sortBy,groupBy)
+import           Data.List (sortBy,groupBy,intersperse)
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple
 import           Debug.Trace (trace)
@@ -14,6 +14,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import           System.Console.CmdArgs
 import           Text.Printf
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
 
 import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
@@ -85,9 +87,11 @@ main = do
         let (x,y) = head g
         let sco = getScores2 scoring (wordLang x) (wordLang y)
         forM_ g $ \(x,y) -> do
-          let (d,xs) = BI.alignGlobal 0 0 sco 0 {- 1 -} (wordWord x) (wordWord y)
-          print d
-          print xs
+          let (d,xs) = BI.alignGlobal 0 0 sco 1 (wordWord x) (wordWord y)
+          -- print d
+          -- print xs
+          printAlignment (-1) ([x,y],(d,xs))
+
 
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
@@ -98,11 +102,24 @@ getScores2 ss a b
 prettyAli2 :: Double -> [(IMMC,IMMC)] -> IO ()
 prettyAli2 d s = do
   print d
-  forM_ s $ \(x,_) -> do
+  forM_ s $ \(x,xs) -> do
     putStr $ show x
+    putStr $ show xs
   putStrLn ""
   forM_ s $ \(_,y) -> do
     putStr $ show y
+  putStrLn ""
+
+printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
+printAlignment k (ws,(s,(xs))) = do
+  let ids = concat . intersperse " " . map (show . wordID)   $ ws
+  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
+  --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
+  let xs1 = map (tail . reverse . map Prelude.fst) $ xs
+  let xs2 = map (tail . reverse . map Prelude.snd) $ xs
+  mapM_ (putStrLn) (alignPretty $ xs1 ++ xs2)
   putStrLn ""
 
 {-

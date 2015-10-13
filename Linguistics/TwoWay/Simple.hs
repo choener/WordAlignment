@@ -17,7 +17,7 @@ import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
-import qualified Data.Vector.Fusion.Stream as S
+--import qualified Data.Vector.Fusion.Stream as S
 import qualified Data.Vector.Unboxed as VU
 import           Data.Vector.Unboxed (Vector)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -60,7 +60,7 @@ alignGlobal scoring k i1 i2 = (d, take k bs) where
   bs = alignGlobalBacktrack scoring i1 i2 t
 {-# NoInline alignGlobal #-}
 
-alignGlobalForward :: SimpleScoring -> Vector IMMC -> Vector IMMC -> Z:.ITbl Id Unboxed (Z:.PointL:.PointL) Double
+alignGlobalForward :: SimpleScoring -> Vector IMMC -> Vector IMMC -> Z:.ITbl Id Unboxed (Z:.PointL I:.PointL I) Double
 alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
   gGlobal (sScore scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
@@ -69,7 +69,7 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: SimpleScoring -> Vector IMMC -> Vector IMMC -> ITbl Id Unboxed (Z:.PointL:.PointL) Double -> [[(IMMC,IMMC)]]
+alignGlobalBacktrack :: SimpleScoring -> Vector IMMC -> Vector IMMC -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[(IMMC,IMMC)]]
 alignGlobalBacktrack scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
   where (Z:.b) = gGlobal (sScore scoring <|| sBacktrack) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}

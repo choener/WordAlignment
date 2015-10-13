@@ -14,12 +14,14 @@ import           Text.Printf
 import           Data.Stringable (toString)
 
 import           NLP.Alphabet.IMMC
+import           NLP.Alphabet.MultiChar
 
 
+type IMCp = (IMMC, IMMC)
 
 -- | Actually align something prettily
 
-alignPretty :: [[IMMC]] -> [String]
+alignPretty :: [[IMCp]] -> [String]
 alignPretty xss = map concat . transpose . map (\xs -> map (f xs) xs) . transpose . map reverse $ xss where
   f zs x = printAligned x zs
 
@@ -29,10 +31,10 @@ printAligned = printAlignedPad ' '
 
 -- | Print with special padding character
 
-printAlignedPad :: Char -> IMMC -> [IMMC] -> String
-printAlignedPad p c zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
+printAlignedPad :: Char -> IMCp -> [IMCp] -> String
+printAlignedPad p (_,c) zs = printf " %s%s" (replicate pad p) (toUtf8String c) where
   pad :: Int
-  pad = (1+) . maximum $ 0 : map (\x -> printLength x - printLength c) zs
+  pad = (1+) . maximum $ 0 : map (\(_,x) -> printLength x - printLength c) zs
 
 -- | Length in /printed characters/ of an UTF8 string wrapped as a 'ByteString'
 --
