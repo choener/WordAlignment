@@ -98,7 +98,7 @@ main = do
           let (d,xs) = BI.alignGlobal 0 0 sco 1 (wordWord x) (wordWord y)
           -- print d
           -- print xs
-          printAlignment (-1) ([x,y],(d,xs))
+          printAlignment' (-1) ([x,y],(d,xs))
 
 
 getScores2 :: Mapping -> Lang -> Lang -> Scores
@@ -119,13 +119,14 @@ prettyAli2 d s = do
   putStrLn ""
 
 printAlignment' :: Double -> ([Linguistics.Word.Word],(Double,[[[String]]])) -> IO ()
-printAlignment' k (ws,(s,(xs))) = do
+printAlignment' k (ws,(s,([xs']))) = do
+  let xs = ["^","^","0.0"] : xs'
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
   let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
   --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  print xs
+  printLines xs
   putStrLn ""
 
 printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()

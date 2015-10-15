@@ -4,6 +4,7 @@
 
 module Linguistics.Common where
 
+import           Control.Monad (forM_)
 import           Data.ByteString (ByteString)
 import           Data.Char
 import           Data.List (transpose,reverse)
@@ -57,6 +58,15 @@ printLength = length . filter isAN . toUtf8String where
 toUtf8String :: IMMC -> String
 toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
+
+printLines :: [[String]] -> IO ()
+printLines xss = do
+  let n = (1+) . maximum $ 1 : (map (length . filter (not . isMark)) . concat $ xss)
+  let yss = transpose xss
+  forM_ yss $ \ys -> do
+    let fmt = "%" ++ show n ++ "s"
+    forM_ ys $ \y -> printf fmt y
+    printf "\n"
 
 --conv = S.fromShort . getMultiChar . uninternMultiChar
 --{-# INLINE conv #-}

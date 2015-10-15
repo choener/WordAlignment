@@ -25,6 +25,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import           Data.FMList (FMList)
 import qualified Data.HashMap.Strict as HM
 import           Data.Stringable (toString)
+import Text.Printf
 
 import ADP.Fusion
 import Data.PrimitiveArray
@@ -84,9 +85,9 @@ sBacktrack = backtrack ("-","-") ("-","-")
 
 sBacktrackFun :: Monad m => Double -> Double -> Scores -> SigT m (FMList [String]) [FMList [String]]
 sBacktrackFun defS go sco = backtrackFun f ("-","-") ("-","-") where
-  f    (_  ,c)    ( _  ,"-") = [toString c,"-", "~"]
+  f    (_  ,c)    ( _  ,"-") = [toString c,"-", printf "%3.1f" go]
   f cc@(mc',c) dd@(nd',d) = let z = HM.lookupDefault defS (Bigram mc' c :!: Bigram nd' d) sco
-    in [toString c,toString d,"%"]
+    in [toString c,toString d,printf "%3.1f" z]
 {-# Inline sBacktrackFun #-}
 
 alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[String]]])
