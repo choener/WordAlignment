@@ -84,10 +84,11 @@ sBacktrack = backtrack ("-","-") ("-","-")
 {-# Inline sBacktrack #-}
 
 sBacktrackFun :: Monad m => Double -> Double -> Scores -> SigT m (FMList [String]) [FMList [String]]
-sBacktrackFun defS go sco = backtrackFun f ("-","-") ("-","-") where
-  f    (_  ,c)    ( _  ,"-") = [toString c,"-", printf "%3.1f" go]
+sBacktrackFun defS go sco = backtrackFun f g ("-","-") ("-","-") where
   f cc@(mc',c) dd@(nd',d) = let z = HM.lookupDefault defS (Bigram mc' c :!: Bigram nd' d) sco
     in [toString c,toString d,printf "%3.1f" z]
+  g    (_  ,c)    ( _  ,"-") = [toString c,"-", printf "%3.1f" go]
+  g    (_, "-") (_,d) = ["-", toString d, printf "%3.1f" go]
 {-# Inline sBacktrackFun #-}
 
 alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[String]]])

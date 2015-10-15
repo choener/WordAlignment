@@ -86,7 +86,7 @@ main = do
       --       $ [ (x,y) | x <- ws, y <- ws ]
       let gs = [ [ (x,y)
                  | (kk,x) <- zip [1..] xs, (ll,y) <- zip [1..] ys
-                 , k/=l || kk <= l
+                 , k/=l || kk < ll
                  ]
                | (k,xs) <- wgs, (l,ys) <- wgs
                , k <= l
@@ -95,7 +95,7 @@ main = do
         let (x,y) = head g
         let sco = getScores2 scoring (wordLang x) (wordLang y)
         forM_ g $ \(x,y) -> do
-          let (d,xs) = BI.alignGlobal 0 0 sco 1 (wordWord x) (wordWord y)
+          let (d,xs) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
           -- print d
           -- print xs
           printAlignment' (-1) ([x,y],(d,xs))
