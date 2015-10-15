@@ -78,11 +78,19 @@ main = do
         mapM_ (prettyAli2 d) xs
     TwoWay{..} -> do
       let ws = map addWordDelims ws'
+      let wgs = zip [1..] (groupBy ((==) `on` wordLang) ws) -- grouped by the language
       let chkLs = S.fromList . map wordLang $ ws
       scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
-      let gs = groupBy ((==)    `on` (wordLang *** wordLang))
-             . sortBy  (compare `on` (wordLang *** wordLang))
-             $ [ (x,y) | x <- ws, y <- ws ]
+      --let gs = groupBy ((==)    `on` (wordLang *** wordLang))
+      --       . sortBy  (compare `on` (wordLang *** wordLang))
+      --       $ [ (x,y) | x <- ws, y <- ws ]
+      let gs = [ [ (x,y)
+                 | (kk,x) <- zip [1..] xs, (ll,y) <- zip [1..] ys
+                 , k/=l || kk <= l
+                 ]
+               | (k,xs) <- wgs, (l,ys) <- wgs
+               , k <= l
+               ]
       forM_ gs $ \g -> do
         let (x,y) = head g
         let sco = getScores2 scoring (wordLang x) (wordLang y)
@@ -110,6 +118,16 @@ prettyAli2 d s = do
     putStr $ show y
   putStrLn ""
 
+printAlignment' :: Double -> ([Linguistics.Word.Word],(Double,[[[String]]])) -> IO ()
+printAlignment' k (ws,(s,(xs))) = do
+  let ids = concat . intersperse " " . map (show . wordID)   $ ws
+  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
+  --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
+  print xs
+  putStrLn ""
+
 printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
 printAlignment k (ws,(s,(xs))) = do
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
@@ -117,8 +135,8 @@ printAlignment k (ws,(s,(xs))) = do
   --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  let xs1 = map (tail . reverse . map Prelude.fst) $ xs
-  let xs2 = map (tail . reverse . map Prelude.snd) $ xs
+  let xs1 = map ({- tail . -} reverse . map Prelude.fst) $ xs
+  let xs2 = map ({- tail . -} reverse . map Prelude.snd) $ xs
   mapM_ (putStrLn) (alignPretty $ xs1 ++ xs2)
   putStrLn ""
 

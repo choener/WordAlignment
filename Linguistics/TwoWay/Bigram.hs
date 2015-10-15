@@ -24,6 +24,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 --import           System.IO.Unsafe (unsafePerformIO)
 import           Data.FMList (FMList)
 import qualified Data.HashMap.Strict as HM
+import           Data.Stringable (toString)
 
 import ADP.Fusion
 import Data.PrimitiveArray
@@ -81,7 +82,14 @@ sBacktrack :: Monad m => SigT m (FMList (IMCp,IMCp)) [FMList (IMCp,IMCp)]
 sBacktrack = backtrack ("-","-") ("-","-")
 {-# Inline sBacktrack #-}
 
-alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[(IMCp,IMCp)]])
+sBacktrackFun :: Monad m => Double -> Double -> Scores -> SigT m (FMList [String]) [FMList [String]]
+sBacktrackFun defS go sco = backtrackFun f ("-","-") ("-","-") where
+  f    (_  ,c)    ( _  ,"-") = [toString c,"-", "~"]
+  f cc@(mc',c) dd@(nd',d) = let z = HM.lookupDefault defS (Bigram mc' c :!: Bigram nd' d) sco
+    in [toString c,toString d,"%"]
+{-# Inline sBacktrackFun #-}
+
+alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[String]]])
 alignGlobal ds gapopen scoring k i1' i2' = (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
   i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
   n1 = VU.length i1 ; n2 = VU.length i2
@@ -99,9 +107,9 @@ alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTable
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[(IMCp,IMCp)]]
+alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[[String]]]
 alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runBacktrack . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrack) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+  where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackFun ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 
 {-
