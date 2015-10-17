@@ -135,7 +135,7 @@ executable WordAlign
   ghc-options:
     -fsimpl-tick-factor=900
     -rtsopts
-    -threaded
+--    -threaded
   if flag(opt)
     ghc-options:
       -O2
