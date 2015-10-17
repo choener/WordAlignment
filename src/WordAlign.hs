@@ -34,6 +34,7 @@ data Config
   = TwoWaySimple
     { scoreFile :: String
     , block :: Maybe (Integer,Integer)
+    , lpblock :: Maybe (Int,Int)
     }
   | TwoWay
     { scoreFile :: String
@@ -42,6 +43,7 @@ data Config
     , gapOpen :: Double
     , gapExtend :: Double
     , block :: Maybe (Integer,Integer)
+    , lpblock :: Maybe (Int,Int)
     }
   | Info
   deriving (Show,Data,Typeable)
@@ -49,6 +51,7 @@ data Config
 twowaySimple = TwoWaySimple
   { scoreFile = def &= help ""
   , block     = Nothing
+  , lpblock   = Nothing
   }
 
 twoway = TwoWay
@@ -58,6 +61,7 @@ twoway = TwoWay
   , gapOpen = (-5) &= help "cost to open a gap"
   , gapExtend = (-1) &= help "cost to extend a gap"
   , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
+  , lpblock   = Nothing
   } &= help "Align two words at a time for all ordered word combinations"
 
 info = Info
@@ -90,7 +94,7 @@ main = do
                  , k/=l || kk < ll
                  ]
                | (k,xs) <- wgs, (l,ys) <- wgs
-               , k <= l
+               , maybe (k <= l) (\(lpK,lpL) -> k==lpK && l==lpL) lpblock -- if we have a language pair block use that one
                ]
       forM_ gs $ \g -> do
         let (x,y) = head g
