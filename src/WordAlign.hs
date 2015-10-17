@@ -3,6 +3,7 @@ module Main where
 
 import           Control.Arrow ((***))
 import           Control.Monad (forM_)
+import           Control.Parallel.Strategies (rdeepseq,parMap)
 import           Data.Function (on)
 import           Data.List (sortBy,groupBy,intersperse)
 import           Data.Sequence (Seq)
@@ -94,7 +95,8 @@ main = do
       forM_ gs $ \g -> do
         let (x,y) = head g
         let sco = getScores2 scoring (wordLang x) (wordLang y)
-        forM_ g $ \(x,y) -> do
+        let g' = parMap rdeepseq g
+        forM_ g' $ \(x,y) -> do
           let (d,xs) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
           -- print d
           -- print xs

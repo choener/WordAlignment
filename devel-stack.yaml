@@ -6,17 +6,26 @@ resolver: lts-3.9
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- ../Lib-ADPfusion/
-- ../Lib-OrderedBits/
-- ../Lib-PrimitiveArray/
-- ../Lib-bimaps/
-- ../Lib-FormalGrammars/
-- ../Lib-GrammarProducts/
-- ../Lib-PrimitiveArray/
-- ../Lib-AlignmentAlgorithms/
-- ../Lib-NaturalLanguageAlphabets/
-- ../Lib-BenchmarkHistory/
-
+- location: ../Lib-ADPfusion/
+  extra-dep: true
+- location: ../Lib-OrderedBits/
+  extra-dep: true
+- location: ../Lib-PrimitiveArray/
+  extra-dep: true
+- location: ../Lib-bimaps/
+  extra-dep: true
+- location: ../Lib-FormalGrammars/
+  extra-dep: true
+- location: ../Lib-GrammarProducts/
+  extra-dep: true
+- location: ../Lib-PrimitiveArray/
+  extra-dep: true
+- location: ../Lib-AlignmentAlgorithms/
+  extra-dep: true
+- location: ../Lib-NaturalLanguageAlphabets/
+  extra-dep: true
+- location: ../Lib-BenchmarkHistory/
+  extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
