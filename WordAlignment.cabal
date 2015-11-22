@@ -11,7 +11,7 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-tested-with:    GHC == 7.8.4, GHC == 7.10.1
+tested-with:    GHC == 7.8.4, GHC == 7.10.2
 synopsis:       Bigram word alignments in 2-4 dimensions.
 description:
                 The library provides fast dynamic programming algorithms to
@@ -22,18 +22,6 @@ description:
 Extra-Source-Files:
   README.md
   changelog.md
-
-
-
-Flag opt
-  description:  use the ghc optimizer (can be set False to speed up compilation)
-  default:      True
-  manual:       True
-
-Flag llvm
-  description:  use llvm backend (use, if possible!)
-  default:      False
-  manual:       True
 
 
 
@@ -97,14 +85,7 @@ library
                     , TypeOperators
   ghc-options:
     -fsimpl-tick-factor=900
-  if flag(Opt)
-    ghc-options:
-      -O2
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+    -O2
 
 
 
@@ -136,16 +117,9 @@ executable WordAlign
     -fsimpl-tick-factor=900
     -rtsopts
 --    -threaded
-  if flag(opt)
-    ghc-options:
-      -O2
-      -funfolding-use-threshold100
-      -funfolding-keeness-factor100
-  if flag(llvm)
-    ghc-options:
-      -fllvm
-      -optlo-O3 -optlo-std-compile-opts
-      -fllvm-tbaa
+    -O2
+    -funfolding-use-threshold100
+    -funfolding-keeness-factor100
 
 
 
