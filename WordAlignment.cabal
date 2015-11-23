@@ -1,5 +1,5 @@
 name:           WordAlignment
-version:        0.0.3.0
+version:        0.0.4.0
 author:         Christian Hoener zu Siederdissen, 2013-2015
 copyright:      Christian Hoener zu Siederdissen, 2013-2015
 homepage:       https://github.com/choener/WordAlignment
@@ -91,16 +91,18 @@ library
 
 executable WordAlign
   build-depends: base
+               , ascii-progress             >= 0.3.2    && < 0.4
                , bytestring
                , cmdargs                    == 0.10.*
                , containers
+               , file-embed
                , intern
                , NaturalLanguageAlphabets
                , parallel                   >= 3.2      && < 3.3
                , strict
-               , WordAlignment
                , unordered-containers
                , vector
+               , WordAlignment
   main-is:
     WordAlign.hs
   hs-source-dirs:
@@ -113,10 +115,11 @@ executable WordAlign
                     , PatternGuards
                     , RecordWildCards
                     , ScopedTypeVariables
+                    , TemplateHaskell
   ghc-options:
     -fsimpl-tick-factor=900
     -rtsopts
---    -threaded
+    -threaded
     -O2
     -funfolding-use-threshold100
     -funfolding-keeness-factor100

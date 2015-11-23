@@ -8,16 +8,15 @@ packages:
 - '.'
 - location: ../Lib-AlignmentAlgorithms/
   extra-dep: true
-- location: ../Lib-NaturalLanguageAlphabets/
-  extra-dep: true
-- location: ../Lib-GrammarProducts/
-  extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - ADPfusion-0.5.0.0
+- AlignmentAlgorithms-0.0.2.1
+- ascii-progress-0.3.2.0
 - bimaps-0.0.0.4
 - cereal-text-0.1.0.1
+- concurrent-output-1.7.1
 - control-monad-omega-0.3.1
 - FormalGrammars-0.2.1.1
 - GrammarProducts-0.1.1.1

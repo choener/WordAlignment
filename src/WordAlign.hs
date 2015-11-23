@@ -2,21 +2,33 @@
 module Main where
 
 import           Control.Arrow ((***))
-import           Control.Monad (forM_)
-import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0)
+import           Control.Monad (forM_,when)
+import           Data.Maybe (isJust)
+import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0,rseq,evalBuffer,parList,evalList,evalTuple3)
+import           Data.FileEmbed
 import           Data.Function (on)
-import           Data.List (sortBy,groupBy,intersperse)
+import           Data.List (sortBy,groupBy,intersperse,genericLength)
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple
 import           Debug.Trace (trace)
+import           Prelude hiding (Word)
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import           System.Console.CmdArgs
-import           Text.Printf
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
+import           System.Console.CmdArgs
+import           Text.Printf
+import           Text.Read (readMaybe)
+import           Debug.Trace
+import           Data.Version (showVersion)
+import           Control.Concurrent (threadDelay)
+import qualified System.Console.AsciiProgress as CAP
+import           GHC.IO.Handle
+import           System.IO
+import           System.Exit
 
 import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
@@ -28,40 +40,50 @@ import           Linguistics.TwoWay.Simple
 import           Linguistics.Word (parseWord,Word(..),addWordDelims)
 import qualified Linguistics.TwoWay.Bigram as BI
 
+import           Paths_WordAlignment (version)
+
 
 
 data Config
   = TwoWaySimple
-    { scoreFile :: String
-    , block :: Maybe (Integer,Integer)
-    , lpblock :: Maybe (Int,Int)
+    { scoreFile     :: String
+    , lpblock       :: Maybe (String,String)
+    , showManual    :: Bool
+    , prettystupid  :: Bool
+    , outfile       :: String
     }
   | TwoWay
-    { scoreFile :: String
-    , bigramDef :: Double
-    , unibiDef  :: Double
-    , gapOpen :: Double
-    , gapExtend :: Double
-    , block :: Maybe (Integer,Integer)
-    , lpblock :: Maybe (Int,Int)
+    { scoreFile     :: String
+    , bigramDef     :: Double
+    , unibiDef      :: Double
+    , gapOpen       :: Double
+    , gapExtend     :: Double
+    , lpblock       :: Maybe (String,String)
+    , showManual    :: Bool
+    , prettystupid  :: Bool
+    , outfile       :: String
     }
   | Info
   deriving (Show,Data,Typeable)
 
 twowaySimple = TwoWaySimple
-  { scoreFile = def &= help ""
-  , block     = Nothing
-  , lpblock   = Nothing
+  { scoreFile  = def &= help ""
+  , lpblock    = Nothing
+  , showManual = False
+  , prettystupid = False
+  , outfile      = ""
   }
 
 twoway = TwoWay
-  { scoreFile = "" &= help "the file to read the scores from"
-  , bigramDef = (-20) &= help "score to use for unknown bigram matches"
-  , unibiDef  = (-5) &= help "score to close a gap if the closing characters are unknown"
-  , gapOpen = (-5) &= help "cost to open a gap"
-  , gapExtend = (-1) &= help "cost to extend a gap"
-  , block = Nothing &= help "when using --block N,k calculate only the k'th block (starting at 1) with length N. For parallelized computations."
-  , lpblock   = Nothing
+  { scoreFile  = "" &= help "the file to read the scores from"
+  , bigramDef  = (-20) &= help "score to use for unknown bigram matches"
+  , unibiDef   = (-5) &= help "score to close a gap if the closing characters are unknown"
+  , gapOpen    = (-5) &= help "cost to open a gap"
+  , gapExtend  = (-1) &= help "cost to extend a gap"
+  , lpblock    = Nothing  &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or '2','3'   (with the latter notation '2' being the 2nd language in the input file"
+  , showManual = False    &= help "show the manual and quit"
+  , prettystupid = False  &= help "a pretty stupid developer option"
+  , outfile      = ""     &= help "write output to this file"
   } &= help "Align two words at a time for all ordered word combinations"
 
 info = Info
@@ -70,48 +92,126 @@ info = Info
 
 config = [twowaySimple, twoway, info]
   &= program "WordAlign"
-  &= summary "WordAlign v.0.0.1"
+  &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2015, choener@bioinf.uni-leipzig.de")
+
+embeddedManual = $(embedFile "README.md")
+
+
 
 main = do
   o <- cmdArgs $ modes config
-  ws' <- BL.getContents >>= return . map parseWord . BL.lines
-  case o of
-    TwoWaySimple{..} -> do
-      scoring <- simpleScoreFromFile scoreFile
-      forM_ ws' $ \x -> forM_ ws' $ \y -> do
-        let (d,xs) = alignGlobal scoring 1 (wordWord x) (wordWord y)
-        mapM_ (prettyAli2 d) xs
-    TwoWay{..} -> do
-      let ws = map addWordDelims ws'
-      let wgs = zip [1..] (groupBy ((==) `on` wordLang) ws) -- grouped by the language
-      let chkLs = S.fromList . map wordLang $ ws
-      scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
-      --let gs = groupBy ((==)    `on` (wordLang *** wordLang))
-      --       . sortBy  (compare `on` (wordLang *** wordLang))
-      --       $ [ (x,y) | x <- ws, y <- ws ]
-      let gs = [ [ (x,y)
+  when (showManual o) $ do
+    BS.putStrLn embeddedManual
+    exitSuccess
+  when (prettystupid o && null (outfile o)) $ do
+    putStrLn "The --prettystupid mode requires giving and --outfile"
+    exitFailure
+  (if prettystupid o then CAP.displayConsoleRegions else id) $ do
+    ws <- BL.getContents >>= return . map parseWord . BL.lines
+    case o of
+      TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
+      TwoWay{..} -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
+
+
+
+-- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.
+
+run2Simple :: Config -> [[(Word,Word)]] -> IO ()
+run2Simple TwoWaySimple{..} wss = do
+  scoring <- simpleScoreFromFile scoreFile
+  let wsslen = length wss
+  -- for each language pairing
+  forM_ (zip [1 :: Int ..] wss) $ \(k,ws) -> do
+    pg <- if prettystupid
+            then do
+              let len = genericLength ws
+              let (x,y) = head ws
+              printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
+              Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
+            else return Nothing
+    -- for each pair of words
+    forM_ ws $ \(x,y) -> do
+      -- calculate score and all co-optimal backtraces
+      let (d,xs) = alignGlobal scoring 1 (wordWord x) (wordWord y)
+      -- print backtraces
+      --mapM_ (prettyAli2 d) xs
+      seq d $ return ()
+      when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
+
+-- | Given a @Config@ and a @List of List of Word-Pairs@ align everything.
+
+run2 :: Config -> [[(Word,Word)]] -> IO ()
+run2 TwoWay{..} wss = do
+  hndl <- if null outfile then return stdout else openFile outfile AppendMode
+  let wsslen = length wss
+  -- build up scoring system
+  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map head $ wss
+  scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
+  -- for each language pairing
+  forM_ (zip [1 :: Int ..] wss) $ \(k,ws) -> do
+    pg <- if prettystupid
+            then do
+              let len = genericLength ws
+              let (x,y) = head ws
+              printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
+              Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
+            else return Nothing
+    -- get score pairing
+    let (hx,hy) = head ws
+    let sco = getScores2 scoring (wordLang hx) (wordLang hy)
+    -- align the words the in @ws@ pairing
+    let as = map (\(x,y) -> (x,y,BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y))) ws
+    forM_ (as `using` parBuffer 100 (evalTuple3 rseq rseq (evalTuple2 rdeepseq rseq))) $ \(x,y,(d,bts)) -> do
+      when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
+      printAlignment hndl (-1) ([x,y],(d,bts))  -- replacing @xs@ by @[[]]@ makes this very fast *and* amenable for parallelization, investigate!!!
+
+-- | Given a set of words from different languages, we want to do two
+-- things:
+--
+-- (i) We want to block alignments into groups. This will make alignments
+-- faster as we do not have to reload the scoring system every time.
+--
+-- (ii) We want to decide on alignment maybe only a subset of words. We
+-- make this selection rather coarse-grained by giving just the name or
+-- running id of the language. I.e you can type @Breton@ or @1@ (if Breton
+-- happens to be the first language). We allow numeric identification as
+-- that is easier for scripts to handle.
+
+blockSelection2 :: Maybe (String,String) -> [Word] -> [[(Word,Word)]]
+blockSelection2 s ws = go (mkCmp s)
+        -- grouping words by their languages
+  where gs = zip [1..] $ groupBy ((==) `on` wordLang) ws
+        ls = M.fromList $ map (\(k,(v:_)) -> (show $ wordLang v,k)) gs
+        go f = [ [ (x,y)
                  | (kk,x) <- zip [1..] xs, (ll,y) <- zip [1..] ys
                  , k/=l || kk < ll
                  ]
-               | (k,xs) <- wgs, (l,ys) <- wgs
-               , maybe (k <= l) (\(lpK,lpL) -> k==lpK && l==lpL) lpblock -- if we have a language pair block use that one
+               | (k,xs) <- gs, (l,ys) <- gs -- @k@ and @l@ are word groups, i.e. language identifiers
+               , f k l
                ]
-      forM_ gs $ \g -> do
-        let (x,y) = head g
-        let sco = getScores2 scoring (wordLang x) (wordLang y)
-        let g' = map (\(x,y) -> BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)) g
-        forM_ (g') {- `using` parBuffer 100 (evalTuple2 rdeepseq rdeepseq)) -} $ \(d,xs) -> do
-          -- let (d,xs) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-          -- print d
-          -- print xs
-          printAlignment' (-1) ([x,y],(d,xs))
+        -- Create comparator function for group selection
+        mkCmp :: Maybe (String,String) -> (Int -> Int -> Bool)
+        -- nothing selected, produce all upper triangular groups
+        mkCmp Nothing = \k l -> k <= l
+        mkCmp (Just (a,b))
+        -- we have two strings that actually are numbers
+          | Just a' <- readMaybe a
+          , Just b' <- readMaybe b = \k l -> a'==k && b'==l
+        -- we have two language names
+          | Just a' <- M.lookup a ls
+          , Just b' <- M.lookup b ls = \k l -> a'==k && b'==l
+        -- the user did provide crappy input
+        mkCmp (Just (a,b)) = \k l -> traceShow ("Unknown languages or ID's: " ++ a ++ " , " ++ b) $ False
 
+-- | (write me)
 
 getScores2 :: Mapping -> Lang -> Lang -> Scores
 getScores2 ss a b
   | Just z <- M.lookup (a:!:b) (lliid ss) = z
   | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
                 HM.empty
+
+-- | (write me)
 
 prettyAli2 :: Double -> [(IMMC,IMMC)] -> IO ()
 prettyAli2 d s = do
@@ -124,28 +224,49 @@ prettyAli2 d s = do
     putStr $ show y
   putStrLn ""
 
-printAlignment' :: Double -> ([Linguistics.Word.Word],(Double,[[[String]]])) -> IO ()
-printAlignment' k (ws,(s,([xs']))) = do
+printAlignment :: Handle -> Double -> ([Linguistics.Word.Word],(Double,[[[String]]])) -> IO ()
+printAlignment hndl k (ws,(s,([xs']))) = do
   let xs = ["^","^","0.0"] : xs'
   let ids = concat . intersperse " " . map (show . wordID)   $ ws
   let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
-  --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  printLines xs
-  putStrLn ""
+  hPrintf hndl "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
+  printLines hndl xs
+  hPrintf hndl "\n"
 
-printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
-printAlignment k (ws,(s,(xs))) = do
-  let ids = concat . intersperse " " . map (show . wordID)   $ ws
-  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
-  --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  let xs1 = map ({- tail . -} reverse . map Prelude.fst) $ xs
-  let xs2 = map ({- tail . -} reverse . map Prelude.snd) $ xs
-  mapM_ (putStrLn) (alignPretty $ xs1 ++ xs2)
-  putStrLn ""
+--printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
+--printAlignment k (ws,(s,(xs))) = do
+--  let ids = concat . intersperse " " . map (show . wordID)   $ ws
+--  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
+--  --let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+--  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+--  printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
+--  let xs1 = map ({- tail . -} reverse . map Prelude.fst) $ xs
+--  let xs2 = map ({- tail . -} reverse . map Prelude.snd) $ xs
+--  mapM_ (putStrLn) (alignPretty $ xs1 ++ xs2)
+--  putStrLn ""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 {-
 import           Control.Arrow

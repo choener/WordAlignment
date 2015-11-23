@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Text.Printf
 import           Data.Stringable (toString)
+import           GHC.IO.Handle
 
 import           NLP.Alphabet.IMMC
 import           NLP.Alphabet.MultiChar
@@ -59,14 +60,14 @@ toUtf8String :: IMMC -> String
 toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
 
-printLines :: [[String]] -> IO ()
-printLines xss = do
+printLines :: Handle -> [[String]] -> IO ()
+printLines hndl xss = do
   let n = (1+) . maximum $ 1 : (map (length . filter (not . isMark)) . concat $ xss)
   let yss = transpose xss
   forM_ yss $ \ys -> do
     let fmt = "%" ++ show n ++ "s"
-    forM_ ys $ \y -> printf fmt y
-    printf "\n"
+    forM_ ys $ \y -> hPrintf hndl fmt y
+    hPrintf hndl "\n"
 
 --conv = S.fromShort . getMultiChar . uninternMultiChar
 --{-# INLINE conv #-}
