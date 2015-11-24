@@ -168,11 +168,9 @@ run2 TwoWay{..} wss = do
                               in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,bts))
                             )
                  ) ws
-    forM_ (as `using` parBuffer 100 rseq) $ \ali -> do -- \(x,y,(d,bts)) -> do
+    forM_ (as) {- `using` parBuffer 100 rseq)-} $ \ali -> do
       when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
       TL.hPutStr hndl ali
-      --let bla = buildAlignment (-1) ([x,y],(d,bts))  -- replacing @xs@ by @[[]]@ makes this very fast *and* amenable for parallelization, investigate!!!
-      --return ()
 
 -- | Given a set of words from different languages, we want to do two
 -- things:
