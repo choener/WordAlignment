@@ -8,6 +8,8 @@ import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,ev
 import           Data.FileEmbed
 import           Data.Function (on)
 import           Data.List (sortBy,groupBy,intersperse,genericLength)
+import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple
 import           Debug.Trace (trace)
@@ -29,6 +31,8 @@ import qualified System.Console.AsciiProgress as CAP
 import           GHC.IO.Handle
 import           System.IO
 import           System.Exit
+import qualified Data.Text.Lazy.Builder as TL
+import qualified Data.Text.Lazy.IO as TL
 
 import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
@@ -160,10 +164,15 @@ run2 TwoWay{..} wss = do
     let (hx,hy) = head ws
     let sco = getScores2 scoring (wordLang hx) (wordLang hy)
     -- align the words the in @ws@ pairing
-    let as = map (\(x,y) -> (x,y,BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y))) ws
-    forM_ (as `using` parBuffer 100 (evalTuple3 rseq rseq (evalTuple2 rdeepseq rseq))) $ \(x,y,(d,bts)) -> do
+    let as = map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
+                              in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,bts))
+                            )
+                 ) ws
+    forM_ (as `using` parBuffer 100 rseq) $ \ali -> do -- \(x,y,(d,bts)) -> do
       when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
-      printAlignment hndl (-1) ([x,y],(d,bts))  -- replacing @xs@ by @[[]]@ makes this very fast *and* amenable for parallelization, investigate!!!
+      TL.hPutStr hndl ali
+      --let bla = buildAlignment (-1) ([x,y],(d,bts))  -- replacing @xs@ by @[[]]@ makes this very fast *and* amenable for parallelization, investigate!!!
+      --return ()
 
 -- | Given a set of words from different languages, we want to do two
 -- things:
@@ -224,15 +233,14 @@ prettyAli2 d s = do
     putStr $ show y
   putStrLn ""
 
-printAlignment :: Handle -> Double -> ([Linguistics.Word.Word],(Double,[[[String]]])) -> IO ()
-printAlignment hndl k (ws,(s,([xs']))) = do
-  let xs = ["^","^","0.0"] : xs'
-  let ids = concat . intersperse " " . map (show . wordID)   $ ws
-  let wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
-  let ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-  hPrintf hndl "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  printLines hndl xs
-  hPrintf hndl "\n"
+buildAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Builder
+buildAlignment k (ws,(s,([xs']))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
+  xs = ["^","^","0.0"] : xs'
+  ids = concat . intersperse " " . map (show . wordID)   $ ws
+  wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
+  ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+  hdr = T.pack $ printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
+  ls  = buildLines xs
 
 --printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
 --printAlignment k (ws,(s,(xs))) = do

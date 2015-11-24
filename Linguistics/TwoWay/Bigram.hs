@@ -9,40 +9,35 @@
 module Linguistics.TwoWay.Bigram where
 
 import           Data.ByteString.Char8 (ByteString)
-import           Data.Strict.Tuple (Pair (..))
-import           Data.Vector.Fusion.Util (Id(..))
-import qualified Data.ByteString.Char8 as B
---import qualified Data.HashTable.IO as H
-import qualified Data.List as L
---import qualified Data.Vector as V
---import           Data.Vector (Vector)
-import           Data.Vector.Unboxed (Vector)
-import qualified Data.Vector.Unboxed as VU
-import           Data.Sequence (Seq)
-import qualified Data.Vector.Fusion.Stream.Monadic as SM
---import qualified Data.Vector.Fusion.Stream as S
---import           System.IO.Unsafe (unsafePerformIO)
 import           Data.FMList (FMList)
+import           Data.Sequence (Seq)
+import           Data.Strict.Tuple (Pair (..))
+import           Data.Stringable (toString,toText)
+import           Data.Text (Text,pack)
+import           Data.Vector.Fusion.Util (Id(..))
+import           Data.Vector.Unboxed (Vector)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.HashMap.Strict as HM
-import           Data.Stringable (toString)
-import Text.Printf
+import qualified Data.List as L
+import qualified Data.Vector.Fusion.Stream.Monadic as SM
+import qualified Data.Vector.Unboxed as VU
+import           Text.Printf
+import qualified Data.Text.Format as TF
 
-import ADP.Fusion
-import Data.PrimitiveArray
-import NLP.Alphabet.MultiChar
-import NLP.Alphabet.IMMC
-import NLP.Scoring.SimpleUnigram
-import DP.Alignment.Global.Tapes2
+import           ADP.Fusion
+import           Data.PrimitiveArray
+import           DP.Alignment.Global.Tapes2
+import           NLP.Alphabet.IMMC
+import           NLP.Alphabet.MultiChar
+import           NLP.Scoring.SimpleUnigram
 
-import Linguistics.Common
+import           Linguistics.Common
 
 import           Linguistics.Bigram
---import           Linguistics.Common
---import           Linguistics.TwoWay.Common
+
 
 
 type IMC = IMMC
---type IMCp = (IMMC, IMMC)
 type SigT m x r = SigGlobal m x r IMCp IMCp
 
 
@@ -56,8 +51,7 @@ sScore dS gapopen s = SigGlobal
   , h         = SM.foldl' max (-888888)
   } where
     lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault dS (Bigram mc' c :!: Bigram nd' d) s
---    lkup mc' c nd' d = {-# SCC "lkup" #-} maybe dS id . unsafePerformIO $ H.lookup s (Bigram mc' c :!: Bigram nd' d)
-    {- INLINE lkup #-}
+    {-# INLINE lkup #-}
 {-# INLINE sScore #-}
 {-
 sScore dS gapOpen s = SigGlobal
@@ -83,15 +77,15 @@ sBacktrack :: Monad m => SigT m (FMList (IMCp,IMCp)) [FMList (IMCp,IMCp)]
 sBacktrack = backtrack ("-","-") ("-","-")
 {-# Inline sBacktrack #-}
 
-sBacktrackFun :: Monad m => Double -> Double -> Scores -> SigT m (FMList [String]) [FMList [String]]
+sBacktrackFun :: Monad m => Double -> Double -> Scores -> SigT m (FMList [Text]) [FMList [Text]]
 sBacktrackFun defS go sco = backtrackFun f g ("-","-") ("-","-") where
   f cc@(mc',c) dd@(nd',d) = let z = HM.lookupDefault defS (Bigram mc' c :!: Bigram nd' d) sco
-    in [toString c,toString d,printf "%3.1f" z]
-  g    (_  ,c)    ( _  ,"-") = [toString c,"-", printf "%3.1f" go]
-  g    (_, "-") (_,d) = ["-", toString d, printf "%3.1f" go]
+    in [toText c,toText d, pack $ printf "%3.1f" z]
+  g    (_  ,c)    ( _  ,"-") = [toText c,"-", pack $ printf "%3.1f" go]
+  g    (_, "-") (_,d) = ["-", toText d, pack $ printf "%3.1f" go]
 {-# Inline sBacktrackFun #-}
 
-alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[String]]])
+alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[Text]]])
 alignGlobal ds gapopen scoring k i1' i2' = (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
   i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
   n1 = VU.length i1 ; n2 = VU.length i2
@@ -109,7 +103,7 @@ alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTable
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[[String]]]
+alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[[Text]]]
 alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runBacktrack . unId $ axiom b
   where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackFun ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}

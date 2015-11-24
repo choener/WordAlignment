@@ -10,6 +10,11 @@ import           Data.Char
 import           Data.List (transpose,reverse)
 import qualified Data.ByteString.Short as S
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.IO as TL
+import qualified Data.Text.Lazy.Builder as TL
+import           Data.Text (Text)
+import qualified Data.Text.Format as TF
 import qualified Data.Text.Encoding as T
 import           Text.Printf
 import           Data.Stringable (toString)
@@ -60,14 +65,25 @@ toUtf8String :: IMMC -> String
 toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
 
-printLines :: Handle -> [[String]] -> IO ()
+buildLines :: [[Text]] -> TL.Builder
+buildLines xss = s where
+  n = (1+) . maximum $ 1 : (map (T.length . T.filter (not . isMark)) . concat $ xss)
+  yss = transpose xss
+  fmt = "%" ++ show n ++ "s"
+  s = mconcat [ (mconcat $ map (TF.left n ' ') ys) `mappend` "\n"
+              | ys <- yss ]
+
+printLines :: Handle -> [[Text]] -> IO ()
 printLines hndl xss = do
-  let n = (1+) . maximum $ 1 : (map (length . filter (not . isMark)) . concat $ xss)
+  let n = (1+) . maximum $ 1 : (map (T.length . T.filter (not . isMark)) . concat $ xss)
   let yss = transpose xss
-  forM_ yss $ \ys -> do
-    let fmt = "%" ++ show n ++ "s"
-    forM_ ys $ \y -> hPrintf hndl fmt y
-    hPrintf hndl "\n"
+  let fmt = "%" ++ show n ++ "s"
+  let s = mconcat [ (mconcat $ map (TF.left n ' ') ys) `mappend` "\n"
+                  | ys <- yss ]
+  TL.hPutStrLn hndl $ TL.toLazyText s
+  --forM_ yss $ \ys -> do
+  --  forM_ ys $ \y -> hPrintf hndl fmt (T.unpack y)
+  --  hPrintf hndl "\n"
 
 --conv = S.fromShort . getMultiChar . uninternMultiChar
 --{-# INLINE conv #-}
