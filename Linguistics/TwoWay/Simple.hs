@@ -23,6 +23,8 @@ import           Data.Vector.Unboxed (Vector)
 import           System.IO.Unsafe (unsafePerformIO)
 import           Data.Sequence (Seq)
 import           Data.FMList (FMList)
+import           Data.Text (Text)
+import           Data.Stringable (toText)
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -51,7 +53,16 @@ sBacktrack :: Monad m => SigT m (FMList (BTI,BTI)) [FMList (BTI,BTI)]
 sBacktrack = backtrack "-" "-"
 {-# Inline sBacktrack #-}
 
-alignGlobal :: SimpleScoring -> Int -> Vector BTI -> Vector BTI -> (Double,[[(BTI,BTI)]])
+-- | Create a backtracking function
+--
+-- TODO includes scores as well?
+
+sBacktrackFun :: Monad m => SigT m (FMList [Text]) [FMList [Text]]
+sBacktrackFun = backtrackFun f g "-" "-" where
+  f c d = [toText c, toText d]
+  g c d = [toText c, toText d]
+
+alignGlobal :: SimpleScoring -> Int -> Vector BTI -> Vector BTI -> (Double,[[[Text]]])
 alignGlobal scoring k i1 i2 = (d, take k bs) where
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward scoring i1 i2
@@ -68,9 +79,9 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: SimpleScoring -> Vector BTI -> Vector BTI -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[(BTI,BTI)]]
+alignGlobalBacktrack :: SimpleScoring -> Vector BTI -> Vector BTI -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[[Text]]]
 alignGlobalBacktrack scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore scoring <|| sBacktrack) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+  where (Z:.b) = gGlobal (sScore scoring <|| sBacktrackFun) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 
 -- | Decoupling the forward phase for CORE observation.
