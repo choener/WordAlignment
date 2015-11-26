@@ -1,4 +1,6 @@
 
+{-# Options_GHC -fno-cse #-}
+
 module Main where
 
 import           Control.Arrow ((***))
@@ -61,40 +63,35 @@ data Config
     , bigramDef     :: Double
     , unibiDef      :: Double
     , gapOpen       :: Double
-    , gapExtend     :: Double
+--    , gapExtend     :: Double
     , lpblock       :: Maybe (String,String)
     , showManual    :: Bool
     , prettystupid  :: Bool
     , outfile       :: String
     }
-  | Info
   deriving (Show,Data,Typeable)
 
 twowaySimple = TwoWaySimple
-  { scoreFile  = def &= help ""
+  { scoreFile  = def &= help "the file to read the simple scores from"
   , lpblock    = Nothing
-  , showManual = False
+  , showManual = False    &= help "show the manual and quit"
   , prettystupid = False
   , outfile      = ""
-  }
+  } &= help "Align words based on a simple, linear scoring model for gaps, and an unigram model for matches."
 
 twoway = TwoWay
   { scoreFile  = "" &= help "the file to read the scores from"
   , bigramDef  = (-20) &= help "score to use for unknown bigram matches"
   , unibiDef   = (-5) &= help "score to close a gap if the closing characters are unknown"
   , gapOpen    = (-5) &= help "cost to open a gap"
-  , gapExtend  = (-1) &= help "cost to extend a gap"
-  , lpblock    = Nothing  &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or '2','3'   (with the latter notation '2' being the 2nd language in the input file"
-  , showManual = False    &= help "show the manual and quit"
+--  , gapExtend  = (-1) &= help "cost to extend a gap" -- we currently do not use the affine cost model. Should come later once a generic affine system is written in AlignmentAlgorithms
+  , lpblock    = Nothing  &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"
   , prettystupid = False  &= help "a pretty stupid developer option"
   , outfile      = ""     &= help "write output to this file"
-  } &= help "Align two words at a time for all ordered word combinations"
+  , showManual = False
+  } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
-info = Info
-  {
-  }
-
-config = [twowaySimple, twoway, info]
+config = [twowaySimple, twoway]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2015, choener@bioinf.uni-leipzig.de")
 
@@ -114,7 +111,7 @@ main = do
     ws <- BL.getContents >>= return . map parseWord . BL.lines
     case o of
       TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
-      TwoWay{..} -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
+      TwoWay{..}       -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
 
 
 

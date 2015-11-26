@@ -13,19 +13,64 @@ character decorations, such as *Umlaute* (even though Umlaute are available in
 unicode).
 
 As user, you send a list to stdin that is formatted as follows (with all fields
-mandatory):
+mandatory; the tab symbol being the separator between each column):
 
-word id
-language name
-meaning identifier (this is a string, not a number)
-length of the word
-space-separated characters (each character is actually a string)
+* word id
+* language name
+* meaning identifier (this is a string, not a number)
+* length of the word
+* space-separated characters (each character is actually a string)
 
-0	Albanian_Tosk	1.100	5	\' b o t ə
-2	Albanian_Tosk	1.100	10	r̃ o k u lʸ i a\' lʸ e m
+(In case you read the plain-text version of this document, the 4 whitespace
+characters should be left out.)
+
+    0	Albanian_Tosk	1.100	5	\' b o t ə
+    2	Albanian_Tosk	1.100	10	r̃ o k u lʸ i a\' lʸ e m
 
 
-In addition, a score file need to be given (--scorefile) with
+
+The WordAlignment program comes with two modes, *twowaysimple* and *twoway*.
+
+## TwoWay - Simple
+
+    WordAlign twowaysimple
+
+aligns words based on a simple scoring model. Gaps are scored with linear
+costs. Matches are scored based on a simple scoring file handling unigrams of
+characters. Even the simple model allows for the concept of equivalence
+classes. This makes it possible to not only score exact matches, but to give
+somewhat high scores to, say, two vowels that should be matched.
+
+The following command-line options are provided:
+
+    --scorefile=ITEM
+    --lpblock=ITEM,ITEM
+    --showmanual
+    --prettystupid
+    --outfile=ITEM
+
+*--scorefile* is the simple score file to be used by the mode. the
+*defaultSimpleScoring* file can be used as a template.
+
+*--lpblock* expects a pair of language names (Breton,Breton) or a pair of
+integers (3,3 or 4,6) and will then align only the given language pairs with
+each other. This option should be very helpful in case you want to parallelize
+the program.
+
+*--showmanual* will show this manual in plain text.
+
+*--prettystupid* will show a progress bar of the current language pair. It's
+pretty and helpful with smaller tasks but should not be used when you
+parallelize on a grid engine.
+
+*--outfile* writes to the given output file, not stdout. Actually required when
+*--prettystupid* is active.
+
+
+
+## TwoWay (Complex Scoring)
+
+In addition, a score file needs to be given (--scorefile) with
 
 language name
 character (bigram 1.1)
