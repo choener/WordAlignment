@@ -20,11 +20,11 @@ import           Text.Printf
 import           Data.Stringable (toString)
 import           GHC.IO.Handle
 
-import           NLP.Alphabet.IMMC
-import           NLP.Alphabet.MultiChar
+import           NLP.Text.BTI
 
 
-type IMCp = (IMMC, IMMC)
+
+type IMCp = (BTI, BTI)
 
 -- | Actually align something prettily
 
@@ -48,7 +48,7 @@ printAlignedPad p (_,c) zs = printf " %s%s" (replicate pad p) (toUtf8String c) w
 -- NOTE 'isMark' selects unicode symbols that modify a character, thereby not
 -- increasing the length of the /printed/ string.
 
-printLength :: IMMC -> Int
+printLength :: BTI -> Int
 printLength = length . filter isAN . toUtf8String where
   isAN c = not (isMark c) -- isAlphaNum c || c `elem` [ '\\', '\'', '^', '$', '-', '\'' ]
 
@@ -61,7 +61,7 @@ printLength = length . filter isAN . toUtf8String where
 -}
 
 
-toUtf8String :: IMMC -> String
+toUtf8String :: BTI -> String
 toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
 {-# INLINE toUtf8String #-}
 

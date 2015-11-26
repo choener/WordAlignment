@@ -1,3 +1,10 @@
+0.1.0.0
+-------
+
+- using BTI types instead of IMMC
+- backtracking pretty printing moved to PRETTY-PRINT-LIB-NAME (TODO!)
+- updated README.md (TODO!)
+
 0.0.4.0
 -------
 

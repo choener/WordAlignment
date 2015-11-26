@@ -24,19 +24,18 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Data.Sequence (Seq)
 import           Data.FMList (FMList)
 
-import ADP.Fusion
-import Data.PrimitiveArray
-import NLP.Alphabet.MultiChar
-import NLP.Alphabet.IMMC
-import NLP.Scoring.SimpleUnigram
-import DP.Alignment.Global.Tapes2
+import           ADP.Fusion
+import           Data.PrimitiveArray
+import           DP.Alignment.Global.Tapes2
+import           NLP.Scoring.SimpleUnigram
+import           NLP.Text.BTI
 
 import Linguistics.Common
 --import Linguistics.TwoWay.Common
 
 
-type IMC = InternedMultiChar
-type SigT m x r = SigGlobal m x r IMMC IMMC
+--type IMC = InternedMultiChar
+type SigT m x r = SigGlobal m x r BTI BTI
 
 sScore :: Monad m => SimpleScoring -> SigT m Double Double
 sScore ss@SimpleScoring{..} = SigGlobal
@@ -48,11 +47,11 @@ sScore ss@SimpleScoring{..} = SigGlobal
   }
 {-# Inline sScore #-}
 
-sBacktrack :: Monad m => SigT m (FMList (IMMC,IMMC)) [FMList (IMMC,IMMC)]
+sBacktrack :: Monad m => SigT m (FMList (BTI,BTI)) [FMList (BTI,BTI)]
 sBacktrack = backtrack "-" "-"
 {-# Inline sBacktrack #-}
 
-alignGlobal :: SimpleScoring -> Int -> Vector IMMC -> Vector IMMC -> (Double,[[(IMMC,IMMC)]])
+alignGlobal :: SimpleScoring -> Int -> Vector BTI -> Vector BTI -> (Double,[[(BTI,BTI)]])
 alignGlobal scoring k i1 i2 = (d, take k bs) where
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward scoring i1 i2
@@ -60,7 +59,7 @@ alignGlobal scoring k i1 i2 = (d, take k bs) where
   bs = alignGlobalBacktrack scoring i1 i2 t
 {-# NoInline alignGlobal #-}
 
-alignGlobalForward :: SimpleScoring -> Vector IMMC -> Vector IMMC -> Z:.ITbl Id Unboxed (Z:.PointL I:.PointL I) Double
+alignGlobalForward :: SimpleScoring -> Vector BTI -> Vector BTI -> Z:.ITbl Id Unboxed (Z:.PointL I:.PointL I) Double
 alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
   gGlobal (sScore scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
@@ -69,7 +68,7 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: SimpleScoring -> Vector IMMC -> Vector IMMC -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[(IMMC,IMMC)]]
+alignGlobalBacktrack :: SimpleScoring -> Vector BTI -> Vector BTI -> ITbl Id Unboxed (Z:.PointL I:.PointL I) Double -> [[(BTI,BTI)]]
 alignGlobalBacktrack scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
   where (Z:.b) = gGlobal (sScore scoring <|| sBacktrack) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}

@@ -3,8 +3,14 @@
 # Word alignments in natural languages
 
 This library and program are designed for the alignment of *words* in human
-languages. Each word is encoded in a particular way (as the mapping between
-characters and their /meaning/ (?) is not well-defined enough).
+languages. Each word is encoded as a list of *characters*. A single
+*character*, however, is encoded as a *list of unicode symbols*, not just a
+single symbol.
+
+This particular encoding is necessary because there is no general one-to-one
+mapping of atomic alphabet symbols to unicode characters. Just consider
+character decorations, such as *Umlaute* (even though Umlaute are available in
+unicode).
 
 As user, you send a list to stdin that is formatted as follows (with all fields
 mandatory):
@@ -34,7 +40,7 @@ Albanian_Tosk \' a Albanian_Tosk \' b 0.402228
 Albanian_Tosk \' a Albanian_Tosk \' g 1.07432
 
 
-Some additional pieces of evidence are required. First is the default score
+Some additional pieces of information are required. First is the default score
 given whenever a pair of bigrams can not be matched against in the score file.
 This defualt score (--defaultscore) defaults to (-42) due to popular
 requirement. If the first line in the score file contains just a single double

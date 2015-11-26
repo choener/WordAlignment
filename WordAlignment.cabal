@@ -1,5 +1,5 @@
 name:           WordAlignment
-version:        0.0.4.0
+version:        0.1.0.0
 author:         Christian Hoener zu Siederdissen, 2013-2015
 copyright:      Christian Hoener zu Siederdissen, 2013-2015
 homepage:       https://github.com/choener/WordAlignment
@@ -42,7 +42,8 @@ library
                , hashable                   >= 1.1      && < 1.3
                , intern                     >= 0.9      && < 0.10
                , lens                       >= 4.0      && < 4.14
-               , NaturalLanguageAlphabets   >= 0.0.2    && < 0.0.3
+               , LinguisticsTypes           >= 0.0.0    && < 0.0.1
+               , NaturalLanguageAlphabets   >= 0.1.0    && < 0.2.0
                , primitive                  >= 0.5      && < 0.7
                , PrimitiveArray             >= 0.6.0    && < 0.7.1
                , strict                     >= 0.3.2    && < 0.3.3
@@ -98,6 +99,7 @@ executable WordAlign
                , containers
                , file-embed
                , intern
+               , LinguisticsTypes
                , NaturalLanguageAlphabets
                , parallel                   >= 3.2      && < 3.3
                , strict

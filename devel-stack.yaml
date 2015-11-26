@@ -6,6 +6,10 @@ resolver: lts-3.15
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
+- location: ../Lib-NaturalLanguageAlphabets/
+  extra-dep: true
+- location: ../Lib-LinguisticsTypes/
+  extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
@@ -19,7 +23,7 @@ extra-deps:
 - FormalGrammars-0.2.1.1
 - GrammarProducts-0.1.1.1
 - intern-0.9.1.4
-- NaturalLanguageAlphabets-0.0.2.0
+- NaturalLanguageAlphabets-0.1.0.0
 - OrderedBits-0.0.1.0
 - PrimitiveArray-0.7.0.0
 - storable-record-0.0.3

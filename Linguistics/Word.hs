@@ -22,8 +22,8 @@ import qualified Data.Vector.Unboxed as VU
 import           Prelude hiding (Word)
 import           Data.Stringable
 
-import NLP.Alphabet.MultiChar
-import NLP.Alphabet.IMMC
+import           NLP.Text.BTI
+
 
 
 -- | A single word we want to align to another word. It comes with an id (here
@@ -38,10 +38,10 @@ import NLP.Alphabet.IMMC
 
 data Word = Word
   { wordID     :: {-# UNPACK #-} !Int
-  , wordClass  :: {-# UNPACK #-} !IMMC -- InternedByteString
-  , wordLang   :: {-# UNPACK #-} !IMMC -- InternedByteString
+  , wordClass  :: {-# UNPACK #-} !BTI -- InternedByteString
+  , wordLang   :: {-# UNPACK #-} !BTI -- InternedByteString
   , wordLength :: {-# UNPACK #-} !Int
-  , wordWord   :: {-# UNPACK #-} !(VU.Vector IMMC)
+  , wordWord   :: {-# UNPACK #-} !(VU.Vector BTI)
   }
   deriving (Show,Eq,Ord)
 
@@ -61,7 +61,7 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*  AB.many1 AB.space
               <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
-    wW   = immc . fromByteString
+    wW   = fromByteString
 
 addWordDelims :: Word -> Word
 addWordDelims w

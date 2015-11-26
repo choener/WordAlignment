@@ -35,14 +35,13 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Stringable as SA
 
-import           NLP.Alphabet.IMMC
-import           NLP.Alphabet.MultiChar
+import           NLP.Text.BTI
 
 
 
 data Bigram = Bigram
-  { peekChar :: {-# UNPACK #-} !IMMC
-  , hitChar  :: {-# UNPACK #-} !IMMC
+  { peekChar :: {-# UNPACK #-} !BTI
+  , hitChar  :: {-# UNPACK #-} !BTI
   }
   deriving (Show,Eq,Ord,Generic)
 
@@ -75,9 +74,9 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
     lang   = wrd <?> "lang"
     bigram = Bigram <$> wrd <*> wrd <?> "bigram"
     score  = AB.double <?> "score"
-    wrd = (immc . SA.fromByteString) <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrd    = SA.fromByteString <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
 
-type Lang = IMMC
+type Lang = BTI
 type Line = (Lang, Lang, Bigram, Bigram, Double)
 type Scores = HM.HashMap (Bigram:!:Bigram) Double
 
@@ -120,7 +119,7 @@ mkMapping !(Mapping bs ll) xs@(x:_)
 -- | Given a set of acceptable languages, a default score, and the lazy
 -- bytestring of scores, create the 'Mapping' of languages and scores.
 
-generateLookups :: S.Set IMMC -> Double -> BL.ByteString -> Mapping
+generateLookups :: S.Set BTI -> Double -> BL.ByteString -> Mapping
 generateLookups langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls

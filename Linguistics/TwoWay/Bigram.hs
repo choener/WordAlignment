@@ -27,17 +27,15 @@ import qualified Data.Text.Format as TF
 import           ADP.Fusion
 import           Data.PrimitiveArray
 import           DP.Alignment.Global.Tapes2
-import           NLP.Alphabet.IMMC
-import           NLP.Alphabet.MultiChar
 import           NLP.Scoring.SimpleUnigram
+import           NLP.Text.BTI
 
 import           Linguistics.Common
-
 import           Linguistics.Bigram
 
 
 
-type IMC = IMMC
+type IMC = BTI
 type SigT m x r = SigGlobal m x r IMCp IMCp
 
 

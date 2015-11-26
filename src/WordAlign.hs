@@ -34,9 +34,9 @@ import           System.Exit
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 
-import           NLP.Alphabet.IMMC
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
+import           NLP.Text.BTI
 
 import           Linguistics.Bigram
 import           Linguistics.Common
@@ -220,7 +220,7 @@ getScores2 ss a b
 
 -- | (write me)
 
-prettyAli2 :: Double -> [(IMMC,IMMC)] -> IO ()
+prettyAli2 :: Double -> [(BTI,BTI)] -> IO ()
 prettyAli2 d s = do
   print d
   forM_ s $ \(x,xs) -> do
