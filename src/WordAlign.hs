@@ -61,7 +61,7 @@ data Config
   | TwoWay
     { scoreFile     :: String
     , bigramDef     :: Double
-    , unibiDef      :: Double
+--    , unibiDef      :: Double
     , gapOpen       :: Double
 --    , gapExtend     :: Double
     , lpblock       :: Maybe (String,String)
@@ -82,7 +82,7 @@ twowaySimple = TwoWaySimple
 twoway = TwoWay
   { scoreFile  = "" &= help "the file to read the scores from"
   , bigramDef  = (-20) &= help "score to use for unknown bigram matches"
-  , unibiDef   = (-5) &= help "score to close a gap if the closing characters are unknown"
+--  , unibiDef   = (-5) &= help "score to close a gap if the closing characters are unknown"
   , gapOpen    = (-5) &= help "cost to open a gap"
 --  , gapExtend  = (-1) &= help "cost to extend a gap" -- we currently do not use the affine cost model. Should come later once a generic affine system is written in AlignmentAlgorithms
   , lpblock    = Nothing  &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"

@@ -33,13 +33,11 @@ The WordAlignment program comes with two modes, *twowaysimple* and *twoway*.
 
 ## TwoWay - Simple
 
-    WordAlign twowaysimple
-
-aligns words based on a simple scoring model. Gaps are scored with linear
-costs. Matches are scored based on a simple scoring file handling unigrams of
-characters. Even the simple model allows for the concept of equivalence
-classes. This makes it possible to not only score exact matches, but to give
-somewhat high scores to, say, two vowels that should be matched.
+```WordAlign twowaysimple``` aligns words based on a simple scoring model. Gaps
+are scored with linear costs. Matches are scored based on a simple scoring file
+handling unigrams of characters. Even the simple model allows for the concept
+of equivalence classes. This makes it possible to not only score exact matches,
+but to give somewhat high scores to, say, two vowels that should be matched.
 
 The following command-line options are provided:
 
@@ -49,56 +47,64 @@ The following command-line options are provided:
     --prettystupid
     --outfile=ITEM
 
-*--scorefile* is the simple score file to be used by the mode. the
+```--scorefile``` is the simple score file to be used by the mode. the
 *defaultSimpleScoring* file can be used as a template.
 
-*--lpblock* expects a pair of language names (Breton,Breton) or a pair of
+```--lpblock``` expects a pair of language names (Breton,Breton) or a pair of
 integers (3,3 or 4,6) and will then align only the given language pairs with
 each other. This option should be very helpful in case you want to parallelize
 the program.
 
-*--showmanual* will show this manual in plain text.
+```--showmanual``` will show this manual in plain text.
 
-*--prettystupid* will show a progress bar of the current language pair. It's
-pretty and helpful with smaller tasks but should not be used when you
+```--prettystupid``` will show a progress bar of the current language pair.
+It's pretty and helpful with smaller tasks but should not be used when you
 parallelize on a grid engine.
 
-*--outfile* writes to the given output file, not stdout. Actually required when
-*--prettystupid* is active.
+```--outfile``` writes to the given output file, not stdout. Actually required
+when ```--prettystupid``` is active.
 
 
 
 ## TwoWay (Complex Scoring)
 
-In addition, a score file needs to be given (--scorefile) with
+The complex scoring model uses linear gap costs. In contrast to the simple
+model above, however, character matching is now performed in a bigram context.
 
-language name
-character (bigram 1.1)
-character (bigram 1.2)
-language name
-character (bigram 2.1)
-character (bigram 2.2)
-score
+The required score file is currently using an in-house format with the
+following columns all required (with whitespace, not tab between the entries):
 
-Albanian_Tosk \' a Albanian_Tosk \' a 4.25238
-Albanian_Tosk \' a Albanian_Tosk \' b 0.402228
-Albanian_Tosk \' a Albanian_Tosk \' g 1.07432
+* language name
+* character (bigram 1.1)
+* character (bigram 1.2)
+* language name
+* character (bigram 2.1)
+* character (bigram 2.2)
+* score
 
+Three example lines
 
-Some additional pieces of information are required. First is the default score
-given whenever a pair of bigrams can not be matched against in the score file.
-This defualt score (--defaultscore) defaults to (-42) due to popular
-requirement. If the first line in the score file contains just a single double
-value, that value is taken instead. Second, the cost to open a gap (--gapopen)
-needs to be given. It defaults to (0) which is probably to high, as now it is
-mostly better to just score two in/dels instead of a slightly worse match.
+    Albanian_Tosk \' a Albanian_Tosk \' a 4.25238
+    Albanian_Tosk \' a Albanian_Tosk \' b 0.402228
+    Albanian_Tosk \' a Albanian_Tosk \' g 1.07432
 
-Once this data is available, start the program. Here, we restrict ourselves to
-the albanian language (albanian.input), from which a only take the three first
-words. Then we call the WordAlign program, asking for twoway alignments
-(twoway), using just the scores for the albanian language (-s albanian.scores).
-We set the gapopen cost to (-2) with (-g -2), and if you need program runtime
-statistics, you may add (+RTS -s -RTS), but that is not required.
+In addition to the scoring file, set via ```--scorefile```, the default score
+constant and the gap cost constant need to be set.
+
+```--bigramdef=NUM``` is the score given to unknown matches.
+
+```--gapopen=NUM``` is the score given to each gap character (and not just the
+opening score)
+
+```--lpblock``` as above
+
+```--showmanual``` as above
+
+```--prettystupid``` as above
+
+```--outfile``` as above
+
+An example output is given below.
 
 The output are four lines for each alignment. An info line with the word ids
 (IDS), the alignment score (SCORE), the normalized scores (NSCORE) and the
@@ -106,70 +112,28 @@ actual words, started by (WORDS) and interleaved by (WORD). The next two lines
 are the alignment, with deletions showning up as minus symbols (---) in the
 deletion field. Note that a deletion does not delete a character from the
 input, it merely aligns an existing character in one alignment with the symbol
-for deletion (--) in the other.  After the alignment follows one empty line.
+for deletion (--) in the other. The final line provides the per-column score
+for the alignment. After the alignment follows one empty line.
 
 The normalized score is defined as SCORE / maximum of input word lengths
 
-cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twoway -s albanian.scores
+```cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twoway -s albanian.scores```
 
-IDS: 0 1 SCORE: -1.28 NSCORE: -0.18    WORDS: ^ \' b o t ə $   WORD   ^ ð e $
- ^ \' b o t ə $
- ^ -- - ð e - $
+yields:
 
-IDS: 0 2 SCORE: 1.46 NSCORE: 0.12    WORDS: ^ \' b o t ə $   WORD   ^ r̃ o k u lʸ i a\' lʸ e m $
- ^ -- - \' -  b -   o  t ə $ -
- ^ r̃ o  k u lʸ i a\' lʸ e m $
-
-IDS: 1 2 SCORE: -1.56 NSCORE: -0.13    WORDS: ^ ð e $   WORD   ^ r̃ o k u lʸ i a\' lʸ e m $
- ^ -- - ð - -- -   e -- $ - -
- ^ r̃ o k u lʸ i a\' lʸ e m $
-
-
-
-In addition, a simplified scoring model is available. Here, the word delimiters
-(^) and ($) are not required, as the scoring model does not score the initial
-and last character differently. The simplified scoring model consists of:
-consonant equality, both consonant, vowel equality, both vowel, both of type
-"other", and vowel vs. consonant. With scores of 3,1,1,0,0,-1 by default. Gap
-costs are set via --gapopen with -1 by default.
-
- cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twowaysimple
-IDS: 0 1 SCORE: -3.00 NSCORE: -0.60    WORDS: \' b o t ə   WORD   ð e
- \' b o t ə
-  ð - e - -
-
-IDS: 0 2 SCORE: -3.00 NSCORE: -0.30    WORDS: \' b o t ə   WORD   r̃ o k u lʸ i a\' lʸ e m
- \' - b o  t ə --- -- - -
- r̃ o k u lʸ i a\' lʸ e m
-
-IDS: 1 2 SCORE: -7.00 NSCORE: -0.70    WORDS: ð e   WORD   r̃ o k u lʸ i a\' lʸ e m
-  ð - - - -- - --- -- e -
- r̃ o k u lʸ i a\' lʸ e m
+    IDS: 1 2 SCORE: 32.85 NSCORE: 5.48    WORDS: ^ d o u a r $   WORD   ^ d o u a r $
+       ^   d   o   u   a   r   $
+       ^   d   o   u   a   r   $
+     0.0 4.8 5.9 4.1 6.6 4.6 6.8
+    
+    IDS: 1 3 SCORE: -12.36 NSCORE: -1.77    WORDS: ^ d o u a r $   WORD   ^ p o u l t r $
+         ^     d     -     o     u     a     r     -     -     $
+         ^     p     o     -     u     -     l     t     r     $
+       0.0   0.3  -5.0  -5.0   4.1  -5.0 -20.0  -5.0  -5.0   6.8
 
 
 
-
-
-
-
-## Some Notes
-
-The scoring data is ~800 mbyte on disk. In memory this grows to ~4000 mbyte due
-to data structure overhead.
-
-Overhead can be reduced by selecting input from a restricted set of languages
-in each run. There is no need to filter the scoring table, that is done
-automatically!
-
-Initial creation of all data structures takes some time (3-4 minutes, if all
-languages are present). For batch runs (--batch batchsize,start) it is a very
-good idea to select a batch size that is quite large. Selecting 1-10 million
-elements for two-way alignments is good. A lot fewer for three-way and four-way
-alignments.
-
-Typical numbers for alignments / second:
-
-two-way: 5.000 - 10.000 alignments / second, on a Core i5
+## Performance Notes
 
 
 
