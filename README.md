@@ -64,6 +64,9 @@ parallelize on a grid engine.
 ```--outfile``` writes to the given output file, not stdout. Actually required
 when ```--prettystupid``` is active.
 
+```--nobacktrack``` disables backtracking. Sometimes just the alignment score
+is enough.
+
 
 
 ## TwoWay (Complex Scoring)
@@ -104,6 +107,8 @@ opening score)
 
 ```--outfile``` as above
 
+```--nobacktrack``` as above
+
 An example output is given below.
 
 The output are four lines for each alignment. An info line with the word ids
@@ -135,7 +140,21 @@ yields:
 
 ## Performance Notes
 
+Measured on a core i5-3570K @ 3.40 GHz; single-threaded.
 
+The program is not compiled for multi-threading, if you need this consider the
+```--lpblock``` option first. Otherwise, send a mail.
+
+The running time for calculating 100 000 alignments is:
+
+    Mode              Seconds     Alignments per Second
+    ====              =======     =====================
+    TwoWay Simple:     6.7 s        ~ 15 000
+    TwoWay Complex:   15.8 s        ~  6 300
+
+Disabling backtracking (to get just the alignment scores) improves performance
+by roughly a factor of ```x 2```. Words are very short, backtracking overhead
+is quite large!
 
 #### Contact
 

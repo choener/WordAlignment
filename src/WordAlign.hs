@@ -57,6 +57,7 @@ data Config
     , showManual    :: Bool
     , prettystupid  :: Bool
     , outfile       :: String
+    , nobacktrack   :: Bool
     }
   | TwoWay
     { scoreFile     :: String
@@ -68,6 +69,7 @@ data Config
     , showManual    :: Bool
     , prettystupid  :: Bool
     , outfile       :: String
+    , nobacktrack   :: Bool
     }
   deriving (Show,Data,Typeable)
 
@@ -77,6 +79,7 @@ twowaySimple = TwoWaySimple
   , showManual = False    &= help "show the manual and quit"
   , prettystupid = False
   , outfile      = ""
+  , nobacktrack   = False
   } &= help "Align words based on a simple, linear scoring model for gaps, and an unigram model for matches."
 
 twoway = TwoWay
@@ -89,6 +92,7 @@ twoway = TwoWay
   , prettystupid = False  &= help "a pretty stupid developer option"
   , outfile      = ""     &= help "write output to this file"
   , showManual = False
+  , nobacktrack   = False
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
 config = [twowaySimple, twoway]
@@ -137,7 +141,7 @@ run2Simple TwoWaySimple{..} wss = do
       let (d,xs) = alignGlobal scoring 1 (wordWord x) (wordWord y)
       -- print backtraces
       --mapM_ (prettyAli2 d) xs
-      let sss = TL.toLazyText $ buildAlignmentSimple 0 ([x,y],(d,xs))
+      let sss = TL.toLazyText $ buildAlignmentSimple 0 ([x,y],(d,if nobacktrack then [] else xs))
       TL.hPutStr hndl sss
       when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
 
@@ -164,7 +168,7 @@ run2 TwoWay{..} wss = do
     let sco = getScores2 scoring (wordLang hx) (wordLang hy)
     -- align the words the in @ws@ pairing
     let as = map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-                              in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,bts))
+                              in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
                             )
                  ) ws
     forM_ (as) {- `using` parBuffer 100 rseq)-} $ \ali -> do
@@ -231,21 +235,20 @@ prettyAli2 d s = do
   putStrLn ""
 
 buildAlignmentSimple :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Builder
-buildAlignmentSimple k (ws,(s,([xs']))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
+buildAlignmentSimple k (ws,(s,(xs))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
   ids = concat . intersperse " " . map (show . wordID)   $ ws
   wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
   ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   hdr = T.pack $ printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  ls  = buildLines xs'
+  ls  = case xs of [] -> "" ; [xs'] -> buildLines xs'
 
 buildAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Builder
-buildAlignment k (ws,(s,([xs']))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
-  xs = ["^","^","0.0"] : xs'
+buildAlignment k (ws,(s,(xss))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
   ids = concat . intersperse " " . map (show . wordID)   $ ws
   wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
   ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
   hdr = T.pack $ printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
-  ls  = buildLines xs
+  ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
 
 --printAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[(IMCp,IMCp)]])) -> IO ()
 --printAlignment k (ws,(s,(xs))) = do
