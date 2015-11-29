@@ -4,37 +4,38 @@
 module Main where
 
 import           Control.Arrow ((***))
+import           Control.Concurrent (threadDelay)
 import           Control.Monad (forM_,when)
-import           Data.Maybe (isJust)
-import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0,rseq,evalBuffer,parList,evalList,evalTuple3)
+import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0,rseq,evalBuffer,parList,evalList,evalTuple3,evalTuple5)
 import           Data.FileEmbed
 import           Data.Function (on)
 import           Data.List (sortBy,groupBy,intersperse,genericLength)
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Maybe (isJust)
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple
+import           Data.Text (Text)
+import           Data.Version (showVersion)
+import           Debug.Trace
 import           Debug.Trace (trace)
+import           GHC.Conc (numCapabilities)
+import           GHC.IO.Handle
 import           Prelude hiding (Word)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as VU
-import           System.Console.CmdArgs
-import           Text.Printf
-import           Text.Read (readMaybe)
-import           Debug.Trace
-import           Data.Version (showVersion)
-import           Control.Concurrent (threadDelay)
-import qualified System.Console.AsciiProgress as CAP
-import           GHC.IO.Handle
-import           System.IO
-import           System.Exit
+import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
+import qualified System.Console.AsciiProgress as CAP
+import           System.Console.CmdArgs
+import           System.Exit
+import           System.IO
+import           Text.Printf
+import           Text.Read (readMaybe)
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -135,13 +136,14 @@ run2Simple TwoWaySimple{..} wss = do
               printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
               Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
             else return Nothing
-    -- for each pair of words
-    forM_ ws $ \(x,y) -> do
-      -- calculate score and all co-optimal backtraces
-      let (d,xs) = alignGlobal scoring 1 (wordWord x) (wordWord y)
-      -- print backtraces
-      --mapM_ (prettyAli2 d) xs
-      let sss = TL.toLazyText $ buildAlignmentSimple 0 ([x,y],(d,if nobacktrack then [] else xs))
+    let alis = [ (x,y,d,bts,sss)
+               | (x,y) <- ws
+               , let (d,bts') = alignGlobal scoring 1 (wordWord x) (wordWord y)  -- calculate score and all co-optimal backtraces
+               , let bts = if nobacktrack then [] else bts'
+               , let sss = TL.toLazyText $ buildAlignmentSimple 0 ([x,y],(d,bts)) -- make nice strings
+               ]
+    -- print the actual alignments
+    forM_ alis $ \(x,y,d,bts,sss) -> do
       TL.hPutStr hndl sss
       when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
 

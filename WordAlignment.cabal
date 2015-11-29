@@ -123,7 +123,6 @@ executable WordAlign
   ghc-options:
     -fsimpl-tick-factor=900
     -rtsopts
-    -threaded
     -O2
     -funfolding-use-threshold100
     -funfolding-keeness-factor100
