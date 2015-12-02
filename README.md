@@ -3,9 +3,33 @@
 # Word alignments in natural languages
 
 This library and program are designed for the alignment of *words* in human
-languages. Each word is encoded as a list of *characters*. A single
-*character*, however, is encoded as a *list of unicode symbols*, not just a
-single symbol.
+languages.
+
+Implemented with ideas described in:
+
+1.  Christian Hoener zu Siederdissen  
+    *Sneaking Around ConcatMap: Efficient Combinators for Dynamic Programming*  
+    2012, Proceedings of the 17th ACM SIGPLAN international conference on Functional programming  
+    [paper](http://doi.acm.org/10.1145/2364527.2364559) [preprint](http://www.tbi.univie.ac.at/newpapers/pdfs/TBI-p-2012-2.pdf)  
+1.  Andrew Farmer, Christian Höner zu Siederdissen, and Andy Gill.  
+    *The HERMIT in the stream: fusing stream fusion’s concatMap*  
+    2014, Proceedings of the ACM SIGPLAN 2014 workshop on Partial evaluation and program manipulation.  
+    [paper](http://dl.acm.org/citation.cfm?doid=2543728.2543736)  
+1.  Christian Höner zu Siederdissen, Ivo L. Hofacker, and Peter F. Stadler.  
+    *Product Grammars for Alignment and Folding*  
+    2014, IEEE/ACM Transactions on Computational Biology and Bioinformatics. 99  
+    [paper](http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=6819790)  
+1.  Christian Höner zu Siederdissen, Sonja J. Prohaska, and Peter F. Stadler  
+    *Algebraic Dynamic Programming over General Data Structures*  
+    2015, BMC Bioinformatics  
+    [preprint](http://www.bioinf.uni-leipzig.de/Software/gADP/preprints/hoe-pro-2015.pdf)  
+
+
+
+## Usage
+
+Each word is encoded as a list of *characters*. A single *character*, however,
+is encoded as a *list of unicode symbols*, not just a single symbol.
 
 This particular encoding is necessary because there is no general one-to-one
 mapping of atomic alphabet symbols to unicode characters. Just consider
@@ -31,7 +55,9 @@ characters should be left out.)
 
 The WordAlignment program comes with two modes, *twowaysimple* and *twoway*.
 
-## TwoWay - Simple
+
+
+### TwoWay - Simple
 
 ```WordAlign twowaysimple``` aligns words based on a simple scoring model. Gaps
 are scored with linear costs. Matches are scored based on a simple scoring file
@@ -69,7 +95,7 @@ is enough.
 
 
 
-## TwoWay (Complex Scoring)
+### TwoWay (Complex Scoring)
 
 The complex scoring model uses linear gap costs. In contrast to the simple
 model above, however, character matching is now performed in a bigram context.
@@ -138,7 +164,7 @@ yields:
 
 
 
-## Performance Notes
+### Performance Notes
 
 Measured on a core i5-3570K @ 3.40 GHz; single-threaded.
 
@@ -162,7 +188,7 @@ combination of multiple unicdoe symbols.
 
 
 
-## Three- and Four-way Alignments
+### Three- and Four-way Alignments
 
 These are currently disabled. If you need them, consider contacting me.
 
