@@ -2,7 +2,7 @@
 -------
 
 - using BTI types instead of IMMC
-- backtracking pretty printing moved to PRETTY-PRINT-LIB-NAME (TODO!)
+- backtracking pretty printing with Text-Builders
 - updated README.md (TODO!)
 
 0.0.4.0

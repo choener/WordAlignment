@@ -12,10 +12,11 @@ build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
 tested-with:    GHC == 7.8.4, GHC == 7.10.2
-synopsis:       Bigram word alignments in 2-4 dimensions.
+synopsis:       Bigram word pair alignments.
 description:
                 The library provides fast dynamic programming algorithms to
-                align 2-4 words using bigram scoring.
+                align word pairs using either a simple or a bigram scoring
+                scheme.
 
 
 

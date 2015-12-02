@@ -19,7 +19,8 @@ extra-deps:
 - FormalGrammars-0.2.1.1
 - GrammarProducts-0.1.1.1
 - intern-0.9.1.4
-- NaturalLanguageAlphabets-0.0.2.0
+- LinguisticsTypes-0.0.0.2
+- NaturalLanguageAlphabets-0.1.0.0
 - OrderedBits-0.0.1.0
 - PrimitiveArray-0.7.0.0
 - storable-record-0.0.3

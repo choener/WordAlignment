@@ -156,6 +156,18 @@ Disabling backtracking (to get just the alignment scores) improves performance
 by roughly a factor of ```x 2```. Words are very short, backtracking overhead
 is quite large!
 
+As in: the number of actual /unicode/ symbols is approximately the same as the
+number of forward DP cells to be filled, since each /character/ can be a
+combination of multiple unicdoe symbols.
+
+
+
+## Three- and Four-way Alignments
+
+These are currently disabled. If you need them, consider contacting me.
+
+
+
 #### Contact
 
 Christian Hoener zu Siederdissen  
