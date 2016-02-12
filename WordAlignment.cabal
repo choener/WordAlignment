@@ -26,6 +26,13 @@ Extra-Source-Files:
 
 
 
+flag debug
+  description:  dump intermediate Core files
+  default:      False
+  manual:       True
+
+
+
 library
   build-depends: base                       >= 4.7      && < 4.9
                , ADPfusion                  >= 0.4.0.2  && < 0.5.2
@@ -89,6 +96,11 @@ library
   ghc-options:
     -fsimpl-tick-factor=900
     -O2
+  if flag(debug)
+    ghc-options:
+      -ddump-to-file
+      -ddump-simpl
+      -dsuppress-all
 
 
 

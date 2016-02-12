@@ -41,7 +41,7 @@ type SigT m x r = SigGlobal m x r IMCp IMCp
 
 
 sScore :: Monad m => Double -> Double -> Scores -> SigT m Double Double
-sScore dS gapopen s = SigGlobal
+sScore !dS !gapopen !s = SigGlobal
   { delin = \ww (Z:.c     :._     ) -> ww + gapopen
   , indel = \ww (Z:._     :.c     ) -> ww + gapopen
   , align = \ww (Z:.(lp,l):.(up,u)) -> ww + lkup up u lp l
@@ -49,7 +49,7 @@ sScore dS gapopen s = SigGlobal
   , h         = SM.foldl' max (-888888)
   } where
     lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault dS (Bigram mc' c :!: Bigram nd' d) s
-    {-# NoInline lkup #-}
+    {-# Inline lkup #-}
 {-# INLINE sScore #-}
 {-
 sScore dS gapOpen s = SigGlobal
@@ -84,21 +84,23 @@ sBacktrackFun defS go sco = backtrackFun f g ("-","-") ("-","-") where
 {-# Inline sBacktrackFun #-}
 
 alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[Text]]])
-alignGlobal ds gapopen scoring k i1' i2' = (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
-  i1 = VU.zip i1' (VU.tail i1') ; i2 = VU.zip i2' (VU.tail i2')
+alignGlobal !ds !gapopen !scoring !k !i1' !i2' = {-# SCC "aliGlob" #-} (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
+  i1 = mkI i1' ; i2 = mkI i2'
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward ds gapopen scoring i1 i2
   d = unId $ axiom t
   bs = alignGlobalBacktrack ds gapopen scoring i1 i2 t
+  mkI m = {-# SCC "mkI" #-} VU.zip m (VU.tail m)
 {-# NoInline alignGlobal #-}
 
 alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
-alignGlobalForward ds gapopen scoring i1 i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ 
+alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ {-# SCC "ali_forw/g" #-}
   gGlobal (sScore ds gapopen scoring)
-    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) mkAlloc )
     (chr i1) (chr i2)
   where n1 = VU.length i1
         n2 = VU.length i2
+        mkAlloc = {-# SCC "ali_forw_alloc" #-} fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []
 {-# NoInline alignGlobalForward #-}
 
 alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[[Text]]]

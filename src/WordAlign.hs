@@ -28,6 +28,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
+import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import qualified System.Console.AsciiProgress as CAP
@@ -71,6 +72,7 @@ data Config
     , prettystupid  :: Bool
     , outfile       :: String
     , nobacktrack   :: Bool
+    , serialized    :: Bool
     }
   deriving (Show,Data,Typeable)
 
@@ -94,6 +96,7 @@ twoway = TwoWay
   , outfile      = ""     &= help "write output to this file"
   , showManual = False
   , nobacktrack   = False
+  , serialized = False
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
 config = [twowaySimple, twoway]
@@ -122,22 +125,23 @@ main = do
 
 -- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.
 
-run2Simple :: Config -> [[(Word,Word)]] -> IO ()
+run2Simple :: Config -> WSS -> IO ()
 run2Simple TwoWaySimple{..} wss = do
   hndl <- if null outfile then return stdout else openFile outfile AppendMode
   scoring <- simpleScoreFromFile scoreFile
   let wsslen = length wss
   -- for each language pairing
-  forM_ (zip [1 :: Int ..] wss) $ \(k,ws) -> do
+  V.forM_ (V.indexed wss) $ \(k',ws) -> do
+    let k = k'+1
     pg <- if prettystupid
             then do
-              let len = genericLength ws
-              let (x,y) = head ws
+              let len = fromIntegral $ V.length ws
+              let (x,y) = V.head ws
               printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
               Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
             else return Nothing
     let alis = [ (x,y,d,bts,sss)
-               | (x,y) <- ws
+               | (x,y) <- V.toList ws
                , let (d,bts') = alignGlobal scoring 1 (wordWord x) (wordWord y)  -- calculate score and all co-optimal backtraces
                , let bts = if nobacktrack then [] else bts'
                , let sss = TL.toLazyText $ buildAlignmentSimple 0 ([x,y],(d,bts)) -- make nice strings
@@ -149,33 +153,44 @@ run2Simple TwoWaySimple{..} wss = do
 
 -- | Given a @Config@ and a @List of List of Word-Pairs@ align everything.
 
-run2 :: Config -> [[(Word,Word)]] -> IO ()
-run2 TwoWay{..} wss = do
+run2 :: Config -> WSS -> IO ()
+run2 TwoWay{..} wss = {-# SCC "run2" #-} do
   hndl <- if null outfile then return stdout else openFile outfile AppendMode
   let wsslen = length wss
   -- build up scoring system
-  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map head $ wss
+  let chkLs = S.fromList . map wordLang . concat . V.toList . V.map (\(x,y) -> [x,y]) . V.map V.head $ wss
   scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
   -- for each language pairing
-  forM_ (zip [1 :: Int ..] wss) $ \(k,ws) -> do
+  V.forM_ (V.indexed wss) $ \(k',ws) -> do
+    let k = k'+1
     pg <- if prettystupid
             then do
-              let len = genericLength ws
-              let (x,y) = head ws
+              let len = fromIntegral $ V.length ws
+              let (x,y) = V.head ws
               printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
               Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
             else return Nothing
     -- get score pairing
-    let (hx,hy) = head ws
-    let sco = getScores2 scoring (wordLang hx) (wordLang hy)
-    -- align the words the in @ws@ pairing
-    let as = map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-                              in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
-                            )
-                 ) ws
-    forM_ (as) {- `using` parBuffer 100 rseq)-} $ \ali -> do
-      when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
-      TL.hPutStr hndl ali
+    let (hx,hy) = V.head ws
+    let sco = {-# SCC "run2/sco" #-} getScores2 scoring (wordLang hx) (wordLang hy)
+    if not serialized
+    then do
+      -- align the words the in @ws@ pairing
+      let as = {-# SCC "run2/as" #-}
+                V.map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
+                                   in  TL.toLazyText $ buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
+                                 )
+                      ) ws
+      V.forM_ (as) {- `using` parBuffer 100 rseq)-} $ \ali -> do
+        when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
+        TL.hPutStr hndl ali
+    else do
+      let as = {-# SCC "run2/ser" #-}
+                V.map (\(x,y) -> ( let (d,_) = BI.alignGlobal bigramDef gapOpen sco 0 (wordWord x) (wordWord y)
+                                   in  (wordID x, wordID y, d)
+                                 )
+                      ) ws
+      print as
 
 -- | Given a set of words from different languages, we want to do two
 -- things:
@@ -189,8 +204,8 @@ run2 TwoWay{..} wss = do
 -- happens to be the first language). We allow numeric identification as
 -- that is easier for scripts to handle.
 
-blockSelection2 :: Maybe (String,String) -> [Word] -> [[(Word,Word)]]
-blockSelection2 s ws = go (mkCmp s)
+blockSelection2 :: Maybe (String,String) -> [Word] -> WSS -- [[(Word,Word)]]
+blockSelection2 s ws = {-# SCC "blockSelection2" #-} V.fromList $ map V.fromList $ go (mkCmp s)
         -- grouping words by their languages
   where gs = zip [1..] $ groupBy ((==) `on` wordLang) ws
         ls = M.fromList $ map (\(k,(v:_)) -> (show $ wordLang v,k)) gs
@@ -214,6 +229,8 @@ blockSelection2 s ws = go (mkCmp s)
           , Just b' <- M.lookup b ls = \k l -> a'==k && b'==l
         -- the user did provide crappy input
         mkCmp (Just (a,b)) = \k l -> traceShow ("Unknown languages or ID's: " ++ a ++ " , " ++ b) $ False
+
+type WSS = V.Vector (V.Vector (Word,Word))
 
 -- | (write me)
 
@@ -245,7 +262,7 @@ buildAlignmentSimple k (ws,(s,(xs))) = TL.fromText hdr `mappend` ls `mappend` "\
   ls  = case xs of [] -> "" ; [xs'] -> buildLines xs'
 
 buildAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Builder
-buildAlignment k (ws,(s,(xss))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
+buildAlignment k (ws,(s,(xss))) = {-# SCC "pretty_ali" #-} TL.fromText hdr `mappend` ls `mappend` "\n" where
   ids = concat . intersperse " " . map (show . wordID)   $ ws
   wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
   ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
