@@ -49,7 +49,7 @@ sScore dS gapopen s = SigGlobal
   , h         = SM.foldl' max (-888888)
   } where
     lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault dS (Bigram mc' c :!: Bigram nd' d) s
-    {-# INLINE lkup #-}
+    {-# NoInline lkup #-}
 {-# INLINE sScore #-}
 {-
 sScore dS gapOpen s = SigGlobal

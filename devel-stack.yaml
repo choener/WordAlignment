@@ -1,7 +1,7 @@
 # For more information, see: https://github.com/commercialhaskell/stack/blob/master/doc/yaml_configuration.md
 
 # Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-3.18
+resolver: lts-5.2
 
 # Local packages, usually specified by relative directory name
 packages:
@@ -18,27 +18,37 @@ packages:
   extra-dep: true
 - location: ../Lib-GrammarProducts/
   extra-dep: true
+- location: ../Lib-PrimitiveArray/
+  extra-dep: true
+- location: ../Lib-bimaps/
+  extra-dep: true
+- location:
+    git: https://github.com/yamadapc/haskell-ascii-progress
+    commit: 8482c6bdabe885a34f89c0b16c62e60b30c2e457
+  extra-dep: true
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
 - ADPfusion-0.5.1.0
 - AlignmentAlgorithms-0.0.2.1
-- ascii-progress-0.3.2.0
-- bimaps-0.0.0.4
+#- ascii-progress-0.3.2.0
+- bimaps-0.0.1.0
 - cereal-text-0.1.0.1
-- concurrent-output-1.7.1
+#- concurrent-output-1.7.1
 - control-monad-omega-0.3.1
-- FormalGrammars-0.3.0.0
-- GrammarProducts-0.1.1.1
+#- FormalGrammars-0.3.0.0
+#- GrammarProducts-0.1.1.1
 - intern-0.9.1.4
-- NaturalLanguageAlphabets-0.1.0.0
+#- NaturalLanguageAlphabets-0.1.0.0
 - OrderedBits-0.0.1.0
-- PrimitiveArray-0.7.0.0
+- PrimitiveArray-0.7.1.0
 - storable-record-0.0.3
 - storable-tuple-0.0.2
-- tuple-th-0.2.5
-- utility-ht-0.0.11
-- vector-0.11.0.0
+#- tuple-th-0.2.5
+#- utility-ht-0.0.11
+#- vector-0.11.0.0
+- tuple-0.3.0.2
+- OneTuple-0.2.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}
