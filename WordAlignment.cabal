@@ -106,7 +106,7 @@ library
 
 executable WordAlign
   build-depends: base
-               , ascii-progress             >= 0.3.2    && < 0.4
+               , ascii-progress             >= 0.3.2    &&  < 0.4
                , bytestring
                , cmdargs                    == 0.10.*
                , containers
@@ -114,10 +114,11 @@ executable WordAlign
                , intern
                , LinguisticsTypes
                , NaturalLanguageAlphabets
-               , parallel                   >= 3.2      && < 3.3
+               , parallel                   >= 3.2      &&  < 3.3
                , strict
                , stringable
                , text
+               , text-format                >= 0.3      &&  < 0.4
                , unordered-containers
                , vector
                , WordAlignment

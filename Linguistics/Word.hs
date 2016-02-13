@@ -11,6 +11,9 @@ import           Control.DeepSeq
 import           Data.ByteString (ByteString)
 import           Data.Interned
 import           Data.Interned.ByteString
+import           Data.List (intersperse)
+import           Data.Stringable
+import           Prelude hiding (Word)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
 import qualified Data.Attoparsec.ByteString.Lazy as ABL
@@ -18,9 +21,9 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
+import qualified Data.Text.Lazy as TL
 import qualified Data.Vector.Unboxed as VU
-import           Prelude hiding (Word)
-import           Data.Stringable
+import qualified Data.Text.Lazy.Builder as TLB
 
 import           NLP.Text.BTI
 
@@ -74,4 +77,17 @@ removeWordDelims w
   | VU.length ww >= 2 && VU.head ww == "^" && VU.last ww == "$" = w { wordWord = VU.init . VU.tail $ wordWord w }
   | otherwise = w
   where ww = wordWord w
+
+-- | Format a 'Word' as a lazy text with interspersed white space.
+
+wordLazyTextWS :: Word -> TL.Text
+wordLazyTextWS = TLB.toLazyText . wordLazyTextWSB
+{-# Inline wordLazyTextWS #-}
+
+-- | A Builder for the actual word in a 'Word'. With intersperse white
+-- space.
+
+wordLazyTextWSB :: Word -> TLB.Builder
+wordLazyTextWSB = mconcat . intersperse " " . map (TLB.fromText . toText) . VU.toList . wordWord
+{-# Inline wordLazyTextWSB #-}
 
