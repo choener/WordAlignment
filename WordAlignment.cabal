@@ -23,6 +23,7 @@ description:
 Extra-Source-Files:
   README.md
   changelog.md
+  stack.yaml
 
 
 
