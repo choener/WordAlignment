@@ -116,6 +116,7 @@ executable WordAlign
                , NaturalLanguageAlphabets
                , parallel                   >= 3.2      && < 3.3
                , strict
+               , stringable
                , text
                , unordered-containers
                , vector

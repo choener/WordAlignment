@@ -20,7 +20,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/yamadapc/haskell-ascii-progress
-    commit: 8482c6bdabe885a34f89c0b16c62e60b30c2e457
+    commit: ff40bd46d611e88ed016f2440dfef5bbfa1bbef1
   extra-dep: true
 
 extra-deps:
