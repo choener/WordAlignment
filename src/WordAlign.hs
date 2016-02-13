@@ -280,13 +280,11 @@ buildAlignment k (ws,(s,(xss)))
                               `mappend` ls
                               `mappend` "\n"
     where
-      wds = mconcat . intersperse "   WORD   " $ map wordLazyTextWSB ws
+      wds = wordLazyTextWSB (ws!!0) `mappend` "   WORD: " `mappend` wordLazyTextWSB (ws!!1)
       ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-      hdr = TF.format "IDS: {} {} SCORE: {} NSCORE: {}    WORDS: " (wid0, wid1, TF.fixed 2 s, TF.fixed 2 ns)
+      hdr = TF.format "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
+                (wid0, wid1, TF.left 6 ' ' $ TF.fixed 2 s, TF.left 6 ' ' $ TF.fixed 2 ns)
       wid0 = wordID $ ws!!0
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
---      ids = concat . intersperse " " . map (show . wordID)   $ ws
---      wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
---      hdr = T.pack $ printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
 
