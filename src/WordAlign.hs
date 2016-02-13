@@ -130,8 +130,7 @@ run2Simple TwoWaySimple{..} wss = do
   scoring <- simpleScoreFromFile scoreFile
   let wsslen = length wss
   -- for each language pairing
-  forM_ (zip [1::Int ..] wss) $ \(k,ws) -> do
-    let len = genericLength ws
+  forM_ (zip [1::Int ..] wss) $ \(k,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
     {-
@@ -150,22 +149,25 @@ run2Simple TwoWaySimple{..} wss = do
                ]
     -- print the actual alignments
     forM_ alis $ \(x,y,d,bts,sss) -> do
-      when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy (len::Int) k
+      when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl sss
       --when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
 
 -- | Given a @Config@ and a @List of List of Word-Pairs@ align everything.
+--
+-- TODO Can we get around explicitly forcing the outer spine and the first
+-- element of each inner pairing?
 
 run2 :: Config -> WSS -> IO ()
 run2 TwoWay{..} wss = {-# SCC "run2" #-} do
   hndl <- if null outfile then return stdout else openFile outfile AppendMode
   let wsslen = length wss
-  -- build up scoring system
-  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map head $ wss
+  -- build up scoring system. This will force the spine of the
+  -- language-pairing list but should not force the pairs explicitly.
+  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
   scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
   -- for each language pairing
-  forM_ (zip [1::Int ..] wss) $ \(k,ws) -> do
-    let len = genericLength ws
+  forM_ (zip [1::Int ..] wss) $ \(k,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
     {-
@@ -189,7 +191,7 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
                     ) ws
       forM_ (zip [1::Int ..] as) $ \(!k,!ali) -> do
 --        when (k `mod` 1000 == 0) $ maybe (return ()) (`CAP.tickN` 1000) pg
-        when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy (len::Int) k
+        when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy len k
         TL.hPutStr hndl ali
 --      maybe (return ()) CAP.complete pg
     else do
@@ -211,19 +213,28 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
 -- running id of the language. I.e you can type @Breton@ or @1@ (if Breton
 -- happens to be the first language). We allow numeric identification as
 -- that is easier for scripts to handle.
+--
+-- (iii) We calculate the length of each language-pairing explicitly, not
+-- from @length list@ so to not force the list spine too early.
 
 blockSelection2 :: Maybe (String,String) -> [Word] -> WSS
 blockSelection2 s ws = {-# SCC "blockSelection2" #-} go (mkCmp s)
         -- grouping words by their languages, pair each language group with
         -- an index
   where gs = zip [1..] $ groupBy ((==) `on` wordLang) ws
+        -- length of each group
+        lgs = VU.fromList $ (-1) : map (length . Prelude.snd) gs
         -- Gives a map "Language String Name" -> Int (for the gs)
         ls = M.fromList $ map (\(k,(v:_)) -> (show $ wordLang v,k)) gs
+        -- what to store as length
+        calcLength k l
+          | k /= l    = lgs VU.! k * lgs VU.! l
+          | otherwise = (lgs VU.! k -1) * lgs VU.! l `div` 2
         -- produces the word pairs to be aligned
-        go f = [ [ (x,y)
+        go f = [ (calcLength k l,[ (x,y)
                  | (kk,x) <- zip [1..] xs, (ll,y) <- zip [1..] ys   -- actually enumerate the words
                  , k/=l || kk < ll                                  -- upper-tri for same group, otherwise all alignments
-                 ]
+                 ])
                | (k,xs) <- gs, (l,ys) <- gs -- @k@ and @l@ are word groups, i.e. language identifiers
                , f k l                      -- shall we accept this language combination
                ]
@@ -241,7 +252,7 @@ blockSelection2 s ws = {-# SCC "blockSelection2" #-} go (mkCmp s)
         -- the user did provide crappy input
         mkCmp (Just (a,b)) = \k l -> traceShow ("Unknown languages or ID's: " ++ a ++ " , " ++ b) $ False
 
-type WSS = [[(Word,Word)]] -- V.Vector (V.Vector (Word,Word))
+type WSS = [(Int,[(Word,Word)])] -- V.Vector (V.Vector (Word,Word))
 
 -- | (write me)
 
