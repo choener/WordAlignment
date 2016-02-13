@@ -167,7 +167,7 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
   let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
   scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
   -- for each language pairing
-  forM_ (zip [1::Int ..] wss) $ \(k,(len,ws)) -> do
+  forM_ (zip [1::Int ..] wss) $ \(tcnt,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
     {-
@@ -191,7 +191,7 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
                     ) ws
       forM_ (zip [1::Int ..] as) $ \(!k,!ali) -> do
 --        when (k `mod` 1000 == 0) $ maybe (return ()) (`CAP.tickN` 1000) pg
-        when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy len k
+        when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s || %7d %7d || %10d %10d\n" wLx wLy wsslen tcnt len k
         TL.hPutStr hndl ali
 --      maybe (return ()) CAP.complete pg
     else do
