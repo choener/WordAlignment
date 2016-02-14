@@ -96,11 +96,10 @@ alignGlobal !ds !gapopen !scoring !k !i1' !i2' = {-# SCC "aliGlob" #-} (d, take 
 alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
 alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ {-# SCC "ali_forw/g" #-}
   gGlobal (sScore ds gapopen scoring)
-    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) mkAlloc )
+    (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []) )
     (chr i1) (chr i2)
-  where n1 = VU.length i1
-        n2 = VU.length i2
-        mkAlloc = {-# SCC "ali_forw_alloc" #-} fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []
+  where !n1 = VU.length i1
+        !n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
 alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[[Text]]]

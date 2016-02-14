@@ -42,5 +42,5 @@ flags:
     debug: true
 
 ghc-options:
-  WordAlign: -fllvm -optlo-O3
+  WordAlign: -O2 -fllvm -optlo-O3
 
