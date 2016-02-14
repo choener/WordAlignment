@@ -40,6 +40,7 @@ import           Text.Printf
 import           Text.Read (readMaybe)
 import           Data.Stringable (toString)
 import qualified Data.Text.Format as TF
+import           Data.Monoid ((<>))
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -285,13 +286,9 @@ buildAlignmentSimple k (ws,(s,(xs))) = TL.fromText hdr `mappend` ls `mappend` "\
 
 buildAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Text
 buildAlignment k (ws,(s,(xss)))
-  = {-# SCC "pretty_ali" #-} TL.toLazyText $ TL.fromLazyText hdr
-                              `mappend` wds
-                              `mappend` "\n"
-                              `mappend` ls
-                              `mappend` "\n"
+  = {-# SCC "pretty_ali" #-} TL.toLazyText $ TL.fromLazyText hdr <> wds <> "\n" <> ls <> "\n"
     where
-      wds = wordLazyTextWSB (ws!!0) `mappend` "   WORD: " `mappend` wordLazyTextWSB (ws!!1)
+      wds = wordLazyTextWSB (ws!!0) <> "   WORD: " <> wordLazyTextWSB (ws!!1)
       ns = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
       hdr = TF.format "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
                 (wid0, wid1, TF.left 6 ' ' $ TF.fixed 2 s, TF.left 6 ' ' $ TF.fixed 2 ns)
