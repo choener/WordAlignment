@@ -7,6 +7,7 @@ import           Control.Arrow ((***),(&&&))
 import           Control.Concurrent (threadDelay)
 import           Control.Monad (forM_,when)
 import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0,rseq,evalBuffer,parList,evalList,evalTuple3,evalTuple5)
+import           Data.Aeson (encode)
 import           Data.FileEmbed
 import           Data.Function (on)
 import           Data.List (sortBy,groupBy,intersperse,genericLength)
@@ -48,6 +49,7 @@ import           NLP.Text.BTI
 
 import           Linguistics.Bigram
 import           Linguistics.Common
+import           Linguistics.TwoWay.Aligned
 import           Linguistics.TwoWay.Simple
 import           Linguistics.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB)
 import qualified Linguistics.TwoWay.Bigram as BI
@@ -171,37 +173,29 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
   forM_ (zip [1::Int ..] wss) $ \(tcnt,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
-    {-
-    pg <- if prettystupid
-            then do
-              let (x,y) = head ws
-              printf "[%4d / %4d] Language pair: %s / %s with %d alignments:\n" k wsslen (show $ wordLang x) (show $ wordLang y) len
-              Just <$> CAP.newProgressBar CAP.def { CAP.pgWidth = 100, CAP.pgTotal = len }
-            else return Nothing
-    -}
     -- get score pairing
     let (hx,hy) = head ws
-    let sco = {-# SCC "run2/sco" #-} getScores2 scoring (wordLang hx) (wordLang hy)
+    let !sco = {-# SCC "run2/sco" #-} getScores2 scoring (wordLang hx) (wordLang hy)
     if not serialized
     then do
       -- align the words the in @ws@ pairing
       let as = {-# SCC "run2/as" #-}
                 map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-                                 in  buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
+                                 in  seq d $ buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
                                )
                     ) ws
-      forM_ (zip [1::Int ..] as) $ \(!k,!ali) -> do
---        when (k `mod` 1000 == 0) $ maybe (return ()) (`CAP.tickN` 1000) pg
+      forM_ (zip [1::Int ..] as) $ \(k,ali) -> {-# SCC "run2/IO" #-} do
         when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s || %7d %7d || %10d %10d\n" wLx wLy wsslen tcnt len k
         TL.hPutStr hndl ali
---      maybe (return ()) CAP.complete pg
     else do
       let as = {-# SCC "run2/ser" #-}
                 map (\(x,y) -> ( let (d,_) = BI.alignGlobal bigramDef gapOpen sco 0 (wordWord x) (wordWord y)
                                  in  (wordID x, wordID y, d)
                                )
                     ) ws
-      print as
+--      let aliset = mkAlignedSet ws as
+--      BL.putStrLn $ encode aliset
+      BL.putStrLn $ encodeAlignedSet ws as
 
 -- | Given a set of words from different languages, we want to do two
 -- things:

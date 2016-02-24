@@ -24,17 +24,13 @@ packages:
   extra-dep: true
 
 extra-deps:
-- ADPfusion-0.5.1.0
-- AlignmentAlgorithms-0.0.2.1
-- bimaps-0.0.1.0
 - cereal-text-0.1.0.1
 - control-monad-omega-0.3.1
 - intern-0.9.1.4
 - OneTuple-0.2.1
 - OrderedBits-0.0.1.0
-- PrimitiveArray-0.7.1.0
 - storable-record-0.0.3
-- storable-tuple-0.0.2
+- storable-tuple-0.0.3.2
 - tuple-0.3.0.2
 
 flags:

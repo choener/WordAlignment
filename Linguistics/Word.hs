@@ -8,11 +8,13 @@ module Linguistics.Word where
 
 import           Control.Applicative
 import           Control.DeepSeq
+import           Data.Aeson
 import           Data.ByteString (ByteString)
 import           Data.Interned
 import           Data.Interned.ByteString
 import           Data.List (intersperse)
 import           Data.Stringable
+import           GHC.Generics
 import           Prelude hiding (Word)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
@@ -22,8 +24,8 @@ import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
 import qualified Data.Text.Lazy as TL
-import qualified Data.Vector.Unboxed as VU
 import qualified Data.Text.Lazy.Builder as TLB
+import qualified Data.Vector.Unboxed as VU
 
 import           NLP.Text.BTI
 
@@ -46,7 +48,15 @@ data Word = Word
   , wordLength :: {-# UNPACK #-} !Int
   , wordWord   :: {-# UNPACK #-} !(VU.Vector BTI)
   }
-  deriving (Show,Eq,Ord)
+  deriving (Show,Eq,Ord,Generic)
+
+instance ToJSON Word where
+  toJSON (Word i c lang len w) = object
+    [ "id"    .= i
+    , "class" .= c
+    , "lang"  .= lang
+    , "word"  .= w
+    ]
 
 instance NFData Word where
   rnf !(Word {}) = ()
