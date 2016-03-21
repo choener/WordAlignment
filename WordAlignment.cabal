@@ -110,7 +110,6 @@ library
 executable WordAlign
   build-depends: base
                , aeson
-               , ascii-progress             >= 0.3.2    &&  < 0.4
                , bytestring
                , cmdargs                    == 0.10.*
                , containers

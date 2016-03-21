@@ -32,7 +32,6 @@ import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
-import qualified System.Console.AsciiProgress as CAP
 import           System.Console.CmdArgs
 import           System.Exit
 import           System.IO
@@ -117,11 +116,10 @@ main = do
   when (prettystupid o && null (outfile o)) $ do
     putStrLn "The --prettystupid mode requires giving an --outfile"
     exitFailure
-  (if prettystupid o then CAP.displayConsoleRegions else id) $ do
-    ws <- BL.getContents >>= return . map parseWord . BL.lines
-    case o of
-      TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
-      TwoWay{..}       -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
+  ws <- BL.getContents >>= return . map parseWord . BL.lines
+  case o of
+    TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
+    TwoWay{..}       -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
 
 
 
