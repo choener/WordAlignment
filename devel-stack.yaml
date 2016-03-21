@@ -6,30 +6,21 @@ packages:
   extra-dep: true
 - location: ../Lib-LinguisticsTypes/
   extra-dep: true
-- location: ../Lib-ADPfusion/
-  extra-dep: true
-- location: ../Lib-FormalGrammars/
-  extra-dep: true
 - location: ../Lib-AlignmentAlgorithms/
-  extra-dep: true
-- location: ../Lib-GrammarProducts/
-  extra-dep: true
-- location: ../Lib-PrimitiveArray/
   extra-dep: true
 - location: ../Lib-bimaps/
   extra-dep: true
-- location:
-    git: https://github.com/yamadapc/haskell-ascii-progress
-    commit: ff40bd46d611e88ed016f2440dfef5bbfa1bbef1
-  extra-dep: true
 
 extra-deps:
+- ADPfusion-0.5.1.0
 - cereal-text-0.1.0.1
-- control-monad-omega-0.3.1
+- FormalGrammars-0.3.0.0
+- GrammarProducts-0.1.1.2
 - intern-0.9.1.4
 - OneTuple-0.2.1
 - OrderedBits-0.0.1.0
-- storable-record-0.0.3
+- PrimitiveArray-0.7.0.1
+- storable-record-0.0.3.1
 - storable-tuple-0.0.3.2
 - tuple-0.3.0.2
 
