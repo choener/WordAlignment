@@ -70,7 +70,7 @@ alignGlobal scoring k i1 i2 = (d, take k bs) where
   bs = alignGlobalBacktrack scoring i1 i2 t
 {-# NoInline alignGlobal #-}
 
-alignGlobalForward :: SimpleScoring -> Vector BTI -> Vector BTI -> Z:.ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
+alignGlobalForward :: SimpleScoring -> Vector BTI -> Vector BTI -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
 alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
   gGlobal (sScore scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
@@ -79,7 +79,7 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
         n2 = VU.length i2
 {-# NoInline alignGlobalForward #-}
 
-alignGlobalBacktrack :: SimpleScoring -> Vector BTI -> Vector BTI -> ITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[[Text]]]
+alignGlobalBacktrack :: SimpleScoring -> Vector BTI -> Vector BTI -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[[Text]]]
 alignGlobalBacktrack scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
   where (Z:.b) = gGlobal (sScore scoring <|| sBacktrackFun) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
