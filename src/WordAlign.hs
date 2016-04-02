@@ -77,6 +77,8 @@ data Config
     , outfile       :: String
     , nobacktrack   :: Bool
     , serialized    :: Bool
+    , filterScore   :: Maybe Double
+    , filterBacktrack :: Maybe Double
     }
   deriving (Show,Data,Typeable)
 
@@ -99,6 +101,8 @@ twoway = TwoWay
   , showManual = False
   , nobacktrack   = False
   , serialized = False
+  , filterScore = Nothing &= help "only print results with this score or higher"
+  , filterBacktrack = Nothing &= help "only provide backtracking results for results with this score or higher"
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
 config = [twowaySimple, twoway]
@@ -180,7 +184,7 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
       -- align the words the in @ws@ pairing
       let as = {-# SCC "run2/as" #-}
                 map (\(x,y) -> ( let (d,bts) = BI.alignGlobal 8 bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-                                 in  seq d $ buildAlignmentBuilder (-1) ([x,y],(d,if nobacktrack then [] else bts))
+                                 in  seq d $ scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter nobacktrack filterBacktrack d bts))
                                )
                     ) ws
       forM_ (zip [1::Int ..] as) $ \(k,ali) -> {-# SCC "run2/IO" #-} do
@@ -195,6 +199,13 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
 --      let aliset = mkAlignedSet ws as
 --      BL.putStrLn $ encode aliset
       BL.putStrLn $ encodeAlignedSet ws as
+
+scoreFilter (Just z) d blder | z > d = mempty
+scoreFilter _        _ blder = blder
+
+btFilter True _        d xs = []
+btFilter _    (Just z) d xs | z > d = []
+btFilter _    _        _ xs = xs
 
 -- | Given a set of words from different languages, we want to do two
 -- things:
