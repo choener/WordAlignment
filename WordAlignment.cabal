@@ -115,6 +115,7 @@ executable WordAlign
                , containers
                , file-embed
                , intern
+               , lens
                , LinguisticsTypes
                , NaturalLanguageAlphabets
                , parallel                   >= 3.2      &&  < 3.3

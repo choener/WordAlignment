@@ -10,6 +10,7 @@ module Linguistics.TwoWay.Bigram where
 
 import           Data.ByteString.Char8 (ByteString)
 import           Data.FMList (FMList)
+import qualified Data.FMList as FM
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple (Pair (..))
 import           Data.Stringable (toString,toText)
@@ -23,6 +24,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           Text.Printf
 import qualified Data.Text.Format as TF
+import qualified Data.Text.Lazy.Builder as TLB
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -83,18 +85,40 @@ sBacktrackFun defS go sco = backtrackFun f g ("-","-") ("-","-") where
   g    (_, "-") (_,d) = ["-", toText d, pack $ printf "%3.1f" go]
 {-# Inline sBacktrackFun #-}
 
-alignGlobal :: Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[[Text]]])
-alignGlobal !ds !gapopen !scoring !k !i1' !i2' = {-# SCC "aliGlob" #-} (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
+type B3 = (TLB.Builder, TLB.Builder, TLB.Builder)
+
+sBacktrackBuilder :: Monad m => Int -> Double -> Double -> Scores -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder k !defS !go !sco = SigGlobal
+  { delin = \ww (Z:.(_ ,c):._     ) -> ww `FM.snoc` ( TF.left k ' ' . TLB.fromText $ toText c
+                                                    , TF.left k ' ' ("-" :: TLB.Builder)
+                                                    , TF.left k ' ' $ TF.fixed 1 go
+                                                    )
+  , indel = \ww (Z:._     :.(_ ,d)) -> ww `FM.snoc` ( TF.left k ' ' ("-" :: TLB.Builder)
+                                                    , TF.left k ' ' . TLB.fromText $ toText d
+                                                    , TF.left k ' ' $ TF.fixed 1 go
+                                                    )
+  , align = \ww (Z:.(mc,c):.(md,d)) -> let z = HM.lookupDefault defS (Bigram mc c :!: Bigram md d) sco
+                                       in  ww `FM.snoc` ( TF.left k ' ' . TLB.fromText $ toText c
+                                                        , TF.left k ' ' . TLB.fromText $ toText d
+                                                        , TF.left k ' ' $ TF.fixed 1 z
+                                                        )
+  , done  = const FM.empty
+  , h     = SM.toList
+  }
+{-# Inline sBacktrackBuilder #-}
+
+alignGlobal :: Int -> Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[B3]])
+alignGlobal !width !ds !gapopen !scoring !k !i1' !i2' = {-# SCC "aliGlob" #-} (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
   i1 = mkI i1' ; i2 = mkI i2'
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward ds gapopen scoring i1 i2
   d = unId $ axiom t
-  bs = alignGlobalBacktrack ds gapopen scoring i1 i2 t
+  bs = alignGlobalBacktrackBuilder width ds gapopen scoring i1 i2 t
   mkI m = {-# SCC "mkI" #-} VU.zip m (VU.tail m)
 {-# NoInline alignGlobal #-}
 
 alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
-alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ {-# SCC "ali_forw/g" #-}
+alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ -- {-# SCC "ali_forw/g" #-}
   gGlobal (sScore ds gapopen scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []) )
     (chr i1) (chr i2)
@@ -103,66 +127,12 @@ alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutate
 {-# NoInline alignGlobalForward #-}
 
 alignGlobalBacktrack :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[[Text]]]
-alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "ali_back" #-} L.map runBacktrack . unId $ axiom b
+alignGlobalBacktrack ds gapopen scoring i1 i2 t = {-# SCC "AliBtText" #-} L.map runBacktrack . unId $ axiom b
   where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackFun ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 
-{-
--- | Backtrack the alignment
-
-sAlign :: Monad m => STwoWay m Aligned (S.Stream m Aligned) (Maybe InternedMultiChar,InternedMultiChar) ()
-sAlign = STwoWay
-  { loop_step = \(w1,w2) (Z:.():.(_,c)) -> ( w1 ++ ["-"], w2 ++ [c]   ) -- (w1++padd "" c, w2++prnt c "")
-  , step_loop = \(w1,w2) (Z:.(_,c):.()) -> ( w1 ++ [c]  , w2 ++ ["-"] ) -- (w1++prnt c "", w2++padd "" c)
-  , step_step = \(w1,w2) (Z:.(_,a):.(_,b)) -> ( w1 ++ [a], w2 ++ [b] ) -- (w1++prnt a b,w2++prnt b a)
-  , nil_nil   = const ([],[])
-  , h         = return . id
-  } where prnt x z = printAligned x [z]
-          padd x z = printAlignedPad '-' x [z]
-{-# INLINE sAlign #-}
-
--- | Wrap calculations
-
-twoWay dS gapOpen scores i1 i2 = (ws ! (Z:.pointL 0 n1:.pointL 0 n2), bt) where
-  ws = unsafePerformIO (twoWayFill dS gapOpen scores i1 i2)
-  n1 = V.length i1
-  n2 = V.length i2
-  bt = backtrack dS gapOpen scores i1 i2 ws
-{-# NOINLINE twoWay #-}
-
--- | Forward phase
-
-twoWayFill
-  :: Double
-  -> Double
-  -> Scores
-  -> V.Vector InternedMultiChar
-  -> V.Vector InternedMultiChar
-  -> IO (PA.Unboxed (Z:.PointL:.PointL) Double)
-twoWayFill dS gapOpen scores i1 i2 = do
-  let n1 = V.length i1
-  let n2 = V.length i2
-  !t' <- newWithM (Z:.pointL 0 0:.pointL 0 0) (Z:.pointL 0 n1:.pointL 0 n2) 0
-  let w = mTbl (Z:.EmptyT:.EmptyT) t'
-  fillTable2 $ gTwoWay (sScore dS gapOpen scores) w (chrLeft i1) (chrLeft i2) Empty Empty
-  freeze t'
-{-# NOINLINE twoWayFill #-}
-
-backtrack
-  :: Double
-  -> Double
-  -> Scores
-  -> V.Vector InternedMultiChar
-  -> V.Vector InternedMultiChar
-  -> PA.Unboxed (Z:.PointL:.PointL) Double
-  -> [Aligned]
-backtrack dS gapOpen scores i1 i2 tbl = unId . S.toList . unId $ g $ Z:.pointL 0 n1 :.pointL 0 n2 where
-  n1 = V.length i1
-  n2 = V.length i2
-  w :: DefBtTbl Id (Z:.PointL:.PointL) Double Aligned
-  w = btTbl (Z:.EmptyT:.EmptyT) tbl (g :: (Z:.PointL:.PointL) -> Id (S.Stream Id Aligned))
-  (Z:.(_,g)) = gTwoWay (sScore dS gapOpen scores <** sAlign) w (chrLeft i1) (chrLeft i2) Empty Empty
-{-# NOINLINE backtrack #-}
-
--}
+alignGlobalBacktrackBuilder :: Int -> Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
+alignGlobalBacktrackBuilder k ds gapopen scoring i1 i2 t = {-# SCC "AliBtBuilder" #-} L.map runBacktrack . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackBuilder k ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+{-# NoInline alignGlobalBacktrackBuilder #-}
 

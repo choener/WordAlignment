@@ -41,6 +41,7 @@ import           Text.Read (readMaybe)
 import           Data.Stringable (toString)
 import qualified Data.Text.Format as TF
 import           Data.Monoid ((<>))
+import           Control.Lens
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -178,16 +179,16 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
     then do
       -- align the words the in @ws@ pairing
       let as = {-# SCC "run2/as" #-}
-                map (\(x,y) -> ( let (d,bts) = BI.alignGlobal bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
-                                 in  seq d $ buildAlignment (-1) ([x,y],(d,if nobacktrack then [] else bts))
+                map (\(x,y) -> ( let (d,bts) = BI.alignGlobal 8 bigramDef gapOpen sco 1 (wordWord x) (wordWord y)
+                                 in  seq d $ buildAlignmentBuilder (-1) ([x,y],(d,if nobacktrack then [] else bts))
                                )
                     ) ws
       forM_ (zip [1::Int ..] as) $ \(k,ali) -> {-# SCC "run2/IO" #-} do
         when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s || %7d %7d || %10d %10d\n" wLx wLy wsslen tcnt len k
-        TL.hPutStr hndl ali
+        TL.hPutStr hndl $ TL.toLazyText ali
     else do
       let as = {-# SCC "run2/ser" #-}
-                map (\(x,y) -> ( let (d,_) = BI.alignGlobal bigramDef gapOpen sco 0 (wordWord x) (wordWord y)
+                map (\(x,y) -> ( let (d,_) = BI.alignGlobal 8 bigramDef gapOpen sco 0 (wordWord x) (wordWord y)
                                  in  (wordID x, wordID y, d)
                                )
                     ) ws
@@ -287,4 +288,20 @@ buildAlignment k (ws,(s,(xss)))
       wid0 = wordID $ ws!!0
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
+
+buildAlignmentBuilder :: Double -> ([Linguistics.Word.Word],(Double,[[BI.B3]])) -> TL.Builder
+buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds <> "\n" <> ls <> "\n"
+  where hdr = TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
+                       (wid0, wid1, TF.left 6 ' ' $ TF.fixed 2 s, TF.left 6 ' ' $ TF.fixed 2 normScore)
+        wds = wordLazyTextWSB (ws!!0) <> "   WORD: " <> wordLazyTextWSB (ws!!1)
+        normScore = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
+        wid0 = wordID $ ws!!0
+        wid1 = wordID $ ws!!1
+        ls = mconcat $ map buildAli xss
+        buildAli b3s = let l1 = b3s ^. traverse . _1
+                           l2 = b3s ^. traverse . _2
+                           l3 = b3s ^. traverse . _3
+                       in  l1 <> "\n" <> l2 <> "\n" <> l3 <> "\n"
+
+
 
