@@ -128,6 +128,7 @@ oInfix2S = Infix2S
 config = [twowaySimple, twoway, oInfix2S]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
+  &= verbosity
 
 embeddedManual = $(embedFile "README.md")
 
@@ -151,9 +152,10 @@ main = do
 -- | Affine infix simple grammar
 
 runInfix2S :: Config -> WSS -> IO ()
-runInfix2S Infix2S{..} wss = do
+runInfix2S o@Infix2S{..} wss = do
   hndl <- return stdout
   scoring <- simpleScoreFromFile scoreFile
+  v <- getVerbosity
   let infixS = IS.InfixScoring
                 { infixOpen = -1
                 , infixExt  =  0
@@ -166,6 +168,7 @@ runInfix2S Infix2S{..} wss = do
     forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> do
       let (d,bts) = IS.alignInfix 8 infixS scoring (wordWord x) (wordWord y) 1
       let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
+      when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl $ TL.toLazyText ali
 
 
