@@ -23,6 +23,8 @@ import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.Word (FastChars, fastChar)
 
+import           Debug.Trace
+
 
 
 type SigT m x r = SigInfix m x r IMCp IMCp
@@ -34,8 +36,10 @@ type SigT m x r = SigInfix m x r IMCp IMCp
 sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
 sScore ss@SimpleScoring{..} bgm = SigInfix
   { align = \ww (Z:.(lb,b):.(lu,u)) ->
-              let s  = HM.lookupDefault defMismatch (Bigram lu u :!: Bigram lb b) bgm
-              in  ww + scoreUnigram ss b u
+              let s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
+              in  if (b == "h" && u == "h")
+                  then traceShow (bgm,s,lb,b,lu,u) $ ww + s
+                  else ww + s
   , contL = \ww (Z:.b:._) -> ww + gapExt
   , contU = \ww (Z:._:.u) -> ww + gapExt
   , done  = const 0
@@ -64,10 +68,12 @@ sScore ss@SimpleScoring{..} bgm = SigInfix
 
 sBacktrackBuilder :: Monad m => FastChars -> Int -> SimpleScoring -> Scores -> SigT m (FMList B3) [FMList B3]
 sBacktrackBuilder !fc !k !ss@SimpleScoring{..} bgm = SigInfix
-  { align = \ww (Z:.(_,b):.(_,u)) -> ww `FM.snoc` ( fastChar fc u
-                                                  , fastChar fc b
-                                                  , TF.left k ' ' . TF.fixed 1 $ scoreUnigram ss b u
-                                                  )
+  { align = \ww (Z:.(lb,b):.(lu,u)) ->
+              let s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
+              in  ww `FM.snoc` ( fastChar fc u
+                               , fastChar fc b
+                               , TF.left k ' ' $ TF.fixed 1 s
+                               )
   , contL = dow gapExt
   , contU = upp gapExt
   , done  = mempty

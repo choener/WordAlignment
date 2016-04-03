@@ -302,7 +302,7 @@ btFilter _    _        _ xs = xs
 -- from @length list@ so to not force the list spine too early.
 
 blockSelection2 :: Maybe (String,String) -> V.Vector Word -> WSS
-blockSelection2 s ws = {-# SCC "blockSelection2" #-} go (mkCmp s)
+blockSelection2 s ws = {-# SCC "blockSelection2" #-} filter (not . null . Prelude.snd) $ go (mkCmp s)
         -- grouping words by their languages, pair each language group with
         -- an index
   where gs = zip [1..] $ groupBy ((==) `on` wordLang) $ V.toList ws

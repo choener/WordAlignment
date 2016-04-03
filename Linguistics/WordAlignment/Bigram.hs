@@ -67,14 +67,15 @@ withDefault d (x:xs)
   | otherwise = (d,(x:xs))
 
 parseLine l = case ABL.eitherResult (ABL.parse go l) of
-                Left  err -> error err
+                Left  err -> error $ "parseLine of: " ++ show l ++ " failed with: " ++ show err
                 Right p   -> force p
   where
     go     = (,,,,) <$> lang <*> lang <*> bigram <*> bigram <*> score <?> "go"
     lang   = wrd <?> "lang"
     bigram = Bigram <$> wrd <*> wrd <?> "bigram"
     score  = AB.double <?> "score"
-    wrd    = SA.fromByteString <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    wrd    = SA.fromByteString <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.skipSpace <?> "word"
+{-# NoInline parseLine #-}
 
 type Lang = BTI
 type Line = (Lang, Lang, Bigram, Bigram, Double)

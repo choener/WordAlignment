@@ -24,6 +24,10 @@ Extra-Source-Files:
   README.md
   changelog.md
   stack.yaml
+  scores/defaultBigramScores
+  scores/defaultSimpleScores
+  tests/example.bgms
+  tests/example.words
 
 
 
