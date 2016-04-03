@@ -51,7 +51,7 @@ import           Linguistics.Bigram
 import           Linguistics.Common
 import           Linguistics.TwoWay.Aligned
 import           Linguistics.TwoWay.Simple
-import           Linguistics.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB)
+import           Linguistics.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
 import qualified Linguistics.TwoWay.Bigram as BI
 import qualified Linguistics.TwoWay.Infix.Simple as IS
 
@@ -142,17 +142,24 @@ main = do
   when (prettystupid o && null (outfile o)) $ do
     putStrLn "The --prettystupid mode requires giving an --outfile"
     exitFailure
-  ws <- BL.getContents >>= return . map parseWord . BL.lines
+  hSetBuffering stdin  $ LineBuffering
+  hSetBuffering stdout $ LineBuffering
+  hSetBuffering stderr $ LineBuffering
+  -- reading of the full input list into a vector
+  ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
+  -- because we now create the first lookup table
+  -- TODO word delims!
+  let !fc = fastChars 8 ws
   case o of
     TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
-    TwoWay{..}       -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
-    Infix2S{..}      -> runInfix2S o $ blockSelection2 lpblock ws
+    TwoWay{..}       -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
+    Infix2S{..}      -> runInfix2S o fc $ blockSelection2 lpblock ws
 
 
 -- | Affine infix simple grammar
 
-runInfix2S :: Config -> WSS -> IO ()
-runInfix2S o@Infix2S{..} wss = do
+runInfix2S :: Config -> FastChars -> WSS -> IO ()
+runInfix2S o@Infix2S{..} fc wss = do
   hndl <- return stdout
   scoring <- simpleScoreFromFile scoreFile
   v <- getVerbosity
@@ -165,8 +172,8 @@ runInfix2S o@Infix2S{..} wss = do
   forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
-    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> do
-      let (d,bts) = IS.alignInfix 8 infixS scoring (wordWord x) (wordWord y) 1
+    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
+      let (d,bts) = IS.alignInfix fc 8 infixS scoring (wordWord x) (wordWord y) 1
       let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
       when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl $ TL.toLazyText ali
@@ -266,11 +273,11 @@ btFilter _    _        _ xs = xs
 -- (iii) We calculate the length of each language-pairing explicitly, not
 -- from @length list@ so to not force the list spine too early.
 
-blockSelection2 :: Maybe (String,String) -> [Word] -> WSS
+blockSelection2 :: Maybe (String,String) -> V.Vector Word -> WSS
 blockSelection2 s ws = {-# SCC "blockSelection2" #-} go (mkCmp s)
         -- grouping words by their languages, pair each language group with
         -- an index
-  where gs = zip [1..] $ groupBy ((==) `on` wordLang) ws
+  where gs = zip [1..] $ groupBy ((==) `on` wordLang) $ V.toList ws
         -- length of each group
         lgs = VU.fromList $ (-1) : map (length . Prelude.snd) gs
         -- Gives a map "Language String Name" -> Int (for the gs)
@@ -346,7 +353,8 @@ buildAlignment k (ws,(s,(xss)))
 
 buildAlignmentBuilder :: Double -> ([Linguistics.Word.Word],(Double,[[BI.B3]])) -> TL.Builder
 buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds <> "\n" <> ls <> "\n"
-  where hdr = TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
+  where hdr = {-# SCC "buildAliBuilder/hdr" #-}
+              TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
                        (wid0, wid1, TF.left 6 ' ' $ TF.fixed 2 s, TF.left 6 ' ' $ TF.fixed 2 normScore)
         wds = wordLazyTextWSB (ws!!0) <> "   WORD: " <> wordLazyTextWSB (ws!!1)
         normScore = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
@@ -357,6 +365,4 @@ buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds 
                            l2 = b3s ^. traverse . _2
                            l3 = b3s ^. traverse . _3
                        in  l1 <> "\n" <> l2 <> "\n" <> l3 <> "\n"
-
-
 

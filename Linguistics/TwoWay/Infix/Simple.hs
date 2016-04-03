@@ -28,6 +28,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
 import           Linguistics.Common
+import           Linguistics.Word (FastChars, fastChar)
 
 
 
@@ -69,10 +70,10 @@ sScore InfixScoring{..} ss@SimpleScoring{..} = SigInfix
   }
 {-# Inline sScore #-}
 
-sBacktrackBuilder :: Monad m => Int -> InfixScoring -> SimpleScoring -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !k InfixScoring{..} ss@SimpleScoring{..} = SigInfix
-  { align = \ww (Z:.b:.u) -> ww `FM.snoc` ( TF.left k ' ' . TLB.fromText $ toText u
-                                          , TF.left k ' ' . TLB.fromText $ toText b
+sBacktrackBuilder :: Monad m => FastChars -> Int -> InfixScoring -> SimpleScoring -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder !fc !k !InfixScoring{..} !ss@SimpleScoring{..} = SigInfix
+  { align = \ww (Z:.b:.u) -> ww `FM.snoc` ( fastChar fc u -- TF.left k ' ' . TLB.fromText $ toText u
+                                          , fastChar fc b -- TF.left k ' ' . TLB.fromText $ toText b
                                           , TF.left k ' ' . TF.fixed 1 $ scoreUnigram ss b u
                                           )
   , contL = dow gapExtend
@@ -98,13 +99,13 @@ sBacktrackBuilder !k InfixScoring{..} ss@SimpleScoring{..} = SigInfix
   , toUPI = dow (infixOpen + gapOpen)
   , toUPM = dow infixOpen
   , h     = SM.toList
-  } where upp s ww (Z:._:.u) = ww `FM.snoc` ( TF.left k ' ' . TLB.fromText $ toText (u::BTI)
-                                            , TF.left k ' ' ("-" :: TLB.Builder)
+  } where upp s ww (Z:._:.u) = ww `FM.snoc` ( fastChar fc u -- TF.left k ' ' . TLB.fromText $ toText (u::BTI)
+                                            , fastChar fc "-" -- TF.left k ' ' ("-" :: TLB.Builder)
                                             , TF.left k ' ' $ TF.fixed 1 s
                                             )
           {-# Inline upp #-}
-          dow s ww (Z:.b:._) = ww `FM.snoc` ( TF.left k ' ' ("-" :: TLB.Builder)
-                                            , TF.left k ' ' . TLB.fromText $ toText (b::BTI)
+          dow s ww (Z:.b:._) = ww `FM.snoc` ( fastChar fc "-" -- TF.left k ' ' ("-" :: TLB.Builder)
+                                            , fastChar fc b -- TF.left k ' ' . TLB.fromText $ toText (b::BTI)
                                             , TF.left k ' ' $ TF.fixed 1 s
                                             )
           {-# Inline dow #-}
@@ -135,15 +136,16 @@ alignInfixForward infixS simpleS i1 i2 = {-# SCC "alignInfixForward" #-} mutateT
 {-# NoInline alignInfixForward #-}
 
 alignInfixBacktrack
-  :: Int
+  :: FastChars
+  -> Int
   -> InfixScoring
   -> SimpleScoring
   -> Vector BTI
   -> Vector BTI
   -> Z:.F:.F:.F:.F:.F:.F:.F:.F
   -> [[B3]]
-alignInfixBacktrack width infixS simpleS i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
-  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore infixS simpleS <|| sBacktrackBuilder width infixS simpleS)
+alignInfixBacktrack fc width infixS simpleS i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
+  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore infixS simpleS <|| sBacktrackBuilder fc width infixS simpleS)
                                           (toBacktrack dd (undefined :: Id a -> Id a))
                                           (toBacktrack ii (undefined :: Id a -> Id a))
                                           (toBacktrack mm (undefined :: Id a -> Id a))
@@ -157,16 +159,17 @@ alignInfixBacktrack width infixS simpleS i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.u
 {-# NoInline alignInfixBacktrack #-}
 
 alignInfix
-  :: Int
+  :: FastChars
+  -> Int
   -> InfixScoring
   -> SimpleScoring
   -> Vector BTI
   -> Vector BTI
   -> Int
   -> (Double , [[B3]])
-alignInfix width infixS simpleS i1 i2 k = {-# SCC "alignInfix" #-} (d, take k bs)
+alignInfix fc width infixS simpleS i1 i2 k = {-# SCC "alignInfix" #-} (d, take k bs)
   where d = unId $ axiom ss
         fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward infixS simpleS i1 i2
-        bs = alignInfixBacktrack width infixS simpleS i1 i2 fwd
+        bs = alignInfixBacktrack fc width infixS simpleS i1 i2 fwd
 {-# NoInline alignInfix #-}
 

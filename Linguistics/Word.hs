@@ -27,6 +27,10 @@ import qualified Data.ByteString.Short as S
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector as V
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Text.Format as TF
+import qualified Data.Text as T
 
 import           NLP.Text.BTI
 
@@ -101,4 +105,26 @@ wordLazyTextWS = TLB.toLazyText . wordLazyTextWSB
 wordLazyTextWSB :: Word -> TLB.Builder
 wordLazyTextWSB = mconcat . intersperse " " . map (TLB.fromText . toText) . VU.toList . wordWord
 {-# Inline wordLazyTextWSB #-}
+
+-- |
+--
+-- TODO @Builder@ or @Text@ or @Lazy.Text@ ?
+
+data FastChars = FastChars
+  { fcTable :: !(HM.HashMap BTI T.Text)
+  , fcWidth :: !Int
+  }
+
+-- | Generate the fast lookup table
+
+fastChars :: Int -> V.Vector Word -> FastChars
+fastChars width ws = {-# SCC "fastChars" #-} deepseq ws `seq` FastChars hm width
+  where hm = HM.fromList . map fmt . addDefaultChars . concatMap (VU.toList . wordWord) . V.toList $ ws
+        fmt k = (k , TL.toStrict . TLB.toLazyText . TF.left width ' ' . toText $ k)
+        addDefaultChars xs = xs ++ map fromString ["-", "$", "^"]
+{-# NoInline fastChars #-}
+
+fastChar :: FastChars -> BTI -> TLB.Builder
+fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe (TF.left width ' ' . TLB.fromText $ toText k) TLB.fromText $ HM.lookup k hm
+{-# InlineAble fastChar #-}
 
