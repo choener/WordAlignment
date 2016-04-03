@@ -53,6 +53,7 @@ import           Linguistics.TwoWay.Aligned
 import           Linguistics.TwoWay.Simple
 import           Linguistics.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB)
 import qualified Linguistics.TwoWay.Bigram as BI
+import qualified Linguistics.TwoWay.Infix.Simple as IS
 
 import           Paths_WordAlignment (version)
 
@@ -77,6 +78,15 @@ data Config
     , outfile       :: String
     , nobacktrack   :: Bool
     , serialized    :: Bool
+    , filterScore   :: Maybe Double
+    , filterBacktrack :: Maybe Double
+    }
+  | Infix2S
+    { scoreFile     :: String
+    , infixScores   :: (Double,Double)
+    , lpblock       :: Maybe (String,String)
+    , showManual    :: Bool
+    , prettystupid  :: Bool
     , filterScore   :: Maybe Double
     , filterBacktrack :: Maybe Double
     }
@@ -105,9 +115,19 @@ twoway = TwoWay
   , filterBacktrack = Nothing &= help "only provide backtracking results for results with this score or higher"
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
-config = [twowaySimple, twoway]
+oInfix2S = Infix2S
+  { scoreFile       = def
+  , infixScores     = (-1,0)  &= help "prefix and suffix opening: (-1), extend (0)"
+  , lpblock         = def
+  , showManual      = def
+  , prettystupid    = def
+  , filterScore     = def
+  , filterBacktrack = def
+  } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
+
+config = [twowaySimple, twoway, oInfix2S]
   &= program "WordAlign"
-  &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2015, choener@bioinf.uni-leipzig.de")
+  &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
 
 embeddedManual = $(embedFile "README.md")
 
@@ -125,7 +145,28 @@ main = do
   case o of
     TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
     TwoWay{..}       -> run2 o (blockSelection2 lpblock $ map addWordDelims ws)
+    Infix2S{..}      -> runInfix2S o $ blockSelection2 lpblock ws
 
+
+-- | Affine infix simple grammar
+
+runInfix2S :: Config -> WSS -> IO ()
+runInfix2S Infix2S{..} wss = do
+  hndl <- return stdout
+  scoring <- simpleScoreFromFile scoreFile
+  let infixS = IS.InfixScoring
+                { infixOpen = -1
+                , infixExt  =  0
+                }
+  let wsslen = length wss
+  -- for each language pair
+  forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
+    let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
+    performGC
+    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> do
+      let (d,bts) = IS.alignInfix 8 infixS scoring (wordWord x) (wordWord y) 1
+      let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
+      TL.hPutStr hndl $ TL.toLazyText ali
 
 
 -- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.

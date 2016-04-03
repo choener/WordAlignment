@@ -28,7 +28,7 @@ import           Data.Stringable (toText)
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
-import           DP.Alignment.Global.Tapes2
+import           DP.Alignment.Global.Linear2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 

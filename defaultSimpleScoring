@@ -15,6 +15,6 @@ InSet   Vowel    Liquid   -1
 InSet   Vowel    Vowel     0
 Gap         -4
 GapOpen     -4
-GapExtend   -4
+GapExtend   -2
 Match        1
 Mismatch    -999999

@@ -1,5 +1,5 @@
 name:           WordAlignment
-version:        0.1.0.1
+version:        0.2.0.0
 author:         Christian Hoener zu Siederdissen, 2013-2015
 copyright:      Christian Hoener zu Siederdissen, 2013-2015
 homepage:       https://github.com/choener/WordAlignment
@@ -82,6 +82,7 @@ library
     Linguistics.TwoWay.Bigram
 --    Linguistics.TwoWay.Common
     Linguistics.TwoWay.Simple
+    Linguistics.TwoWay.Infix.Simple
     Linguistics.Word
   default-language:
     Haskell2010
@@ -96,6 +97,7 @@ library
                     , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators
+                    , RecordWildCards
   ghc-options:
     -fsimpl-tick-factor=900
     -O2

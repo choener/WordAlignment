@@ -19,6 +19,7 @@ import           Prelude hiding (Word)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
 import qualified Data.Attoparsec.ByteString.Lazy as ABL
+import           Data.Attoparsec.ByteString.Lazy ((<?>))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
@@ -63,17 +64,17 @@ instance NFData Word where
 
 parseWord :: BL.ByteString -> Word
 parseWord w = case ABL.eitherResult (ABL.parse go w) of
-                Left  err -> error err
+                Left  err -> error $ "failed to parse line: " ++ show w ++ " with error: " ++ show err
                 Right p   -> force p
   where
-    go = Word <$> AB.decimal
-              <*  AB.many1 AB.space
-              <*> (wW <$> wrd)
-              <*> (wW <$> wrd)
-              <*> AB.decimal
-              <*  AB.many1 AB.space
-              <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space))
-    wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.space
+    go = Word <$> (AB.decimal         <?> "number")
+              <*  (AB.skipSpace       <?> "1+ ws")
+              <*> ((wW <$> wrd)       <?> "class")
+              <*> ((wW <$> wrd)       <?> "language")
+              <*> (AB.decimal         <?> "length")
+              <*  (AB.skipSpace       <?> "1+ ws")
+              <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space) <?> "word")
+    wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.skipSpace
     wW   = fromByteString
 
 addWordDelims :: Word -> Word
