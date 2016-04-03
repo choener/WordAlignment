@@ -83,8 +83,6 @@ sBacktrackFun defS go sco = backtrackFun f g ("-","-") ("-","-") where
   g    (_, "-") (_,d) = ["-", toText d, pack $ printf "%3.1f" go]
 {-# Inline sBacktrackFun #-}
 
-type B3 = (TLB.Builder, TLB.Builder, TLB.Builder)
-
 sBacktrackBuilder :: Monad m => Int -> Double -> Double -> Scores -> SigT m (FMList B3) [FMList B3]
 sBacktrackBuilder k !defS !go !sco = SigGlobal
   { delin = \ww (Z:.(_ ,c):._     ) -> ww `FM.snoc` ( TF.left k ' ' . TLB.fromText $ toText c

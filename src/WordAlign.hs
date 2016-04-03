@@ -47,6 +47,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 import           NLP.Text.BTI
 
+import           Linguistics.WordAlignment
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.TwoWay.Aligned
@@ -81,12 +82,19 @@ data Config
     , filterScore   :: Maybe Double
     , filterBacktrack :: Maybe Double
     }
-  | Infix2S
-    { scoreFile     :: String
-    , infixScores   :: (Double,Double)
-    , lpblock       :: Maybe (String,String)
-    , showManual    :: Bool
-    , filterScore   :: Maybe Double
+  | Infix2Simple
+    { simpleScoreFile :: String
+    , lpblock         :: Maybe (String,String)
+    , showManual      :: Bool
+    , filterScore     :: Maybe Double
+    , filterBacktrack :: Maybe Double
+    }
+  | Infix2Bigram
+    { simpleScoreFile :: String
+    , bigramScoreFile :: String
+    , lpblock         :: Maybe (String,String)
+    , showManual      :: Bool
+    , filterScore     :: Maybe Double
     , filterBacktrack :: Maybe Double
     }
   deriving (Show,Data,Typeable)
@@ -114,16 +122,24 @@ twoway = TwoWay
   , filterBacktrack = Nothing &= help "only provide backtracking results for results with this score or higher"
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
-oInfix2S = Infix2S
-  { scoreFile       = def
-  , infixScores     = (-1,0)  &= help "prefix and suffix opening: (-1), extend (0)"
+oInfix2Simple = Infix2Simple
+  { simpleScoreFile = def
   , lpblock         = def
   , showManual      = def
   , filterScore     = def
   , filterBacktrack = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
-config = [twowaySimple, twoway, oInfix2S]
+oInfix2Bigram = Infix2Bigram
+  { simpleScoreFile = def
+  , bigramScoreFile = def
+  , lpblock         = def
+  , showManual      = def
+  , filterScore     = def
+  , filterBacktrack = def
+  } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
+
+config = [twowaySimple, twoway, oInfix2Simple, oInfix2Bigram]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
   &= verbosity
@@ -137,41 +153,55 @@ main = do
   when (showManual o) $ do
     BS.putStrLn embeddedManual
     exitSuccess
-  when (prettystupid o && null (outfile o)) $ do
-    putStrLn "The --prettystupid mode requires giving an --outfile"
-    exitFailure
   hSetBuffering stdin  $ LineBuffering
   hSetBuffering stdout $ LineBuffering
   hSetBuffering stderr $ LineBuffering
-  -- reading of the full input list into a vector
   ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
-  -- because we now create the first lookup table
-  -- TODO word delims!
   let !fc = fastChars 8 ws
   case o of
     TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
     TwoWay{..}       -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
-    Infix2S{..}      -> runInfix2S o fc $ blockSelection2 lpblock ws
+    Infix2Simple{..} -> runInfix2Simple o fc $ blockSelection2 lpblock ws
+    Infix2Bigram{..} -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
+
 
 
 -- | Affine infix simple grammar
 
-runInfix2S :: Config -> FastChars -> WSS -> IO ()
-runInfix2S o@Infix2S{..} fc wss = do
+runInfix2Simple :: Config -> FastChars -> WSS -> IO ()
+runInfix2Simple o@Infix2Simple{..} fc wss = do
   hndl <- return stdout
-  scoring <- simpleScoreFromFile scoreFile
+  scoring <- simpleScoreFromFile simpleScoreFile
   v <- getVerbosity
-  let infixS = IS.InfixScoring
-                { infixOpen = -1
-                , infixExt  =  0
-                }
   let wsslen = length wss
   -- for each language pair
   forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     performGC
     forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
-      let (d,bts) = IS.alignInfix fc 8 infixS scoring (wordWord x) (wordWord y) 1
+      let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
+      let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
+      when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
+      TL.hPutStr hndl $ TL.toLazyText ali
+
+-- | Affine infix bigram grammar
+
+runInfix2Bigram :: Config -> FastChars -> WSS -> IO ()
+runInfix2Bigram o@Infix2Bigram{..} fc wss = do
+  hndl <- return stdout
+  simpleScoring <- simpleScoreFromFile simpleScoreFile
+  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
+  bigramScoring <- BL.readFile bigramScoreFile >>= return . generateLookups chkLs (-999999)
+  v <- getVerbosity
+  let wsslen = length wss
+  -- for each language pair
+  forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
+    let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
+    let (hx,hy) = head ws
+    let !sco = getScores2 bigramScoring (wordLang hx) (wordLang hy)
+    performGC
+    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
+      let (d,bts) = alignInfixBigram2 fc 8 simpleScoring sco (wordWord x) (wordWord y) 1
       let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
       when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl $ TL.toLazyText ali
@@ -349,7 +379,7 @@ buildAlignment k (ws,(s,(xss)))
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
 
-buildAlignmentBuilder :: Double -> ([Word],(Double,[[BI.B3]])) -> TL.Builder
+buildAlignmentBuilder :: Double -> ([Word],(Double,[[B3]])) -> TL.Builder
 buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds <> "\n" <> ls <> "\n"
   where hdr = {-# SCC "buildAliBuilder/hdr" #-}
               TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "

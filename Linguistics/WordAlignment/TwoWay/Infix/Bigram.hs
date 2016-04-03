@@ -1,25 +1,17 @@
 
 module Linguistics.WordAlignment.TwoWay.Infix.Bigram where
 
-import           Data.ByteString.Char8 (ByteString)
 import           Data.FMList (FMList)
-import           Data.Sequence (Seq)
-import           Data.Stringable (toText)
-import           Data.Text (Text)
+import           Data.Strict.Tuple (Pair (..))
 import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)
-import           GHC.Exts
-import qualified Data.ByteString.Char8 as B
+import qualified Data.FMList as FM
+import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Format as TF
+import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
-import           System.IO.Unsafe (unsafePerformIO)
-import qualified Data.Text.Lazy.Builder as TLB
-import           Data.FMList (FMList)
-import qualified Data.FMList as FM
-import qualified Data.Text.Format as TF
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -27,87 +19,87 @@ import           DP.Alignment.Global.Infix2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
+import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.Word (FastChars, fastChar)
 
 
 
-type B3 = (TLB.Builder, TLB.Builder, TLB.Builder)
+type SigT m x r = SigInfix m x r IMCp IMCp
 
-data InfixScoring = InfixScoring
-  { infixOpen :: !Double
-  , infixExt  :: !Double
-  }
+-- |
+--
+-- TODO check if the score is in the right order!
 
-type SigT m x r = SigInfix m x r BTI BTI
-
-sScore :: Monad m => InfixScoring -> SimpleScoring -> SigT m Double Double
-sScore InfixScoring{..} ss@SimpleScoring{..} = SigInfix
-  { align = \ww (Z:.b:.u) -> ww + scoreUnigram ss b u
-  , contL = \ww (Z:.b:._) -> ww + gapExtend
-  , contU = \ww (Z:._:.u) -> ww + gapExtend
+sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
+sScore ss@SimpleScoring{..} bgm = SigInfix
+  { align = \ww (Z:.(lb,b):.(lu,u)) ->
+              let s  = HM.lookupDefault defMismatch (Bigram lu u :!: Bigram lb b) bgm
+              in  ww + scoreUnigram ss b u
+  , contL = \ww (Z:.b:._) -> ww + gapExt
+  , contU = \ww (Z:._:.u) -> ww + gapExt
   , done  = const 0
-  , frSUD = \ww (Z:._:.u) -> ww + infixOpen
-  , frSUI = \ww (Z:._:.u) -> ww + infixOpen
-  , frSUM = \ww (Z:._:.u) -> ww + infixOpen
-  , frUSD = \ww (Z:.b:._) -> ww + infixOpen
-  , frUSI = \ww (Z:.b:._) -> ww + infixOpen
-  , frUSM = \ww (Z:.b:._) -> ww + infixOpen
+  , frSUD = \ww (Z:._:.u) -> ww + preSufOpen
+  , frSUI = \ww (Z:._:.u) -> ww + preSufOpen
+  , frSUM = \ww (Z:._:.u) -> ww + preSufOpen
+  , frUSD = \ww (Z:.b:._) -> ww + preSufOpen
+  , frUSI = \ww (Z:.b:._) -> ww + preSufOpen
+  , frUSM = \ww (Z:.b:._) -> ww + preSufOpen
   , openL = \ww (Z:.b:._) -> ww + gapOpen
   , openU = \ww (Z:._:.u) -> ww + gapOpen
-  , prePU = \ww (Z:._:.u) -> ww + infixExt
-  , preUP = \ww (Z:.b:._) -> ww + infixExt
+  , prePU = \ww (Z:._:.u) -> ww + preSufExt
+  , preUP = \ww (Z:.b:._) -> ww + preSufExt
   , start = \ww -> ww
-  , sufSU = \ww (Z:._:.u) -> ww + infixExt
-  , sufUS = \ww (Z:.b:._) -> ww + infixExt
-  , toPUD = \ww (Z:._:.u) -> ww + infixOpen + gapOpen
-  , toPUI = \ww (Z:._:.u) -> ww + infixOpen + gapOpen
-  , toPUM = \ww (Z:._:.u) -> ww + infixOpen
-  , toUPD = \ww (Z:.b:._) -> ww + infixOpen + gapOpen
-  , toUPI = \ww (Z:.b:._) -> ww + infixOpen + gapOpen
-  , toUPM = \ww (Z:.b:._) -> ww + infixOpen
+  , sufSU = \ww (Z:._:.u) -> ww + preSufExt
+  , sufUS = \ww (Z:.b:._) -> ww + preSufExt
+  , toPUD = \ww (Z:._:.u) -> ww + preSufOpen + gapOpen
+  , toPUI = \ww (Z:._:.u) -> ww + preSufOpen + gapOpen
+  , toPUM = \ww (Z:._:.u) -> ww + preSufOpen
+  , toUPD = \ww (Z:.b:._) -> ww + preSufOpen + gapOpen
+  , toUPI = \ww (Z:.b:._) -> ww + preSufOpen + gapOpen
+  , toUPM = \ww (Z:.b:._) -> ww + preSufOpen
   , h     = SM.foldl' max (-888888)
   }
 {-# Inline sScore #-}
 
-sBacktrackBuilder :: Monad m => FastChars -> Int -> InfixScoring -> SimpleScoring -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !fc !k !InfixScoring{..} !ss@SimpleScoring{..} = SigInfix
-  { align = \ww (Z:.b:.u) -> ww `FM.snoc` ( fastChar fc u -- TF.left k ' ' . TLB.fromText $ toText u
-                                          , fastChar fc b -- TF.left k ' ' . TLB.fromText $ toText b
-                                          , TF.left k ' ' . TF.fixed 1 $ scoreUnigram ss b u
-                                          )
-  , contL = dow gapExtend
-  , contU = upp gapExtend
+sBacktrackBuilder :: Monad m => FastChars -> Int -> SimpleScoring -> Scores -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder !fc !k !ss@SimpleScoring{..} bgm = SigInfix
+  { align = \ww (Z:.(_,b):.(_,u)) -> ww `FM.snoc` ( fastChar fc u
+                                                  , fastChar fc b
+                                                  , TF.left k ' ' . TF.fixed 1 $ scoreUnigram ss b u
+                                                  )
+  , contL = dow gapExt
+  , contU = upp gapExt
   , done  = mempty
-  , frSUD = upp infixOpen
-  , frSUI = upp infixOpen
-  , frSUM = upp infixOpen
-  , frUSD = dow infixOpen
-  , frUSI = dow infixOpen
-  , frUSM = dow infixOpen
+  , frSUD = upp preSufOpen
+  , frSUI = upp preSufOpen
+  , frSUM = upp preSufOpen
+  , frUSD = dow preSufOpen
+  , frUSI = dow preSufOpen
+  , frUSM = dow preSufOpen
   , openL = dow gapOpen
   , openU = upp gapOpen
-  , prePU = upp infixExt
-  , preUP = dow infixExt
+  , prePU = upp preSufExt
+  , preUP = dow preSufExt
   , start = \ww -> ww
-  , sufSU = upp infixExt
-  , sufUS = dow infixExt
-  , toPUD = upp (infixOpen + gapOpen)
-  , toPUI = upp (infixOpen + gapOpen)
-  , toPUM = upp infixOpen
-  , toUPD = dow (infixOpen + gapOpen)
-  , toUPI = dow (infixOpen + gapOpen)
-  , toUPM = dow infixOpen
+  , sufSU = upp preSufExt
+  , sufUS = dow preSufExt
+  , toPUD = upp (preSufOpen + gapOpen)
+  , toPUI = upp (preSufOpen + gapOpen)
+  , toPUM = upp preSufOpen
+  , toUPD = dow (preSufOpen + gapOpen)
+  , toUPI = dow (preSufOpen + gapOpen)
+  , toUPM = dow preSufOpen
   , h     = SM.toList
-  } where upp s ww (Z:._:.u) = ww `FM.snoc` ( fastChar fc u -- TF.left k ' ' . TLB.fromText $ toText (u::BTI)
-                                            , fastChar fc "-" -- TF.left k ' ' ("-" :: TLB.Builder)
-                                            , TF.left k ' ' $ TF.fixed 1 s
-                                            )
+  } where upp s ww (Z:._:.(_,u)) = ww `FM.snoc` ( fastChar fc u
+                                                , fastChar fc "-"
+                                                , TF.left k ' ' $ TF.fixed 1 s
+                                                )
           {-# Inline upp #-}
-          dow s ww (Z:.b:._) = ww `FM.snoc` ( fastChar fc "-" -- TF.left k ' ' ("-" :: TLB.Builder)
-                                            , fastChar fc b -- TF.left k ' ' . TLB.fromText $ toText (b::BTI)
-                                            , TF.left k ' ' $ TF.fixed 1 s
-                                            )
+          dow s ww (Z:.(_,b):._) = ww `FM.snoc` ( fastChar fc "-"
+                                                , fastChar fc b
+                                                , TF.left k ' ' $ TF.fixed 1 s
+                                                )
           {-# Inline dow #-}
 {-# Inline sBacktrackBuilder #-}
 
@@ -115,13 +107,13 @@ type F = TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
 type B = TwITblBt Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double Id Id (FM.FMList B3)
 
 alignInfixForward
-  :: InfixScoring
-  -> SimpleScoring
-  -> Vector BTI
-  -> Vector BTI
+  :: SimpleScoring
+  -> Scores
+  -> Vector IMCp
+  -> Vector IMCp
   -> Z:.F:.F:.F:.F:.F:.F:.F:.F
-alignInfixForward infixS simpleS i1 i2 = {-# SCC "alignInfixForward" #-} mutateTablesDefault $
-  gInfix (sScore infixS simpleS)
+alignInfixForward simpleS bgm i1 i2 = {-# SCC "alignInfixForward" #-} mutateTablesDefault $
+  gInfix (sScore simpleS bgm)
     (ITbl 1 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))  -- DD
     (ITbl 1 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))  -- II
     (ITbl 1 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))  -- MM
@@ -138,14 +130,14 @@ alignInfixForward infixS simpleS i1 i2 = {-# SCC "alignInfixForward" #-} mutateT
 alignInfixBacktrack
   :: FastChars
   -> Int
-  -> InfixScoring
   -> SimpleScoring
-  -> Vector BTI
-  -> Vector BTI
+  -> Scores
+  -> Vector IMCp
+  -> Vector IMCp
   -> Z:.F:.F:.F:.F:.F:.F:.F:.F
   -> [[B3]]
-alignInfixBacktrack fc width infixS simpleS i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
-  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore infixS simpleS <|| sBacktrackBuilder fc width infixS simpleS)
+alignInfixBacktrack fc width simpleS bgm i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
+  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore simpleS bgm <|| sBacktrackBuilder fc width simpleS bgm)
                                           (toBacktrack dd (undefined :: Id a -> Id a))
                                           (toBacktrack ii (undefined :: Id a -> Id a))
                                           (toBacktrack mm (undefined :: Id a -> Id a))
@@ -161,15 +153,18 @@ alignInfixBacktrack fc width infixS simpleS i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up
 alignInfix
   :: FastChars
   -> Int
-  -> InfixScoring
   -> SimpleScoring
+  -> Scores
   -> Vector BTI
   -> Vector BTI
   -> Int
   -> (Double , [[B3]])
-alignInfix fc width infixS simpleS i1 i2 k = {-# SCC "alignInfix" #-} (d, take k bs)
+alignInfix fc width simpleS bgm i1' i2' k = {-# SCC "alignInfix" #-} (d, take k bs)
   where d = unId $ axiom ss
-        fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward infixS simpleS i1 i2
-        bs = alignInfixBacktrack fc width infixS simpleS i1 i2 fwd
+        fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward simpleS bgm i1 i2
+        bs = alignInfixBacktrack fc width simpleS bgm i1 i2 fwd
+        mkI m = VU.zip m (VU.tail m)
+        i1 = mkI i1'
+        i2 = mkI i2'
 {-# NoInline alignInfix #-}
 

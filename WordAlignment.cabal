@@ -54,7 +54,7 @@ library
                , intern                     >= 0.9      &&  < 0.10
                , lens                       >= 4.0      &&  < 4.14
                , LinguisticsTypes           >= 0.0.0    &&  < 0.0.1
-               , NaturalLanguageAlphabets   >= 0.1.0    &&  < 0.2.0
+               , NaturalLanguageAlphabets   >= 0.1.1    &&  < 0.2.0
                , primitive                  >= 0.5      &&  < 0.7
                , PrimitiveArray             >= 0.6.0    &&  < 0.7.1
                , strict                     >= 0.3.2    &&  < 0.3.3
@@ -67,26 +67,15 @@ library
                , unordered-containers       >= 0.2.3    &&  < 0.2.6
                , vector                     >= 0.10     &&  < 0.12
   exposed-modules:
+    Linguistics.WordAlignment
     Linguistics.WordAlignment.Bigram
     Linguistics.WordAlignment.Common
---    Linguistics.FourWay
---    Linguistics.FourWay.Backward
---    Linguistics.FourWay.Common
---    Linguistics.FourWay.Forward
---    Linguistics.ThreeWay
---    Linguistics.ThreeWay.Bigram
---    Linguistics.ThreeWay.Common
---    Linguistics.ThreeWay.Simple
---    Linguistics.TwoWay
---    Linguistics.TwoWay.AdvancedBigram
---    Linguistics.TwoWay.Common
-    Linguistics.WordAlignment.Word
-    Linguistics.WordAlignment
     Linguistics.WordAlignment.TwoWay.Aligned
     Linguistics.WordAlignment.TwoWay.Bigram
     Linguistics.WordAlignment.TwoWay.Infix.Bigram
     Linguistics.WordAlignment.TwoWay.Infix.Simple
     Linguistics.WordAlignment.TwoWay.Simple
+    Linguistics.WordAlignment.Word
   default-language:
     Haskell2010
   default-extensions: BangPatterns
