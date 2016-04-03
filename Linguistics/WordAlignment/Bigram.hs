@@ -9,7 +9,7 @@
 -- overhead for actually storing the bigrams once (creating pointers instead of
 -- multiple copied 'Bigram' data structures.
 
-module Linguistics.Bigram where
+module Linguistics.WordAlignment.Bigram where
 
 import           Control.Applicative
 import           Control.Arrow

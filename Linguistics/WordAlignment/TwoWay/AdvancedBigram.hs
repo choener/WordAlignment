@@ -7,7 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Linguistics.TwoWay.AdvancedBigram where
+module Linguistics.WordAlignment.TwoWay.AdvancedBigram where
 
 import           Control.Applicative
 import           Control.Monad
@@ -33,7 +33,7 @@ import           FormalLanguage.GrammarProduct
 import           FormalLanguage.GrammarProduct.QQ
 import           NLP.Alphabet.MultiChar
 
-import           Linguistics.Bigram
+import           Linguistics.WordAlignment.Bigram
 
 
 [grammarProductF|Linguistics/TwoWay/AdvancedBigram.gra|]

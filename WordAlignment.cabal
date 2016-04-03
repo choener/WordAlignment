@@ -67,8 +67,8 @@ library
                , unordered-containers       >= 0.2.3    &&  < 0.2.6
                , vector                     >= 0.10     &&  < 0.12
   exposed-modules:
-    Linguistics.Bigram
-    Linguistics.Common
+    Linguistics.WordAlignment.Bigram
+    Linguistics.WordAlignment.Common
 --    Linguistics.FourWay
 --    Linguistics.FourWay.Backward
 --    Linguistics.FourWay.Common
@@ -79,12 +79,14 @@ library
 --    Linguistics.ThreeWay.Simple
 --    Linguistics.TwoWay
 --    Linguistics.TwoWay.AdvancedBigram
-    Linguistics.TwoWay.Aligned
-    Linguistics.TwoWay.Bigram
 --    Linguistics.TwoWay.Common
-    Linguistics.TwoWay.Simple
-    Linguistics.TwoWay.Infix.Simple
-    Linguistics.Word
+    Linguistics.WordAlignment.Word
+    Linguistics.WordAlignment
+    Linguistics.WordAlignment.TwoWay.Aligned
+    Linguistics.WordAlignment.TwoWay.Bigram
+    Linguistics.WordAlignment.TwoWay.Infix.Bigram
+    Linguistics.WordAlignment.TwoWay.Infix.Simple
+    Linguistics.WordAlignment.TwoWay.Simple
   default-language:
     Haskell2010
   default-extensions: BangPatterns

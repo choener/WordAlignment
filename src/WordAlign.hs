@@ -47,13 +47,13 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 import           NLP.Text.BTI
 
-import           Linguistics.Bigram
-import           Linguistics.Common
-import           Linguistics.TwoWay.Aligned
-import           Linguistics.TwoWay.Simple
-import           Linguistics.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
-import qualified Linguistics.TwoWay.Bigram as BI
-import qualified Linguistics.TwoWay.Infix.Simple as IS
+import           Linguistics.WordAlignment.Bigram
+import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.TwoWay.Aligned
+import           Linguistics.WordAlignment.TwoWay.Simple
+import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
+import qualified Linguistics.WordAlignment.TwoWay.Bigram as BI
+import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS
 
 import           Paths_WordAlignment (version)
 
@@ -86,7 +86,6 @@ data Config
     , infixScores   :: (Double,Double)
     , lpblock       :: Maybe (String,String)
     , showManual    :: Bool
-    , prettystupid  :: Bool
     , filterScore   :: Maybe Double
     , filterBacktrack :: Maybe Double
     }
@@ -120,7 +119,6 @@ oInfix2S = Infix2S
   , infixScores     = (-1,0)  &= help "prefix and suffix opening: (-1), extend (0)"
   , lpblock         = def
   , showManual      = def
-  , prettystupid    = def
   , filterScore     = def
   , filterBacktrack = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
@@ -331,7 +329,7 @@ prettyAli2 d s = do
     putStr $ show y
   putStrLn ""
 
-buildAlignmentSimple :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Builder
+buildAlignmentSimple :: Double -> ([Word],(Double,[[[Text]]])) -> TL.Builder
 buildAlignmentSimple k (ws,(s,(xs))) = TL.fromText hdr `mappend` ls `mappend` "\n" where
   ids = concat . intersperse " " . map (show . wordID)   $ ws
   wds = concat . intersperse "   WORD   " . map (concat . intersperse " " . map toUtf8String . VU.toList . wordWord) $ ws
@@ -339,7 +337,7 @@ buildAlignmentSimple k (ws,(s,(xs))) = TL.fromText hdr `mappend` ls `mappend` "\
   hdr = T.pack $ printf "IDS: %s SCORE: %.2f NSCORE: %.2f    WORDS: %s\n" ids s ns wds
   ls  = case xs of [] -> "" ; [xs'] -> buildLines xs'
 
-buildAlignment :: Double -> ([Linguistics.Word.Word],(Double,[[[Text]]])) -> TL.Text
+buildAlignment :: Double -> ([Word],(Double,[[[Text]]])) -> TL.Text
 buildAlignment k (ws,(s,(xss)))
   = {-# SCC "pretty_ali" #-} TL.toLazyText $ TL.fromLazyText hdr <> wds <> "\n" <> ls <> "\n"
     where
@@ -351,7 +349,7 @@ buildAlignment k (ws,(s,(xss)))
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
 
-buildAlignmentBuilder :: Double -> ([Linguistics.Word.Word],(Double,[[BI.B3]])) -> TL.Builder
+buildAlignmentBuilder :: Double -> ([Word],(Double,[[BI.B3]])) -> TL.Builder
 buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds <> "\n" <> ls <> "\n"
   where hdr = {-# SCC "buildAliBuilder/hdr" #-}
               TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "

@@ -1,12 +1,10 @@
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{- LANGUAGE MultiWayIf #-}
+{- LANGUAGE OverloadedStrings #-}
+{- LANGUAGE TypeOperators #-}
+{- LANGUAGE BangPatterns #-}
+{- LANGUAGE NoMonomorphismRestriction #-}
 
-{-# OPTIONS_GHC -fno-liberate-case #-}
-
-module Linguistics.TwoWay.Bigram where
+module Linguistics.WordAlignment.TwoWay.Bigram where
 
 import           Data.ByteString.Char8 (ByteString)
 import           Data.FMList (FMList)
@@ -32,8 +30,8 @@ import           DP.Alignment.Global.Linear2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
-import           Linguistics.Common
-import           Linguistics.Bigram
+import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.Bigram
 
 
 

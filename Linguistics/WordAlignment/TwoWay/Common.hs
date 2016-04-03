@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeOperators #-}
+{- LANGUAGE TypeOperators #-}
 
-module Linguistics.TwoWay.Common where
+module Linguistics.WordAlignment.TwoWay.Common where
 
 import           Control.Monad
 import           Data.ByteString (ByteString)

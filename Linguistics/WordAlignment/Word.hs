@@ -4,7 +4,7 @@
 -- | A single word in a language. Uses a 'MultiChar' encoding for the actual
 -- characters. MultiChar encodings need to be decoded for printing on screen.
 
-module Linguistics.Word where
+module Linguistics.WordAlignment.Word where
 
 import           Control.Applicative
 import           Control.DeepSeq

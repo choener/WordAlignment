@@ -2,7 +2,7 @@
 -- | Some common functions and things that are not of immediate importance to
 -- understand the algorithms.
 
-module Linguistics.Common where
+module Linguistics.WordAlignment.Common where
 
 import           Control.Monad (forM_)
 import           Data.ByteString (ByteString)

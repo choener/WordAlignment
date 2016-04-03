@@ -1,13 +1,13 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{- LANGUAGE RecordWildCards #-}
+{- LANGUAGE OverloadedStrings #-}
+{- LANGUAGE TypeOperators #-}
+{- LANGUAGE BangPatterns #-}
+{- LANGUAGE MultiWayIf #-}
+{- LANGUAGE NoMonomorphismRestriction #-}
 
-{-# OPTIONS_GHC -fno-liberate-case #-}
+{- OPTIONS_GHC -fno-liberate-case #-}
 
-module Linguistics.TwoWay.Simple where
+module Linguistics.WordAlignment.TwoWay.Simple where
 
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Vector.Fusion.Util (Id(..))
@@ -32,8 +32,7 @@ import           DP.Alignment.Global.Linear2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
-import Linguistics.Common
---import Linguistics.TwoWay.Common
+import Linguistics.WordAlignment.Common
 
 
 --type IMC = InternedMultiChar

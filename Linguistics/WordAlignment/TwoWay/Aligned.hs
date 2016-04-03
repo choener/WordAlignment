@@ -1,7 +1,7 @@
 
 -- | Efficient encoding of alignments.
 
-module Linguistics.TwoWay.Aligned where
+module Linguistics.WordAlignment.TwoWay.Aligned where
 
 import           Data.Aeson
 import           Data.ByteString.Lazy (ByteString)
@@ -14,7 +14,7 @@ import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Set as S
 
-import Linguistics.Word
+import Linguistics.WordAlignment.Word
 
 
 

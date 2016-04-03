@@ -1,7 +1,8 @@
 
-module Linguistics.TwoWay.Infix.Simple where
+module Linguistics.WordAlignment.TwoWay.Infix.Simple where
 
 import           Data.ByteString.Char8 (ByteString)
+import           Data.FMList (FMList)
 import           Data.FMList (FMList)
 import           Data.Sequence (Seq)
 import           Data.Stringable (toText)
@@ -10,16 +11,15 @@ import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)
 import           GHC.Exts
 import qualified Data.ByteString.Char8 as B
+import qualified Data.FMList as FM
 import qualified Data.List as L
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Format as TF
+import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe (unsafePerformIO)
-import qualified Data.Text.Lazy.Builder as TLB
-import           Data.FMList (FMList)
-import qualified Data.FMList as FM
-import qualified Data.Text.Format as TF
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -27,8 +27,8 @@ import           DP.Alignment.Global.Infix2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
-import           Linguistics.Common
-import           Linguistics.Word (FastChars, fastChar)
+import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.Word (FastChars, fastChar)
 
 
 
