@@ -1,15 +1,15 @@
 
 module Linguistics.WordAlignment.AlignmentBuilder where
 
-import Data.Monoid
-import Control.Lens
-import qualified Data.Vector.Unboxed as VU
+import           Control.Lens
+import           Data.Monoid
+import           Prelude hiding (Word)
 import qualified Data.Text.Format as TF
 import qualified Data.Text.Lazy.Builder as TL
-import Prelude hiding (Word)
+import qualified Data.Vector.Unboxed as VU
 
-import Linguistics.WordAlignment.Common
-import Linguistics.WordAlignment.Word (Word(..), wordLazyTextWSB)
+import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.Word (Word(..), wordLazyTextWSB)
 
 -- |
 

@@ -21,11 +21,11 @@ description:
 
 
 Extra-Source-Files:
-  README.md
   changelog.md
-  stack.yaml
+  README.md
   scores/defaultBigramScores
   scores/defaultSimpleScores
+  stack.yaml
   tests/example.bgms
   tests/example.words
 
@@ -47,7 +47,6 @@ library
                , bimaps                     >= 0.1
                , bytestring
                , containers
-               , mtl
                , deepseq                    >= 1.3      &&  < 1.5
                , file-embed                 >= 0.0.6    &&  < 0.1
                , fmlist                     >= 0.9      &&  < 0.10
@@ -58,6 +57,7 @@ library
                , intern                     >= 0.9      &&  < 0.10
                , lens                       >= 4.0      &&  < 4.14
                , LinguisticsTypes           >= 0.0.0    &&  < 0.0.1
+               , mtl
                , NaturalLanguageAlphabets   >= 0.1.1    &&  < 0.2.0
                , primitive                  >= 0.5      &&  < 0.7
                , PrimitiveArray             >= 0.6.0    &&  < 0.7.1
@@ -90,11 +90,11 @@ library
                     , OverloadedStrings
                     , PatternGuards
                     , QuasiQuotes
+                    , RecordWildCards
                     , StandaloneDeriving
                     , TemplateHaskell
                     , TypeFamilies
                     , TypeOperators
-                    , RecordWildCards
   ghc-options:
     -fsimpl-tick-factor=900
     -O2
@@ -110,7 +110,7 @@ executable WordAlign
   build-depends: base
                , aeson
                , bytestring
-               , cmdargs                    == 0.10.*
+               , cmdargs                    >= 0.10
                , containers
                , file-embed
                , intern
@@ -159,19 +159,19 @@ test-suite properties
   default-language:
     Haskell2010
   default-extensions: BangPatterns
+                    , OverloadedStrings
                     , ScopedTypeVariables
                     , TemplateHaskell
-                    , OverloadedStrings
   build-depends: base
-               , tasty            >= 0.11
-               , tasty-quickcheck >= 0.8
-               , tasty-silver     >= 3.1
-               , tasty-th         >= 0.1
-               , WordAlignment
-               , NaturalLanguageAlphabets
-               , text
-               , containers
                , bytestring
+               , containers
+               , NaturalLanguageAlphabets
+               , tasty                      >= 0.11
+               , tasty-quickcheck           >= 0.8
+               , tasty-silver               >= 3.1
+               , tasty-th                   >= 0.1
+               , text
+               , WordAlignment
 
 
 

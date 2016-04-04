@@ -15,15 +15,17 @@ import           Test.Tasty.Silver as S
 import           Test.Tasty.Silver.Interactive as SI
 import           Test.Tasty.TH
 
+import           Linguistics.WordAlignment.Bigram
+import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
-import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
-import           Linguistics.WordAlignment.Bigram
 
 import           Linguistics.WordAlignment
 
-bla = do
-  ws <- (map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
+
+
+infixBigramTest = do
+  ws <- (map addWordDelims . map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
   simpleScoring <- simpleScoreFromFile "scores/defaultBigramScoring"
   let chkLs = S.fromList . map wordLang $ ws
   bigramScoring <- BL.readFile "tests/example.bgms" >>= return . generateLookups chkLs (-999999)
@@ -36,27 +38,16 @@ bla = do
     return $ TL.toLazyText ali
   return $ TL.toStrict $ TL.concat $ concat ts
 
-golden' = S.goldenVsAction
-            "Infix-Bigram"
-            "tests/infix-bigram.golden"
-            bla
-            id
-
-golden
-  = S.goldenVsProg
-      "Infix/Bigram"
+goldenInfixBigramTest
+  = S.goldenVsAction
+      "Infix-Bigram"
       "tests/infix-bigram.golden"
-      "stack"
-      [ "exec"
-      , "WordAlign"
-      , "--"
-      , "infix2bigram"
-      , "--simplescorefile tests/defaultSimpleScoring"
-      ]
-      ""
+      infixBigramTest
+      id
+
 
 main :: IO ()
 main = do
-  SI.defaultMain golden'
+  SI.defaultMain goldenInfixBigramTest
   $(defaultMainGenerator)
 
