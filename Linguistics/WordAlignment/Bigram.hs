@@ -34,8 +34,12 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Stringable as SA
+import           Debug.Trace
+import           Text.Printf
 
 import           NLP.Text.BTI
+
+import           Linguistics.WordAlignment.Common
 
 
 
@@ -129,4 +133,13 @@ generateLookups langs wd b = lines2mapping xs where
     |  (l^._1) `S.member` langs
     && (l^._2) `S.member` langs = True
     | otherwise = False
+
+-- | (write me)
+
+getScores2 :: Bool -> Mapping -> Lang -> Lang -> Scores
+getScores2 vrb ss a b
+  | Just z <- M.lookup (a:!:b) (lliid ss) = z
+  | vrb = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
+                HM.empty
+  | otherwise = HM.empty
 

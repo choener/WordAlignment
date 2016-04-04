@@ -198,7 +198,7 @@ runInfix2Bigram o@Infix2Bigram{..} fc wss = do
   forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
     let (hx,hy) = head ws
-    let !sco = getScores2 bigramScoring (wordLang hx) (wordLang hy)
+    let !sco = getScores2 True bigramScoring (wordLang hx) (wordLang hy)
     performGC
     forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
       let (d,bts) = alignInfixBigram2 fc 8 simpleScoring sco (wordWord x) (wordWord y) 1
@@ -257,7 +257,7 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
     performGC
     -- get score pairing
     let (hx,hy) = head ws
-    let !sco = {-# SCC "run2/sco" #-} getScores2 scoring (wordLang hx) (wordLang hy)
+    let !sco = {-# SCC "run2/sco" #-} getScores2 True scoring (wordLang hx) (wordLang hy)
     if not serialized
     then do
       -- align the words the in @ws@ pairing
@@ -340,14 +340,6 @@ type WSS = [(Int,[(Word,Word)])] -- V.Vector (V.Vector (Word,Word))
 
 -- | (write me)
 
-getScores2 :: Mapping -> Lang -> Lang -> Scores
-getScores2 ss a b
-  | Just z <- M.lookup (a:!:b) (lliid ss) = z
-  | otherwise = trace (printf "Language pair %s %s not found in mapping! Returning empty hashmap\n" (toUtf8String a) (toUtf8String b))
-                HM.empty
-
--- | (write me)
-
 prettyAli2 :: Double -> [(BTI,BTI)] -> IO ()
 prettyAli2 d s = do
   print d
@@ -378,19 +370,4 @@ buildAlignment k (ws,(s,(xss)))
       wid0 = wordID $ ws!!0
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
-
-buildAlignmentBuilder :: Double -> ([Word],(Double,[[B3]])) -> TL.Builder
-buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> wds <> "\n" <> ls <> "\n"
-  where hdr = {-# SCC "buildAliBuilder/hdr" #-}
-              TF.build "IDS: {} {} SCORE: {} NSCORE: {}    WORD: "
-                       (wid0, wid1, TF.left 6 ' ' $ TF.fixed 2 s, TF.left 6 ' ' $ TF.fixed 2 normScore)
-        wds = wordLazyTextWSB (ws!!0) <> "   WORD: " <> wordLazyTextWSB (ws!!1)
-        normScore = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
-        wid0 = wordID $ ws!!0
-        wid1 = wordID $ ws!!1
-        ls = mconcat $ map buildAli xss
-        buildAli b3s = let l1 = b3s ^. traverse . _1
-                           l2 = b3s ^. traverse . _2
-                           l3 = b3s ^. traverse . _3
-                       in  l1 <> "\n" <> l2 <> "\n" <> l3 <> "\n"
 

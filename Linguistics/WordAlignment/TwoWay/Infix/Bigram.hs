@@ -37,9 +37,7 @@ sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
 sScore ss@SimpleScoring{..} bgm = SigInfix
   { align = \ww (Z:.(lb,b):.(lu,u)) ->
               let s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
-              in  if (b == "h" && u == "h")
-                  then traceShow (bgm,s,lb,b,lu,u) $ ww + s
-                  else ww + s
+              in  ww + s
   , contL = \ww (Z:.b:._) -> ww + gapExt
   , contU = \ww (Z:._:.u) -> ww + gapExt
   , done  = const 0
