@@ -112,6 +112,7 @@ executable WordAlign
                , bytestring
                , cmdargs                    >= 0.10
                , containers
+               , DPutils                    >= 0.0      &&  < 0.1
                , file-embed
                , intern
                , lens
@@ -165,6 +166,7 @@ test-suite properties
   build-depends: base
                , bytestring
                , containers
+               , DPutils                    >= 0.0      &&  < 0.1
                , NaturalLanguageAlphabets
                , tasty                      >= 0.11
                , tasty-quickcheck           >= 0.8

@@ -20,6 +20,8 @@ packages:
   extra-dep: true
 - location: ../Lib-AlignmentAlgorithms/
   extra-dep: true
+- location: ../Lib-DPutils/
+  extra-dep: true
 
 extra-deps:
 - cereal-text-0.1.0.1

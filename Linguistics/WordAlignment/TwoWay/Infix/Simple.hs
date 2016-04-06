@@ -13,7 +13,7 @@ import qualified Data.Vector.Unboxed as VU
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
-import           DP.Alignment.Global.Infix2
+import           DP.Alignment.SemiGlobal.Infix2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
