@@ -19,14 +19,14 @@ import           Linguistics.WordAlignment.Word (Word(..), wordLazyTextWSB)
 
 buildAlignmentBuilder :: BuildAli t => Double -> ([Word],(Double,[t])) -> Builder
 buildAlignmentBuilder k (ws,(s,xss)) = {-# SCC "buildAliBuilder" #-} hdr <> "\n" <> ls <> "\n"
-  where hdr = TF.build "IDS:{} SCORE: {} NSCORE: {}  {}"
+  where hdr = TF.build "IDS:{} SCORE: {} NSCORE: {} {}"
                        ( wids
                        , TF.left 6 ' ' $ TF.fixed 2 s
                        , TF.left 6 ' ' $ TF.fixed 2 normScore
                        , words
                        )
         wids  = mconcat . map (TF.build " {}" . TF.Only . wordID) $ ws
-        words = mconcat . map (TF.build " WORD: {}" . TF.Only . wordLazyTextWSB) $ ws
+        words = mconcat . map (TF.build "   WORD: {}" . TF.Only . wordLazyTextWSB) $ ws
         normScore = s / (maximum $ 1 : map ((+k) . fromIntegral . VU.length . wordWord) ws)
         ls = mconcat $ map buildAli xss
 
