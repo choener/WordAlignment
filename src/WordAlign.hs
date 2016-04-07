@@ -51,9 +51,9 @@ import           Linguistics.WordAlignment
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.TwoWay.Aligned
-import           Linguistics.WordAlignment.TwoWay.Simple
+import           Linguistics.WordAlignment.TwoWay.Global.Simple
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
-import qualified Linguistics.WordAlignment.TwoWay.Bigram as BI
+import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as BI
 import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS
 
 import           Paths_WordAlignment (version)
@@ -61,7 +61,7 @@ import           Paths_WordAlignment (version)
 
 
 data Config
-  = TwoWaySimple
+  = Global2Simple
     { scoreFile     :: String
     , lpblock       :: Maybe (String,String)
     , showManual    :: Bool
@@ -69,7 +69,7 @@ data Config
     , outfile       :: String
     , nobacktrack   :: Bool
     }
-  | TwoWay
+  | Global2Bigram
     { scoreFile     :: String
     , bigramDef     :: Double
     , gapOpen       :: Double
@@ -99,7 +99,7 @@ data Config
     }
   deriving (Show,Data,Typeable)
 
-twowaySimple = TwoWaySimple
+oGlobal2Simple = Global2Simple
   { scoreFile  = def &= help "the file to read the simple scores from"
   , lpblock    = Nothing
   , showManual = False    &= help "show the manual and quit"
@@ -108,7 +108,7 @@ twowaySimple = TwoWaySimple
   , nobacktrack   = False
   } &= help "Align words based on a simple, linear scoring model for gaps, and an unigram model for matches."
 
-twoway = TwoWay
+oGlobal2Bigram = Global2Bigram
   { scoreFile  = "" &= help "the file to read the scores from"
   , bigramDef  = (-20) &= help "score to use for unknown bigram matches"
   , gapOpen    = (-5) &= help "cost to open a gap"
@@ -139,7 +139,7 @@ oInfix2Bigram = Infix2Bigram
   , filterBacktrack = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
-config = [twowaySimple, twoway, oInfix2Simple, oInfix2Bigram]
+config = [oGlobal2Simple, oGlobal2Bigram, oInfix2Simple, oInfix2Bigram]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
   &= verbosity
@@ -159,10 +159,10 @@ main = do
   ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
   let !fc = fastChars 8 ws
   case o of
-    TwoWaySimple{..} -> run2Simple o (blockSelection2 lpblock ws)
-    TwoWay{..}       -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
-    Infix2Simple{..} -> runInfix2Simple o fc $ blockSelection2 lpblock ws
-    Infix2Bigram{..} -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
+    Global2Simple{..} -> run2Simple o (blockSelection2 lpblock ws)
+    Global2Bigram{..} -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
+    Infix2Simple{..}  -> runInfix2Simple o fc $ blockSelection2 lpblock ws
+    Infix2Bigram{..}  -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
 
 
 
@@ -210,7 +210,9 @@ runInfix2Bigram o@Infix2Bigram{..} fc wss = do
 -- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.
 
 run2Simple :: Config -> WSS -> IO ()
-run2Simple TwoWaySimple{..} wss = do
+run2Simple Global2Simple{..} wss = do
+  error "write along the lines of infix2s / infix2b"
+  {-
   hndl <- if null outfile then return stdout else openFile outfile AppendMode
   scoring <- simpleScoreFromFile scoreFile
   let wsslen = length wss
@@ -237,6 +239,7 @@ run2Simple TwoWaySimple{..} wss = do
       when (prettystupid && k `mod` 10000 == 0) $ printf "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl sss
       --when (isJust pg) $ let Just pg' = pg in CAP.tick pg'
+-}
 
 -- | Given a @Config@ and a @List of List of Word-Pairs@ align everything.
 --
@@ -244,7 +247,9 @@ run2Simple TwoWaySimple{..} wss = do
 -- element of each inner pairing?
 
 run2 :: Config -> WSS -> IO ()
-run2 TwoWay{..} wss = {-# SCC "run2" #-} do
+run2 Global2Bigram{..} wss = {-# SCC "run2" #-} do
+  error "write along the lines of infix2s / infix2b"
+{-
   hndl <- if null outfile then return stdout else openFile outfile AppendMode
   let wsslen = length wss
   -- build up scoring system. This will force the spine of the
@@ -275,9 +280,8 @@ run2 TwoWay{..} wss = {-# SCC "run2" #-} do
                                  in  (wordID x, wordID y, d)
                                )
                     ) ws
---      let aliset = mkAlignedSet ws as
---      BL.putStrLn $ encode aliset
       BL.putStrLn $ encodeAlignedSet ws as
+-}
 
 scoreFilter (Just z) d blder | z > d = mempty
 scoreFilter _        _ blder = blder

@@ -16,7 +16,9 @@ synopsis:       Bigram word pair alignments.
 description:
                 The library provides fast dynamic programming algorithms to
                 align word pairs using either a simple or a bigram scoring
-                scheme.
+                scheme. Simple schemes are unigram schemes in nature but use an
+                ad-hoc scoring scheme. Bigram schemes use actual training data
+                for bigram frequences.
 
 
 
@@ -76,10 +78,10 @@ library
     Linguistics.WordAlignment.Bigram
     Linguistics.WordAlignment.Common
     Linguistics.WordAlignment.TwoWay.Aligned
-    Linguistics.WordAlignment.TwoWay.Bigram
+    Linguistics.WordAlignment.TwoWay.Global.Bigram
     Linguistics.WordAlignment.TwoWay.Infix.Bigram
     Linguistics.WordAlignment.TwoWay.Infix.Simple
-    Linguistics.WordAlignment.TwoWay.Simple
+    Linguistics.WordAlignment.TwoWay.Global.Simple
     Linguistics.WordAlignment.Word
   default-language:
     Haskell2010
