@@ -1,11 +1,3 @@
-{- LANGUAGE RecordWildCards #-}
-{- LANGUAGE OverloadedStrings #-}
-{- LANGUAGE TypeOperators #-}
-{- LANGUAGE BangPatterns #-}
-{- LANGUAGE MultiWayIf #-}
-{- LANGUAGE NoMonomorphismRestriction #-}
-
-{- OPTIONS_GHC -fno-liberate-case #-}
 
 module Linguistics.WordAlignment.TwoWay.Global.Simple where
 
@@ -87,7 +79,7 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
 -- |
 
 alignGlobalBacktrack :: FastChars -> Int -> SimpleScoring -> Vector BTI -> Vector BTI -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
-alignGlobalBacktrack fc width scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map runBacktrack . unId $ axiom b
+alignGlobalBacktrack fc width scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map FM.toList . unId $ axiom b
   where (Z:.b) = gGlobal (sScore scoring <|| sBacktrackBuilder fc width scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 

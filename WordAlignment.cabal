@@ -77,11 +77,10 @@ library
     Linguistics.WordAlignment.AlignmentBuilder
     Linguistics.WordAlignment.Bigram
     Linguistics.WordAlignment.Common
-    Linguistics.WordAlignment.TwoWay.Aligned
     Linguistics.WordAlignment.TwoWay.Global.Bigram
+    Linguistics.WordAlignment.TwoWay.Global.Simple
     Linguistics.WordAlignment.TwoWay.Infix.Bigram
     Linguistics.WordAlignment.TwoWay.Infix.Simple
-    Linguistics.WordAlignment.TwoWay.Global.Simple
     Linguistics.WordAlignment.Word
   default-language:
     Haskell2010

@@ -50,7 +50,6 @@ import           NLP.Text.BTI
 import           Linguistics.WordAlignment
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
-import           Linguistics.WordAlignment.TwoWay.Aligned
 import           Linguistics.WordAlignment.TwoWay.Global.Simple
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
 import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as BI

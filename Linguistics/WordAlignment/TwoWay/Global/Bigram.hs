@@ -1,8 +1,3 @@
-{- LANGUAGE MultiWayIf #-}
-{- LANGUAGE OverloadedStrings #-}
-{- LANGUAGE TypeOperators #-}
-{- LANGUAGE BangPatterns #-}
-{- LANGUAGE NoMonomorphismRestriction #-}
 
 module Linguistics.WordAlignment.TwoWay.Global.Bigram where
 
@@ -89,7 +84,7 @@ alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutate
 -- |
 
 alignGlobalBacktrackBuilder :: FastChars -> Int -> Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
-alignGlobalBacktrackBuilder !fc !k !ds !gapopen !scoring !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map runBacktrack . unId $ axiom b
+alignGlobalBacktrackBuilder !fc !k !ds !gapopen !scoring !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map FM.toList . unId $ axiom b
   where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackBuilder fc k ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrackBuilder #-}
 
