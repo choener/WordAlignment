@@ -61,9 +61,9 @@ runTwowayAlignments
   => (Int -> Vector (Word,Word) -> AlignmentT t m t)
   -- | Perform the actual alignment
   -> (t -> FastChars -> Word -> Word -> AlignmentT t m Builder)
-  -- | An action that might do something with each pair counter, pairX,
-  -- pairY tripel.
-  -> (Int -> Word -> Word -> AlignmentT t m ())
+  -- | An action that might do something with each total length, pair
+  -- counter, pairX, pairY tripel.
+  -> (Int -> Int -> Word -> Word -> AlignmentT t m ())
   -- | The input words
   -> Vector Word
   -- | A producer of 'Builder's
@@ -75,7 +75,7 @@ runTwowayAlignments groupAction alignXY eachXY ws = do
   for (languagePairProducer ws) $ \(lenPs,ps) -> do
     !t <- lift $ groupAction lenPs ps
     for (each $ V.indexed ps) $ \(k,(x,y)) -> do
-      lift $ eachXY k x y
+      lift $ eachXY lenPs k x y
       lift (alignXY t fc x y) >>= yield
 {-# Inline runTwowayAlignments #-}
 
@@ -121,4 +121,12 @@ newtype AlignmentT t (m :: * -> *) a = AlignmentT
     , MonadState (AlignmentConfig t)
     , MonadTrans
     )
+
+-- | Wrap up the full call to the monad transformer
+
+runAlignment
+  :: Monad m
+  => Effect (AlignmentT t m) a -> AlignmentConfig t -> m a
+runAlignment = evalStateT . runAlignmentT . runEffect
+{-# Inline runAlignment #-}
 

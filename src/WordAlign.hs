@@ -44,6 +44,7 @@ import qualified Data.Text.Format as TF
 import           Data.Monoid ((<>))
 import           Control.Lens
 import           Pipes
+import qualified Data.Foldable as F
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -170,6 +171,8 @@ main = do
 
 
 -- | Affine infix simple grammar
+--
+-- TODO Move everything except the consumer into Linguistics.WordAlignment
 
 runInfix2Simple :: Config -> V.Vector Word -> IO ()
 runInfix2Simple Infix2Simple{..} ws = do
@@ -183,19 +186,17 @@ runInfix2Simple Infix2Simple{..} ws = do
                 $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
         in  return ali
       {-# Inline alignXY #-}
-  let eachXY k x y =
+  let eachXY len k x y =
         let wLx = show $ wordLang x
             wLy = show $ wordLang y
-            len = (-1) :: Int
         in  lift $ when (v==Loud && k `mod` 10000 == 0)
                  $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
       {-# Inline eachXY #-}
-  (evalStateT . runAlignmentT . runEffect)
+  runAlignment
     (for  (runTwowayAlignments groupAction alignXY eachXY ws)
           (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
     )
     (AlignmentConfig 8 0 0 ())
-  return ()
 
 {-
 runInfix2Simple :: Config -> FastChars -> WSS -> IO ()
