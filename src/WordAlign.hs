@@ -178,7 +178,7 @@ runInfix2Simple :: Config -> V.Vector Word -> IO ()
 runInfix2Simple Infix2Simple{..} ws = do
   !scoring <- simpleScoreFromFile simpleScoreFile
   !v <- getVerbosity
-  let groupAction _ _ = return ()
+  let groupAction _ _ = lift performGC
       {-# Inline groupAction #-}
   let alignXY () fc x y =
         let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
