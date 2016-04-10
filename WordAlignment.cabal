@@ -141,6 +141,7 @@ executable WordAlign
     Haskell2010
   default-extensions: BangPatterns
                     , DeriveDataTypeable
+                    , FlexibleContexts
                     , OverloadedStrings
                     , PatternGuards
                     , RecordWildCards
