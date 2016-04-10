@@ -3,6 +3,7 @@
 
 module Main where
 
+import           Control.Monad.State.Strict
 import           Control.Arrow ((***),(&&&))
 import           Control.Concurrent (threadDelay)
 import           Control.Monad (forM_,when)
@@ -42,6 +43,7 @@ import           Data.Stringable (toString)
 import qualified Data.Text.Format as TF
 import           Data.Monoid ((<>))
 import           Control.Lens
+import           Pipes
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -90,7 +92,7 @@ data Config
     }
   | Infix2Bigram
     { simpleScoreFile :: String
-    , bigramScoreFile :: String
+    , bigramLogOdds :: String
     , lpblock         :: Maybe (String,String)
     , showManual      :: Bool
     , filterScore     :: Maybe Double
@@ -131,7 +133,7 @@ oInfix2Simple = Infix2Simple
 
 oInfix2Bigram = Infix2Bigram
   { simpleScoreFile = def
-  , bigramScoreFile = def
+  , bigramLogOdds   = def
   , lpblock         = def
   , showManual      = def
   , filterScore     = def
@@ -160,13 +162,42 @@ main = do
   case o of
     Global2Simple{..} -> run2Simple o (blockSelection2 lpblock ws)
     Global2Bigram{..} -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
-    Infix2Simple{..}  -> runInfix2Simple o fc $ blockSelection2 lpblock ws
+    --Infix2Simple{..}  -> runInfix2Simple o fc $ blockSelection2 lpblock ws
     Infix2Bigram{..}  -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
+    --
+    Infix2Simple{..}  -> runInfix2Simple o ws
 
 
 
 -- | Affine infix simple grammar
 
+runInfix2Simple :: Config -> V.Vector Word -> IO ()
+runInfix2Simple Infix2Simple{..} ws = do
+  !scoring <- simpleScoreFromFile simpleScoreFile
+  !v <- getVerbosity
+  let groupAction _ _ = return ()
+      {-# Inline groupAction #-}
+  let alignXY () fc x y =
+        let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
+            ali = scoreFilter filterScore d
+                $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
+        in  return ali
+      {-# Inline alignXY #-}
+  let eachXY k x y =
+        let wLx = show $ wordLang x
+            wLy = show $ wordLang y
+            len = (-1) :: Int
+        in  lift $ when (v==Loud && k `mod` 10000 == 0)
+                 $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
+      {-# Inline eachXY #-}
+  (evalStateT . runAlignmentT . runEffect)
+    (for  (runTwowayAlignments groupAction alignXY eachXY ws)
+          (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+    )
+    (AlignmentConfig 8 0 0 ())
+  return ()
+
+{-
 runInfix2Simple :: Config -> FastChars -> WSS -> IO ()
 runInfix2Simple o@Infix2Simple{..} fc wss = do
   hndl <- return stdout
@@ -182,6 +213,7 @@ runInfix2Simple o@Infix2Simple{..} fc wss = do
       let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
       when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
       TL.hPutStr hndl $ TL.toLazyText ali
+-}
 
 -- | Affine infix bigram grammar
 
@@ -190,7 +222,7 @@ runInfix2Bigram o@Infix2Bigram{..} fc wss = do
   hndl <- return stdout
   simpleScoring <- simpleScoreFromFile simpleScoreFile
   let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
-  bigramScoring <- BL.readFile bigramScoreFile >>= return . generateLookups chkLs (-999999)
+  bigramScoring <- BL.readFile bigramLogOdds >>= return . generateLookups chkLs (-999999)
   v <- getVerbosity
   let wsslen = length wss
   -- for each language pair

@@ -36,7 +36,7 @@ extra-deps:
 
 flags:
   WordAlignment:
-    debug: true
+    debug: false
 
 ghc-options:
   WordAlign: -O2 -fllvm -optlo-O3
