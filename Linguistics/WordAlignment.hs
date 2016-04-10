@@ -17,6 +17,7 @@ import           Data.List (groupBy)
 import           Data.Function (on)
 import           Control.Arrow (second)
 import           Control.Lens hiding (each)
+import           Control.DeepSeq
 
 import           Data.Vector.Combined
 
@@ -90,13 +91,13 @@ languagePairProducer
 languagePairProducer ws = do
   -- produces a vector with (wordLanguage, first index in @ws@, length of
   -- group)
-  let gs = V.fromList . map (\g@((i,w):_) -> (wordLang w,i,length g))
+  let gs = deepseq ws . V.fromList . map (\g@((i,w):_) -> (wordLang w,i,length g))
          . groupBy ((==) `on` (wordLang . snd)) . V.toList . V.indexed $ ws
   -- from @gs@ we generate the upper-triangular pairs
   let (lenWgs,wgs) = second (V.map mkGroup) . upperTriVG OnDiag $ gs
   aliGroups .= lenWgs
   -- each wgs
-  for (each $ V.indexed wgs) $ \(k,w) -> aliCurGroup .= k >> yield w
+  for (each . zip [1..] . V.toList $ wgs) $ \(k,w) -> aliCurGroup .= k >> yield w
   where
     -- This builds up a group
     mkGroup ( (langX,startX,lengthX) , (langY,startY,lengthY) )
