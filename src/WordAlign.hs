@@ -191,8 +191,8 @@ runInfix2Simple Infix2Simple{..} ws = do
             wLy = toString $ wordLang y
         in  do numGs <- use aliGroups
                curG  <- use aliCurGroup
-               lift . when (v==Loud && k `mod` 10000 == 0)
-                    $ hPrintf stderr "%5d %5d %s %s %10d %10d\n" numGs curG wLx wLy len k
+               lift . when (v==Loud && k `mod` 10000 == 9999)
+                    $ hPrintf stderr "%5d %5d   %s %s %10d %10d\n" numGs (curG +1) wLx wLy len (k+1)
       {-# Inline eachXY #-}
   runAlignment
     (for  (runTwowayAlignments groupAction alignXY eachXY ws)
