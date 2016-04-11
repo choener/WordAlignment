@@ -3,48 +3,26 @@
 
 module Main where
 
-import           Control.Monad.State.Strict
 import           Control.Arrow ((***),(&&&))
-import           Control.Concurrent (threadDelay)
+import           Control.Lens
 import           Control.Monad (forM_,when)
-import           Control.Parallel.Strategies (rdeepseq,parMap,parBuffer,using,evalTuple2,r0,rseq,evalBuffer,parList,evalList,evalTuple3,evalTuple5)
-import           Data.Aeson (encode)
+import           Control.Monad.Trans.Class (lift)
 import           Data.FileEmbed
-import           Data.Function (on)
-import           Data.List (sortBy,groupBy,intersperse,genericLength)
-import           Data.Maybe (isJust)
-import           Data.Sequence (Seq)
-import           Data.Strict.Tuple
-import           Data.Text (Text)
+import           Data.Stringable (toString)
 import           Data.Version (showVersion)
-import           Debug.Trace
-import           Debug.Trace (trace)
-import           GHC.Conc (numCapabilities)
-import           GHC.IO.Handle
+import           Pipes (for)
 import           Prelude hiding (Word)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
-import qualified Data.Text.Lazy as TL
 import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as VU
 import           System.Console.CmdArgs
 import           System.Exit
-import           System.IO
+import           System.IO (stderr, stdout, stdin)
 import           System.Mem (performGC)
 import           Text.Printf
-import           Text.Read (readMaybe)
-import           Data.Stringable (toString)
-import qualified Data.Text.Format as TF
-import           Data.Monoid ((<>))
-import           Control.Lens
-import           Pipes
-import qualified Data.Foldable as F
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
@@ -53,6 +31,7 @@ import           NLP.Text.BTI
 import           Linguistics.WordAlignment
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.PipedPairs
 import           Linguistics.WordAlignment.TwoWay.Global.Simple
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
 import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as BI
@@ -155,16 +134,16 @@ main = do
   when (showManual o) $ do
     BS.putStrLn embeddedManual
     exitSuccess
-  hSetBuffering stdin  $ LineBuffering
-  hSetBuffering stdout $ LineBuffering
-  hSetBuffering stderr $ LineBuffering
+  --hSetBuffering stdin  $ LineBuffering
+  --hSetBuffering stdout $ LineBuffering
+  --hSetBuffering stderr $ LineBuffering
   ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
   let !fc = fastChars 8 ws
   case o of
-    Global2Simple{..} -> run2Simple o (blockSelection2 lpblock ws)
-    Global2Bigram{..} -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
+    --Global2Simple{..} -> run2Simple o (blockSelection2 lpblock ws)
+    --Global2Bigram{..} -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
     --Infix2Simple{..}  -> runInfix2Simple o fc $ blockSelection2 lpblock ws
-    Infix2Bigram{..}  -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
+    --Infix2Bigram{..}  -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
     --
     Infix2Simple{..}  -> runInfix2Simple o ws
 
@@ -220,7 +199,7 @@ runInfix2Simple o@Infix2Simple{..} fc wss = do
 
 -- | Affine infix bigram grammar
 
-runInfix2Bigram :: Config -> FastChars -> WSS -> IO ()
+--runInfix2Bigram :: Config -> FastChars -> WSS -> IO ()
 runInfix2Bigram o@Infix2Bigram{..} fc wss = do
   hndl <- return stdout
   simpleScoring <- simpleScoreFromFile simpleScoreFile
@@ -243,7 +222,7 @@ runInfix2Bigram o@Infix2Bigram{..} fc wss = do
 
 -- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.
 
-run2Simple :: Config -> WSS -> IO ()
+--run2Simple :: Config -> WSS -> IO ()
 run2Simple Global2Simple{..} wss = do
   error "write along the lines of infix2s / infix2b"
   {-
@@ -280,7 +259,7 @@ run2Simple Global2Simple{..} wss = do
 -- TODO Can we get around explicitly forcing the outer spine and the first
 -- element of each inner pairing?
 
-run2 :: Config -> WSS -> IO ()
+--run2 :: Config -> WSS -> IO ()
 run2 Global2Bigram{..} wss = {-# SCC "run2" #-} do
   error "write along the lines of infix2s / infix2b"
 {-
@@ -324,6 +303,7 @@ btFilter True _        d xs = []
 btFilter _    (Just z) d xs | z > d = []
 btFilter _    _        _ xs = xs
 
+{-
 -- | Given a set of words from different languages, we want to do two
 -- things:
 --
@@ -375,9 +355,11 @@ blockSelection2 s ws = {-# SCC "blockSelection2" #-} filter (not . null . Prelud
         mkCmp (Just (a,b)) = \k l -> traceShow ("Unknown languages or ID's: " ++ a ++ " , " ++ b) $ False
 
 type WSS = [(Int,[(Word,Word)])] -- V.Vector (V.Vector (Word,Word))
+-}
 
 -- | (write me)
 
+{-
 prettyAli2 :: Double -> [(BTI,BTI)] -> IO ()
 prettyAli2 d s = do
   print d
@@ -408,4 +390,4 @@ buildAlignment k (ws,(s,(xss)))
       wid0 = wordID $ ws!!0
       wid1 = wordID $ ws!!1
       ls  = case xss of [] -> "" ; [xs'] -> buildLines $ ["^","^","0.0"] : xs'
-
+-}

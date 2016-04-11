@@ -6,6 +6,23 @@
 
 module Linguistics.WordAlignment.PipedPairs where
 
+import           Control.Arrow (second)
+import           Control.DeepSeq
+import           Control.Lens hiding (each)
+import           Control.Monad.State.Strict
+import           Data.Default
+import           Data.Function (on)
+import           Data.Function (on)
+import           Data.List (groupBy)
+import           Data.Text.Lazy.Builder (Builder)
+import           Data.Vector (Vector)
+import           Pipes hiding ((<~))
+import           Prelude hiding (Word)
+import qualified Data.Vector as V
+
+import           Data.Vector.Combined
+
+import           Linguistics.WordAlignment.Word (Word, wordLang, FastChars, fastChars)
 
 
 -- | Alignment configuration for use in the Reader.
