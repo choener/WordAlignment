@@ -80,6 +80,7 @@ library
     Linguistics.WordAlignment.AlignmentBuilder
     Linguistics.WordAlignment.Bigram
     Linguistics.WordAlignment.Common
+    Linguistics.WordAlignment.PipedPairs
     Linguistics.WordAlignment.TwoWay.Global.Bigram
     Linguistics.WordAlignment.TwoWay.Global.Simple
     Linguistics.WordAlignment.TwoWay.Infix.Bigram

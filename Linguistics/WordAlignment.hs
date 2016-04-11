@@ -31,103 +31,43 @@ import           Linguistics.WordAlignment.Word (Word, wordLang, FastChars, fast
 alignInfixSimple2 = IS2.alignInfix
 alignInfixBigram2 = IB2.alignInfix
 
-
-
--- | Alignment configuration for use in the Reader.
-
-data AlignmentConfig t = AlignmentConfig
-  { _aliWidth     :: !Int   -- ^ width of columns for the builder
-  , _aliGroups    :: !Int   -- ^ how many groups will be processed
-  , _aliCurGroup  :: !Int   -- ^ current group
-  , _aliCustom    :: !t     -- ^ custom data
-  }
-
-instance Default t => Default (AlignmentConfig t) where
-  def = AlignmentConfig
-          { _aliWidth = 8
-          , _aliGroups = 0
-          , _aliCurGroup = 0
-          , _aliCustom = def
-          }
-
-makeLenses ''AlignmentConfig
-
-
-
--- | Generic system for twoway alignments.
-
-runTwowayAlignments
-  :: (Monad m)
-  -- | Perform an action before each group is sent downstream
-  => (Int -> Vector (Word,Word) -> AlignmentT t m t)
-  -- | Perform the actual alignment
-  -> (t -> FastChars -> Word -> Word -> AlignmentT t m Builder)
-  -- | An action that might do something with each total length, pair
-  -- counter, pairX, pairY tripel.
-  -> (Int -> Int -> Word -> Word -> AlignmentT t m ())
-  -- | The input words
-  -> Vector Word
-  -- | A producer of 'Builder's
-  -> Producer Builder (AlignmentT t m) ()
-runTwowayAlignments groupAction alignXY eachXY ws = do
-  width <- use aliWidth
-  let !fc = fastChars width ws
-  -- Generate the pairs of languages
-  for (languagePairProducer ws) $ \(lenPs,ps) -> do
-    !t <- lift $ groupAction lenPs ps
-    for (each $ V.indexed ps) $ \(k,(x,y)) -> do
-      lift $ eachXY lenPs k x y
-      lift (alignXY t fc x y) >>= yield
-{-# Inline runTwowayAlignments #-}
-
 -- |
 --
--- TODO re-add language filter!
+-- TODO runAlignment should return one big builder.
+--
+-- TODO can we generalize a bit more so that we can get the alignments
+-- themselves? or should we assume that people will call alignInfixSimple2
+-- themselves?
 
-languagePairProducer
-  :: (Monad m)
-  => Vector Word
-  -> Producer (Int, Vector (Word,Word)) (AlignmentT t m) ()
-languagePairProducer ws = do
-  -- produces a vector with (wordLanguage, first index in @ws@, length of
-  -- group)
-  let gs = deepseq ws . V.fromList . map (\g@((i,w):_) -> (wordLang w,i,length g))
-         . groupBy ((==) `on` (wordLang . snd)) . V.toList . V.indexed $ ws
-  -- from @gs@ we generate the upper-triangular pairs
-  let (lenWgs,wgs) = second (V.map mkGroup) . upperTriVG OnDiag $ gs
-  aliGroups .= lenWgs
-  -- each wgs
-  for (each . zip [1..] . V.toList $ wgs) $ \(k,w) -> aliCurGroup .= k >> yield w
-  where
-    -- This builds up a group
-    mkGroup ( (langX,startX,lengthX) , (langY,startY,lengthY) )
-      -- same language, perform upper-triangular number of comparisons.
-      -- Test for starting position as well, in case we have non-contiguous
-      -- data.
-      | langX == langY && startX == startY
-      = upperTriVG OnDiag (V.slice startX lengthX ws)
-      | otherwise
-      = rectangularVG (V.slice startX lengthX ws) (V.slice startY lengthY ws)
-{-# Inline languagePairProducer #-}
-
--- | All important information for running the alignment producer.
-
-newtype AlignmentT t (m :: * -> *) a = AlignmentT
-  { runAlignmentT :: StateT (AlignmentConfig t) m a
-  }
-  deriving
-    ( Applicative
-    , Functor
-    , Monad
-    , MonadState (AlignmentConfig t)
-    , MonadTrans
+runInfix2Simple
+  :: _groupAction
+  -> Int
+  -> _scoring
+  -> _verbose
+  -> Builder
+runInfix2Simple groupAction width scoring v
+  !scoring <- simpleScoreFromFile simpleScoreFile
+  !v <- getVerbosity
+  let groupAction _ _ = lift performGC
+      {-# Inline groupAction #-}
+  let alignXY () fc x y =
+        let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
+            ali = scoreFilter filterScore d
+                $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
+        in  return ali
+      {-# Inline alignXY #-}
+  let eachXY len k x y =
+        let wLx = toString $ wordLang x
+            wLy = toString $ wordLang y
+        in  do numGs <- use aliGroups
+               curG  <- use aliCurGroup
+               lift . when (v==Loud && k `mod` 10000 == 9999)
+                    $ hPrintf stderr "%5d %5d   %s %s %10d %10d\n" numGs curG wLx wLy len (k+1)
+      {-# Inline eachXY #-}
+  runAlignment
+    (for  (runTwowayAlignments groupAction alignXY eachXY ws)
+          (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
     )
+    (AlignmentConfig width 0 0 ())
 
--- | Wrap up the full call to the monad transformer
-
-runAlignment
-  :: Monad m
-  => Effect (AlignmentT t m) a -> AlignmentConfig t -> m a
-runAlignment = evalStateT . runAlignmentT . runEffect
-{-# Inline runAlignment #-}
 
