@@ -163,8 +163,8 @@ wrapSimple2IO
   -> V.Vector Word
   -> IO ()
 wrapSimple2IO f cfg ws = do
-  !scoring <- simpleScoreFromFile $ simpleScoreFile cfg
   !v <- getVerbosity
+  !scoring <- simpleScoreFromFile $ simpleScoreFile cfg
   let align = alignmentWrapper2 (const $ f scoring)
       -- 4 arguments, @const@ takes care of the @()@ group action result
       {-# Inline align #-}
@@ -195,6 +195,7 @@ runInfix2Bigram = wrapBigram2IO alignInfixBigram2
 -- | Wrap two-tape bigram alignments in IO.
 
 wrapBigram2IO f cfg ws = do
+  !v <- getVerbosity
   !simpleScoring <- simpleScoreFromFile $ simpleScoreFile cfg
   let chkLs = S.fromList . map wordLang . V.toList $ ws
   !bigramScoring <- BL.readFile (bigramScoreFile cfg) >>= return . mkBigramMap chkLs (-999999)
@@ -214,6 +215,7 @@ wrapBigram2IO f cfg ws = do
     )
     ( set aliFilterScore (filterScore cfg) .
       set aliFilterBackt (filterBacktrack cfg) .
+      set aliVerbose (v==Loud) .
       set aliCustom (mempty :: Scores) $
       (def :: AlignmentConfig ())
     )
