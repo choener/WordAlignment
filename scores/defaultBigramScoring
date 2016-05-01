@@ -10,3 +10,5 @@ PreSufOpen    -1
 PreSufExtend   0
 -- score to return for bigram mismatches
 Mismatch      -3
+-- needs to be set, but is not used (need better simple scoring parser)
+Match         -999999

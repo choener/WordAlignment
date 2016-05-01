@@ -28,11 +28,11 @@ infixBigramTest = do
   ws <- (map addWordDelims . map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
   simpleScoring <- simpleScoreFromFile "scores/defaultBigramScoring"
   let chkLs = S.fromList . map wordLang $ ws
-  bigramScoring <- BL.readFile "tests/example.bgms" >>= return . generateLookups chkLs (-999999)
+  bigramScoring <- BL.readFile "tests/example.bgms" >>= return . mkBigramMap chkLs (-999999)
   ts <- forM ws $ \x -> forM ws $ \y -> do
     let fc = FastChars mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
-    let (d,bts) = alignInfixBigram2 fc 8 simpleScoring sco (wordWord x) (wordWord y) 1
+    let (d,bts) = alignInfixBigram2 simpleScoring sco fc 8 1 (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder (-1) ([x,y],(d, bts))
     let hndl = stdout
     return $ TL.toLazyText ali

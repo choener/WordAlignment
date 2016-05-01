@@ -118,6 +118,7 @@ executable WordAlign
                , bytestring
                , cmdargs                    >= 0.10
                , containers
+               , data-default
                , DPutils                    >= 0.0      &&  < 0.1
                , file-embed
                , intern
@@ -144,6 +145,7 @@ executable WordAlign
   default-extensions: BangPatterns
                     , DeriveDataTypeable
                     , FlexibleContexts
+                    , NondecreasingIndentation
                     , OverloadedStrings
                     , PatternGuards
                     , RecordWildCards
