@@ -1,22 +1,12 @@
-Set Conso    b c d f g h j k m n p q s t v w x y z
-Set Liquid   l r
-Set Vowel    a e i o u   a\' e\' i\' o\' u\'   ə ɐ æ œ   æh ɔh ɒ ɔ
-Eq Conso   4
-Eq Liquid  3
-Eq Vowel   2
-InSet   Conso    Conso     0
-InSet   Conso    Liquid   -1
-InSet   Conso    Vowel    -999999
-InSet   Liquid   Conso    -1
-InSet   Liquid   Liquid   -1
-InSet   Liquid   Vowel    -1
-InSet   Vowel    Conso    -999999
-InSet   Vowel    Liquid   -1
-InSet   Vowel    Vowel     0
+-- a gap in linear scoring global alignments
 Gap           -4
+-- gap opening in affine languages
 GapOpen       -4
+-- gap extension in affine languages
 GapExtend     -2
+-- opening the prefix or suffix in overhang languages
 PreSufOpen    -1
+-- extending the prefix or suffix in overhang languages
 PreSufExtend   0
-Match          1
+-- score to return for bigram mismatches
 Mismatch      -3
