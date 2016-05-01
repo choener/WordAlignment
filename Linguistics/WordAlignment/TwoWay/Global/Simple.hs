@@ -85,7 +85,14 @@ alignGlobalBacktrack fc width scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #
 
 -- |
 
-alignGlobal :: SimpleScoring -> FastChars -> Int -> Int -> Vector BTI -> Vector BTI -> (Double,[[B3]])
+alignGlobal
+  :: SimpleScoring
+  -> FastChars
+  -> Int
+  -> Int
+  -> Vector BTI
+  -> Vector BTI
+  -> (Double,[[B3]])
 alignGlobal scoring fc width k i1 i2 = (d, take k bs) where
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward scoring i1 i2

@@ -36,31 +36,37 @@ type SigT m x r = SigGlobal m x r IMCp IMCp
 
 -- |
 
-sScore :: Monad m => Double -> Double -> Scores -> SigT m Double Double
-sScore !dS !gapopen !s = SigGlobal
-  { delin = \ww (Z:.c     :._     ) -> ww + gapopen
-  , indel = \ww (Z:._     :.c     ) -> ww + gapopen
+sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
+sScore !ss@SimpleScoring{..} !bgm = SigGlobal
+  { delin = \ww (Z:.c     :._     ) -> ww + gapScore
+  , indel = \ww (Z:._     :.c     ) -> ww + gapScore
   , align = \ww (Z:.(lp,l):.(up,u)) -> ww + lkup up u lp l
   , done = const 0
   , h         = SM.foldl' max (-888888)
   } where
-    lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault dS (Bigram mc' c :!: Bigram nd' d) s
+    lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault defMismatch (Bigram mc' c :!: Bigram nd' d) bgm
     {-# Inline lkup #-}
 {-# INLINE sScore #-}
 
 -- |
 
-sBacktrackBuilder :: Monad m => FastChars -> Int -> Double -> Double -> Scores -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !fc !k !defS !go !sco = SigGlobal
+sBacktrackBuilder
+  :: Monad m
+  => FastChars
+  -> Int
+  -> SimpleScoring
+  -> Scores
+  -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder !fc !k !ss@SimpleScoring{..} !bgm = SigGlobal
   { delin = \ww (Z:.(_ ,b):._     ) -> ww `FM.snoc` ( fastChar fc "-"
                                                     , fastChar fc b
-                                                    , TF.left k ' ' $ TF.fixed 1 go
+                                                    , TF.left k ' ' $ TF.fixed 1 gapScore
                                                     )
   , indel = \ww (Z:._     :.(_ ,u)) -> ww `FM.snoc` ( fastChar fc u
                                                     , fastChar fc "-"
-                                                    , TF.left k ' ' $ TF.fixed 1 go
+                                                    , TF.left k ' ' $ TF.fixed 1 gapScore
                                                     )
-  , align = \ww (Z:.(lb,b):.(lu,u)) -> let z = HM.lookupDefault defS (Bigram lb b :!: Bigram lu u) sco
+  , align = \ww (Z:.(lb,b):.(lu,u)) -> let z = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
                                        in  ww `FM.snoc` ( fastChar fc u
                                                         , fastChar fc b
                                                         , TF.left k ' ' $ TF.fixed 1 z
@@ -72,9 +78,14 @@ sBacktrackBuilder !fc !k !defS !go !sco = SigGlobal
 
 -- |
 
-alignGlobalForward :: Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
-alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $ -- {-# SCC "ali_forw/g" #-}
-  gGlobal (sScore ds gapopen scoring)
+alignGlobalForward
+  :: SimpleScoring
+  -> Scores
+  -> Vector IMCp
+  -> Vector IMCp
+  -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
+alignGlobalForward !simpleS !bgm !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDefault $
+  gGlobal (sScore simpleS bgm)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []) )
     (chr i1) (chr i2)
   where !n1 = VU.length i1
@@ -83,20 +94,36 @@ alignGlobalForward !ds !gapopen !scoring !i1 !i2 = {-# SCC "ali_forw" #-} mutate
 
 -- |
 
-alignGlobalBacktrackBuilder :: FastChars -> Int -> Double -> Double -> Scores -> Vector IMCp -> Vector IMCp -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
-alignGlobalBacktrackBuilder !fc !k !ds !gapopen !scoring !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map FM.toList . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore ds gapopen scoring <|| sBacktrackBuilder fc k ds gapopen scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+alignGlobalBacktrackBuilder
+  :: FastChars
+  -> Int
+  -> SimpleScoring
+  -> Scores
+  -> Vector IMCp
+  -> Vector IMCp
+  -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
+  -> [[B3]]
+alignGlobalBacktrackBuilder !fc !width !simpleS !bgm !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map FM.toList . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore simpleS bgm <|| sBacktrackBuilder fc width simpleS bgm) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrackBuilder #-}
 
 -- |
 
-alignGlobal :: FastChars -> Int -> Double -> Double -> Scores -> Int -> Vector IMC -> Vector IMC -> (Double,[[B3]])
-alignGlobal !fc !width !ds !gapopen !scoring !k !i1' !i2' = {-# SCC "aliGlob" #-} (d, take k bs) where -- . L.map runPrettyF . S.toList . unId $ axiom b) where
-  i1 = mkI i1' ; i2 = mkI i2'
-  n1 = VU.length i1 ; n2 = VU.length i2
-  !(Z:.t) = alignGlobalForward ds gapopen scoring i1 i2
-  d = unId $ axiom t
-  bs = alignGlobalBacktrackBuilder fc width ds gapopen scoring i1 i2 t
-  mkI m = {-# SCC "mkI" #-} VU.zip m (VU.tail m)
+alignGlobal
+  :: SimpleScoring
+  -> Scores
+  -> FastChars
+  -> Int
+  -> Int
+  -> Vector BTI
+  -> Vector BTI
+  -> (Double,[[B3]])
+alignGlobal simpleS bgm fc width k i1' i2' = {-# SCC "alignGlobal" #-} (d, take k bs)
+  where i1 = mkI i1' ; i2 = mkI i2'
+        n1 = VU.length i1 ; n2 = VU.length i2
+        !(Z:.t) = alignGlobalForward simpleS bgm i1 i2
+        d = unId $ axiom t
+        bs = alignGlobalBacktrackBuilder fc width simpleS bgm i1 i2 t
+        mkI m = VU.zip m (VU.tail m)
 {-# NoInline alignGlobal #-}
 

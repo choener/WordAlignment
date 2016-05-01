@@ -35,6 +35,7 @@ import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS2
 
 
 alignGlobalSimple2 = GS2.alignGlobal
+alignGlobalBigram2 = GB2.alignGlobal
 
 alignInfixSimple2 = IS2.alignInfix
 alignInfixBigram2 = IB2.alignInfix
