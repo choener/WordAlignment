@@ -124,8 +124,8 @@ mkMapping !(Mapping bs ll) xs@(x:_)
 -- | Given a set of acceptable languages, a default score, and the lazy
 -- bytestring of scores, create the 'Mapping' of languages and scores.
 
-generateLookups :: S.Set BTI -> Double -> BL.ByteString -> Mapping
-generateLookups langs wd b = lines2mapping xs where
+mkBigramMap :: S.Set BTI -> Double -> BL.ByteString -> Mapping
+mkBigramMap langs wd b = lines2mapping xs where
   (d,ls) = withDefault wd $ BL.lines b
   xs = filter inLangSet $ map parseLine ls
   inLangSet l

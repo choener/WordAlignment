@@ -19,26 +19,39 @@ import           Data.Vector (Vector)
 import           Pipes hiding ((<~))
 import           Prelude hiding (Word)
 import qualified Data.Vector as V
+import           System.Mem (performGC)
 
 import           Data.Vector.Combined
+import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.Word (Word, wordLang, FastChars, fastChars)
+
 
 
 -- | Alignment configuration for use in the Reader.
 
 data AlignmentConfig t = AlignmentConfig
-  { _aliWidth     :: !Int   -- ^ width of columns for the builder
-  , _aliGroups    :: !Int   -- ^ how many groups will be processed
-  , _aliCurGroup  :: !Int   -- ^ current group
-  , _aliCustom    :: !t     -- ^ custom data
+  { _aliWidth           :: !Int             -- ^ width of columns for the builder
+  , _aliNumCoopts       :: !Int             -- ^ how many co-optimals to take
+  , _aliGroups          :: !Int             -- ^ how many groups will be processed
+  , _aliCurGroup        :: !Int             -- ^ current group
+  , _aliFilterScore     :: !(Maybe Double)  -- ^ if @Just s@ then keep only scores @>= s@
+  , _aliFilterBackt     :: !(Maybe Double)  -- ^ if @Just s@ then backtrack only for scores @>= s@
+  , _aliVerbose         :: !Bool            -- ^ be verbose (what that means depends on the functions)
+  , _aliGroupLanguages  :: ![BTI]           -- ^ the languages used in the current group
+  , _aliCustom          :: !t               -- ^ custom data
   }
 
 instance Default t => Default (AlignmentConfig t) where
   def = AlignmentConfig
           { _aliWidth = 8
+          , _aliNumCoopts = 1
           , _aliGroups = 0
           , _aliCurGroup = 0
+          , _aliFilterScore = Nothing
+          , _aliFilterBackt = Nothing
+          , _aliVerbose = False
+          , _aliGroupLanguages = []
           , _aliCustom = def
           }
 
@@ -47,6 +60,9 @@ makeLenses ''AlignmentConfig
 
 
 -- | Generic system for twoway alignments.
+--
+-- TODO this will almost surely force the @ps@ vector, which maybe is not
+-- what we want.
 
 runTwowayAlignments
   :: (Monad m)
@@ -89,7 +105,7 @@ languagePairProducer ws = do
   let (lenWgs,wgs) = second (V.map mkGroup) . upperTriVG OnDiag $ gs
   aliGroups .= lenWgs
   -- each wgs
-  for (each . zip [1..] . V.toList $ wgs) $ \(k,w) -> aliCurGroup .= k >> yield w
+  for (each . zip [1..] . V.toList $ wgs) $ \(k,w) -> aliCurGroup .= k >> aliGroupLanguages .= fst w >> yield (snd w)
   where
     -- This builds up a group
     mkGroup ( (langX,startX,lengthX) , (langY,startY,lengthY) )
@@ -97,9 +113,9 @@ languagePairProducer ws = do
       -- Test for starting position as well, in case we have non-contiguous
       -- data.
       | langX == langY && startX == startY
-      = upperTriVG OnDiag (V.slice startX lengthX ws)
+      = ([langX], upperTriVG OnDiag (V.slice startX lengthX ws))
       | otherwise
-      = rectangularVG (V.slice startX lengthX ws) (V.slice startY lengthY ws)
+      = ([langX,langY], rectangularVG (V.slice startX lengthX ws) (V.slice startY lengthY ws))
 {-# Inline languagePairProducer #-}
 
 -- | All important information for running the alignment producer.
@@ -122,4 +138,10 @@ runAlignment
   => Effect (AlignmentT t m) a -> AlignmentConfig t -> m a
 runAlignment = evalStateT . runAlignmentT . runEffect
 {-# Inline runAlignment #-}
+
+-- | Useful default group action: perform garbage collection after a group
+-- has been processed.
+
+groupActionGC _ _ = lift performGC
+{-# Inline groupActionGC #-}
 

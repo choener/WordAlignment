@@ -155,15 +155,15 @@ alignInfixBacktrack fc width simpleS bgm i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.u
 {-# NoInline alignInfixBacktrack #-}
 
 alignInfix
-  :: FastChars
-  -> Int
-  -> SimpleScoring
+  :: SimpleScoring
   -> Scores
-  -> Vector BTI
-  -> Vector BTI
+  -> FastChars
   -> Int
+  -> Int
+  -> Vector BTI
+  -> Vector BTI
   -> (Double , [[B3]])
-alignInfix fc width simpleS bgm i1' i2' k = {-# SCC "alignInfix" #-} (d, take k bs)
+alignInfix simpleS bgm fc width k i1' i2' = {-# SCC "alignInfix" #-} (d, take k bs)
   where d = unId $ axiom ss
         fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward simpleS bgm i1 i2
         bs = alignInfixBacktrack fc width simpleS bgm i1 i2 fwd

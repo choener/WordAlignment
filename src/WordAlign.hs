@@ -7,6 +7,7 @@ import           Control.Arrow ((***),(&&&))
 import           Control.Lens
 import           Control.Monad (forM_,when)
 import           Control.Monad.Trans.Class (lift)
+import           Data.Default
 import           Data.FileEmbed
 import           Data.Stringable (toString)
 import           Data.Version (showVersion)
@@ -18,7 +19,8 @@ import qualified Data.Set as S
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector as V
-import           System.Console.CmdArgs
+import qualified Data.Vector.Unboxed as VU
+import           System.Console.CmdArgs hiding (def)
 import           System.Exit
 import           System.IO (stderr, stdout, stdin)
 import           System.Mem (performGC)
@@ -29,6 +31,7 @@ import           NLP.Scoring.SimpleUnigram.Import
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment
+import           Linguistics.WordAlignment.AlignmentBuilder (BuildAli)
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.PipedPairs
@@ -43,25 +46,21 @@ import           Paths_WordAlignment (version)
 
 data Config
   = Global2Simple
-    { scoreFile     :: String
-    , lpblock       :: Maybe (String,String)
-    , showManual    :: Bool
-    , prettystupid  :: Bool
-    , outfile       :: String
-    , nobacktrack   :: Bool
+    { simpleScoreFile :: String
+    , lpblock         :: Maybe (String,String)
+    , showManual      :: Bool
+    , filterScore     :: Maybe Double
+    , filterBacktrack :: Maybe Double
     }
   | Global2Bigram
-    { scoreFile     :: String
-    , bigramDef     :: Double
-    , gapOpen       :: Double
-    , lpblock       :: Maybe (String,String)
-    , showManual    :: Bool
-    , prettystupid  :: Bool
-    , outfile       :: String
-    , nobacktrack   :: Bool
-    , serialized    :: Bool
-    , filterScore   :: Maybe Double
+    { simpleScoreFile :: String
+    , lpblock         :: Maybe (String,String)
+    , showManual      :: Bool
+    , filterScore     :: Maybe Double
     , filterBacktrack :: Maybe Double
+    , bigramScoreFile :: String
+    , bigramDef       :: Double   -- into simple score file!
+    , gapOpen         :: Double
     }
   | Infix2Simple
     { simpleScoreFile :: String
@@ -72,7 +71,7 @@ data Config
     }
   | Infix2Bigram
     { simpleScoreFile :: String
-    , bigramLogOdds :: String
+    , bigramScoreFile :: String
     , lpblock         :: Maybe (String,String)
     , showManual      :: Bool
     , filterScore     :: Maybe Double
@@ -81,43 +80,39 @@ data Config
   deriving (Show,Data,Typeable)
 
 oGlobal2Simple = Global2Simple
-  { scoreFile  = def &= help "the file to read the simple scores from"
-  , lpblock    = Nothing
-  , showManual = False    &= help "show the manual and quit"
-  , prettystupid = False
-  , outfile      = ""
-  , nobacktrack   = False
+  { simpleScoreFile = def   &= help "the file to read the simple scores from"
+  , lpblock         = def   &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"
+  , showManual      = False &= help "show the manual and quit"
+  , filterScore     = def   &= help "only print results with this score or higher"
+  , filterBacktrack = def   &= help "only provide backtracking results for results with this score or higher"
   } &= help "Align words based on a simple, linear scoring model for gaps, and an unigram model for matches."
 
 oGlobal2Bigram = Global2Bigram
-  { scoreFile  = "" &= help "the file to read the scores from"
-  , bigramDef  = (-20) &= help "score to use for unknown bigram matches"
-  , gapOpen    = (-5) &= help "cost to open a gap"
-  , lpblock    = Nothing  &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"
-  , prettystupid = False  &= help "a pretty stupid developer option"
-  , outfile      = ""     &= help "write output to this file"
-  , showManual = False
-  , nobacktrack   = False
-  , serialized = False
-  , filterScore = Nothing &= help "only print results with this score or higher"
-  , filterBacktrack = Nothing &= help "only provide backtracking results for results with this score or higher"
+  { simpleScoreFile = def
+  , lpblock         = def
+  , showManual      = False
+  , filterScore     = def
+  , filterBacktrack = def
+  , bigramScoreFile = def   &= help "the file to read the bigram scores from"
+  , bigramDef       = (-20) &= help "score to use for unknown bigram matches"
+  , gapOpen         = (-5)  &= help "cost to open a gap"
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
 oInfix2Simple = Infix2Simple
   { simpleScoreFile = def
   , lpblock         = def
-  , showManual      = def
+  , showManual      = False
   , filterScore     = def
   , filterBacktrack = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
 oInfix2Bigram = Infix2Bigram
   { simpleScoreFile = def
-  , bigramLogOdds   = def
   , lpblock         = def
-  , showManual      = def
+  , showManual      = False
   , filterScore     = def
   , filterBacktrack = def
+  , bigramScoreFile = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
 config = [oGlobal2Simple, oGlobal2Bigram, oInfix2Simple, oInfix2Bigram]
@@ -134,90 +129,87 @@ main = do
   when (showManual o) $ do
     BS.putStrLn embeddedManual
     exitSuccess
-  --hSetBuffering stdin  $ LineBuffering
-  --hSetBuffering stdout $ LineBuffering
-  --hSetBuffering stderr $ LineBuffering
   ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
   let !fc = fastChars 8 ws
   case o of
-    --Global2Simple{..} -> run2Simple o (blockSelection2 lpblock ws)
     --Global2Bigram{..} -> run2 o (blockSelection2 lpblock $ V.map addWordDelims ws)
-    --Infix2Simple{..}  -> runInfix2Simple o fc $ blockSelection2 lpblock ws
-    --Infix2Bigram{..}  -> runInfix2Bigram o fc $ blockSelection2 lpblock $ V.map addWordDelims ws
     --
-    Infix2Simple{..}  -> runInfix2Simple o ws
+    Global2Simple{..} -> runGlobal2Simple o ws
+    Infix2Simple{..}  -> runInfix2Simple  o ws
+    Infix2Bigram{..}  -> runInfix2Bigram  o ws
 
+-- | Simple global alignment.
 
+runGlobal2Simple :: Config -> V.Vector Word -> IO ()
+runGlobal2Simple = wrapSimple2IO (alignGlobalSimple2)
 
 -- | Affine infix simple grammar
---
--- TODO Move everything except the consumer into Linguistics.WordAlignment
 
 runInfix2Simple :: Config -> V.Vector Word -> IO ()
-runInfix2Simple Infix2Simple{..} ws = do
-  !scoring <- simpleScoreFromFile simpleScoreFile
+runInfix2Simple = wrapSimple2IO alignInfixSimple2
+
+-- | Wrap simple alignments on two tapes with IO.
+
+wrapSimple2IO
+  :: BuildAli t2
+  => ( SimpleScoring
+       -> FastChars
+       -> Int
+       -> Int
+       -> VU.Vector BTI
+       -> VU.Vector BTI
+       -> (Double, [t2])
+    )
+  -> Config
+  -> V.Vector Word
+  -> IO ()
+wrapSimple2IO f cfg ws = do
+  !scoring <- simpleScoreFromFile $ simpleScoreFile cfg
   !v <- getVerbosity
-  let groupAction _ _ = lift performGC
-      {-# Inline groupAction #-}
-  let alignXY () fc x y =
-        let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
-            ali = scoreFilter filterScore d
-                $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
-        in  return ali
-      {-# Inline alignXY #-}
-  let eachXY len k x y =
-        let wLx = toString $ wordLang x
-            wLy = toString $ wordLang y
-        in  do numGs <- use aliGroups
-               curG  <- use aliCurGroup
-               lift . when (v==Loud && k `mod` 10000 == 9999)
-                    $ hPrintf stderr "%5d %5d   %s %s %10d %10d\n" numGs curG wLx wLy len (k+1)
-      {-# Inline eachXY #-}
+  let align = alignmentWrapper2 (const $ f scoring)
+      -- 4 arguments, @const@ takes care of the @()@ group action result
+      {-# Inline align #-}
   runAlignment
-    (for  (runTwowayAlignments groupAction alignXY eachXY ws)
+    (for  (runTwowayAlignments groupActionGC align eachGroupStatus ws)
           (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
     )
-    (AlignmentConfig 8 0 0 ())
+    ( set aliFilterScore (filterScore cfg) .
+      set aliFilterBackt (filterBacktrack cfg) .
+      set aliVerbose (v==Loud) $
+      def
+    )
 
-{-
-runInfix2Simple :: Config -> FastChars -> WSS -> IO ()
-runInfix2Simple o@Infix2Simple{..} fc wss = do
-  hndl <- return stdout
-  scoring <- simpleScoreFromFile simpleScoreFile
-  v <- getVerbosity
-  let wsslen = length wss
-  -- for each language pair
-  forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
-    let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
-    performGC
-    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
-      let (d,bts) = alignInfixSimple2 fc 8 scoring (wordWord x) (wordWord y) 1
-      let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
-      when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
-      TL.hPutStr hndl $ TL.toLazyText ali
--}
+
+
+-- ** Affine grammars
 
 -- | Affine infix bigram grammar
 
---runInfix2Bigram :: Config -> FastChars -> WSS -> IO ()
-runInfix2Bigram o@Infix2Bigram{..} fc wss = do
-  hndl <- return stdout
-  simpleScoring <- simpleScoreFromFile simpleScoreFile
-  let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
-  bigramScoring <- BL.readFile bigramLogOdds >>= return . generateLookups chkLs (-999999)
-  v <- getVerbosity
-  let wsslen = length wss
-  -- for each language pair
-  forM_ (zip [1::Int ..] wss) $ \(langNumber,(len,ws)) -> do
-    let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
-    let (hx,hy) = head ws
-    let !sco = getScores2 True bigramScoring (wordLang hx) (wordLang hy)
-    performGC
-    forM_ (zip [1::Int ..] ws) $ \(k,(x,y)) -> {-# SCC "runInfix2S/forM_/ws" #-} do
-      let (d,bts) = alignInfixBigram2 fc 8 simpleScoring sco (wordWord x) (wordWord y) 1
-      let ali = scoreFilter filterScore d $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False filterBacktrack d bts))
-      when (v==Loud && k `mod` 10000 == 0) $ hPrintf stderr "%s %s %10d %10d\n" wLx wLy len k
-      TL.hPutStr hndl $ TL.toLazyText ali
+runInfix2Bigram :: Config -> V.Vector Word -> IO ()
+runInfix2Bigram Infix2Bigram{..} ws = do
+  !simpleScoring <- simpleScoreFromFile simpleScoreFile
+  let chkLs = S.fromList . map wordLang . V.toList $ ws
+  !bigramScoring <- BL.readFile bigramScoreFile >>= return . mkBigramMap chkLs (-999999)
+  let perGroup _ _ = do
+      groupActionGC () ()
+      xy <- use aliGroupLanguages
+      let [x,y] = case xy of
+                    [z] -> [z,z]
+                    [x,y] -> [x,y]
+      return $ getScores2 True bigramScoring x y
+  let align = alignmentWrapper2 (alignInfixBigram2 simpleScoring)
+      -- 5 arguments, receives the group action result (the bigram scores)
+      {-# Inline align #-}
+  runAlignment
+    (for  (runTwowayAlignments perGroup align eachGroupStatus ws)
+          (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+    )
+    ( set aliFilterScore filterScore .
+      set aliFilterBackt filterBacktrack .
+      set aliCustom (mempty :: Scores) $
+      (def :: AlignmentConfig ())
+    )
+
 
 
 -- | Given a @Config@ and a @List of Lists of Word-Pairs@ align everything.
@@ -268,7 +260,7 @@ run2 Global2Bigram{..} wss = {-# SCC "run2" #-} do
   -- build up scoring system. This will force the spine of the
   -- language-pairing list but should not force the pairs explicitly.
   let chkLs = S.fromList . map wordLang . concat . map (\(x,y) -> [x,y]) . map (head . Prelude.snd) $ wss
-  scoring <- BL.readFile scoreFile >>= return . generateLookups chkLs (-999999)
+  scoring <- BL.readFile scoreFile >>= return . mkBigramMap chkLs (-999999)
   -- for each language pairing
   forM_ (zip [1::Int ..] wss) $ \(tcnt,(len,ws)) -> do
     let (wLx,wLy) = (toString . wordLang *** toString . wordLang) $ head ws
@@ -295,13 +287,6 @@ run2 Global2Bigram{..} wss = {-# SCC "run2" #-} do
                     ) ws
       BL.putStrLn $ encodeAlignedSet ws as
 -}
-
-scoreFilter (Just z) d blder | z > d = mempty
-scoreFilter _        _ blder = blder
-
-btFilter True _        d xs = []
-btFilter _    (Just z) d xs | z > d = []
-btFilter _    _        _ xs = xs
 
 {-
 -- | Given a set of words from different languages, we want to do two
