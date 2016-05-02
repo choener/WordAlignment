@@ -44,7 +44,7 @@ library
   build-depends: base                       >= 4.7      &&  < 4.9
                , ADPfusion                  >= 0.5.2    &&  < 0.5.3
                , aeson                      >= 0.9      &&  < 0.10
-               , AlignmentAlgorithms        >= 0.0.2    &&  < 0.0.3
+               , AlignmentAlgorithms        >= 0.1      &&  < 0.2
                , attoparsec                 >= 0.10     &&  < 0.14
                , bimaps                     >= 0.1
                , bytestring

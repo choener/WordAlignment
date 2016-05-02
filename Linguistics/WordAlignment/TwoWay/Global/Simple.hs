@@ -21,7 +21,7 @@ import qualified Data.Text.Format as TF
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
-import           DP.Alignment.Global.Linear2
+import           DP.Seq.Align.Global.Linear2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
