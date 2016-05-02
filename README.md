@@ -53,52 +53,96 @@ characters should be left out.)
 
 
 
-The WordAlignment program comes with two modes, *twowaysimple* and *twoway*.
+The WordAlignment program comes with these modes:
+
+| Grammar   | Simple Scoring  | Bigram Scoring  | Number of Input Tapes |
+|-----------|-----------------|-----------------|-----------------------|
+| Global    | global2simple   | global2bigram   | 2                     |
+| Overhang  | global2infix    | global2infix    | 2                     |
+
+Mode names can be shortened to unique prefixes.
 
 
 
-### TwoWay - Simple
+### Global Alignments
 
-```WordAlign twowaysimple``` aligns words based on a simple scoring model. Gaps
-are scored with linear costs. Matches are scored based on a simple scoring file
-handling unigrams of characters. Even the simple model allows for the concept
-of equivalence classes. This makes it possible to not only score exact matches,
-but to give somewhat high scores to, say, two vowels that should be matched.
+Global alignments use a NeedlemanWunsch style algorithm with linear gap costs.
 
-The following command-line options are provided:
 
-    --scorefile=ITEM
-    --lpblock=ITEM,ITEM
-    --showmanual
-    --prettystupid
-    --outfile=ITEM
 
-```--scorefile``` is the simple score file to be used by the mode. the
-*defaultSimpleScoring* file can be used as a template.
+### Overhang alignments
+
+Overhang alignments use affine gap scoring. Overhang alignments separate the
+alignment into three phases, the prefix, infix, and suffix phase. Typically,
+prefix and suffix phases have very low costs.
+
+
+
+### Options
+
+#### Common default options
+
+    -? --help             Display help message
+    -V --version          Print version information
+       --numeric-version  Print just the version number
+    -v --verbose          Loud verbosity
+    -q --quiet            Quiet verbosity
+
+```--verbose``` prints status information every 10.000 alignments
+
+
+
+#### Common options for all alignments variants
+
+       --simplescorefile=ITEM  the file to read the simple scores from
+    -l --lpblock=ITEM,ITEM     compare ONLY the given pair of languages: i.e
+                               'Breton','Breton' or 2,3  (with the latter
+                               notation '2' being the 2nd language in the input
+                               file)
+       --showmanual            show the manual and quit
+       --filterscore=NUM       only print results with this score or higher
+       --filterbacktrack=NUM   only provide backtracking results for results
+                               with this score or higher
+
+```--simplescorefile``` expects a score file for simple unigram based scoring.
+An example file is provided under ```scores/defaultSimpleScoring```. For bigram
+score files, use a file like ```scores/defaultBigramScoring```.
 
 ```--lpblock``` expects a pair of language names (Breton,Breton) or a pair of
 integers (3,3 or 4,6) and will then align only the given language pairs with
 each other. This option should be very helpful in case you want to parallelize
 the program.
 
-```--showmanual``` will show this manual in plain text.
+```--showmanual``` shows this manual.
 
-```--prettystupid``` will show a progress bar of the current language pair.
-It's pretty and helpful with smaller tasks but should not be used when you
-parallelize on a grid engine.
+```--filterscore``` is used to limit printing results to only the alignments
+with score not lower than this option. Given that printing requires a
+significant amount of CPU time due to unicode conversion, this option improves
+performance substantially.
 
-```--outfile``` writes to the given output file, not stdout. Actually required
-when ```--prettystupid``` is active.
-
-```--nobacktrack``` disables backtracking. Sometimes just the alignment score
-is enough.
-
+```--filterbacktrack``` is used to limit printing of backtracking for a given
+alignment to the best results. Works like ```--filterscore``` but will always
+print the forward result.
 
 
-### TwoWay (Complex Scoring)
 
-The complex scoring model uses linear gap costs. In contrast to the simple
-model above, however, character matching is now performed in a bigram context.
+#### Options for bigram alignment variants
+
+    -b --bigramscorefile=ITEM  the file to read the bigram scores from
+
+```--bigramscorefile``` is used to point toward a file with a list of bigram
+scores for all language pairs.
+
+
+
+### Simple score file description
+
+
+
+### Bigram score file description
+
+In contrast to the simple model above, however, character matching is now
+performed in a bigram context.
 
 The required score file is currently using an in-house format with the
 following columns all required (with whitespace, not tab between the entries):
@@ -117,50 +161,27 @@ Three example lines
     Albanian_Tosk \' a Albanian_Tosk \' b 0.402228
     Albanian_Tosk \' a Albanian_Tosk \' g 1.07432
 
-In addition to the scoring file, set via ```--scorefile```, the default score
-constant and the gap cost constant need to be set.
 
-```--bigramdef=NUM``` is the score given to unknown matches.
 
-```--gapopen=NUM``` is the score given to each gap character (and not just the
-opening score)
-
-```--lpblock``` as above
-
-```--showmanual``` as above
-
-```--prettystupid``` as above
-
-```--outfile``` as above
-
-```--nobacktrack``` as above
-
-An example output is given below.
+### Example output
 
 The output are four lines for each alignment. An info line with the word ids
 (IDS), the alignment score (SCORE), the normalized scores (NSCORE) and the
-actual words, started by (WORDS) and interleaved by (WORD). The next two lines
-are the alignment, with deletions showning up as minus symbols (---) in the
+actual words, started by (WORD) and interleaved by (WORD). The next two lines
+are the alignment, with deletions showning up as minus symbols ```-``` in the
 deletion field. Note that a deletion does not delete a character from the
 input, it merely aligns an existing character in one alignment with the symbol
-for deletion (--) in the other. The final line provides the per-column score
+for deletion ```-``` in the other. The final line provides the per-column score
 for the alignment. After the alignment follows one empty line.
 
-The normalized score is defined as SCORE / maximum of input word lengths
+Words are written left-to-right in the information line, and bottom to top in
+the alignment.
 
-```cat albanian.input | head -n 3 | ./dist/build/WordAlign/WordAlign twoway -s albanian.scores```
+    IDS: 2 3 SCORE:  93.40 NSCORE:  10.38    WORD: ^ h a u s b a u $   WORD: ^ b a u m h a u s $
+           b       a       u       m       h       a       u       s       $       -       -       -
+           -       -       -       -       h       a       u       s       b       a       u       $
+         0.0     0.0     0.0    -1.0    -3.0    33.9    33.8    33.7    -3.0    -1.0     0.0     0.0
 
-yields:
-
-    IDS: 1 2 SCORE: 32.85 NSCORE: 5.48    WORDS: ^ d o u a r $   WORD   ^ d o u a r $
-       ^   d   o   u   a   r   $
-       ^   d   o   u   a   r   $
-     0.0 4.8 5.9 4.1 6.6 4.6 6.8
-    
-    IDS: 1 3 SCORE: -12.36 NSCORE: -1.77    WORDS: ^ d o u a r $   WORD   ^ p o u l t r $
-         ^     d     -     o     u     a     r     -     -     $
-         ^     p     o     -     u     -     l     t     r     $
-       0.0   0.3  -5.0  -5.0   4.1  -5.0 -20.0  -5.0  -5.0   6.8
 
 
 
@@ -169,22 +190,27 @@ yields:
 Measured on a core i5-3570K @ 3.40 GHz; single-threaded.
 
 The program is not compiled for multi-threading, if you need this consider the
-```--lpblock``` option first. Otherwise, send a mail.
+```--lpblock``` option first and parallelize on the language pair level.
+Otherwise, send a mail.
 
 The running time for calculating 100 000 alignments is:
 
-    Mode              Seconds     Alignments per Second
-    ====              =======     =====================
-    TwoWay Simple:     6.7 s        ~ 15 000
-    TwoWay Complex:   15.8 s        ~  6 300
+| Mode      | Simple/Bigram   | Tapes | Alignments per Second |
+| :---      | :---            | :---: |                  ---: |
+| Global    | Simple          | 2     | 25 000
+|           | Bigram          | 2     | 26 600
+| Overhang  | Simple          | 2     | 14 300
+|           | Bigram          | 2     | 15 160
 
-Disabling backtracking (to get just the alignment scores) improves performance
-by roughly a factor of ```x 2```. Words are very short, backtracking overhead
-is quite large!
+and when printing alignments via ```--filterscore``` is restricted to scores
+```>=10``` to return about 0.6% of alignments:
 
-As in: the number of actual /unicode/ symbols is approximately the same as the
-number of forward DP cells to be filled, since each /character/ can be a
-combination of multiple unicdoe symbols.
+| Mode      | Simple/Bigram   | Tapes | Alignments per Second |
+| :---      | :---            | :---: |                  ---: |
+| Global    | Simple          | 2     | 278 000
+|           | Bigram          | 2     | 192 500
+| Overhang  | Simple          | 2     |  48 125
+|           | Bigram          | 2     |  54 400
 
 
 
