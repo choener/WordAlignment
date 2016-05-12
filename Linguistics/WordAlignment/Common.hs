@@ -6,7 +6,6 @@ module Linguistics.WordAlignment.Common where
 
 import           Data.Char (isMark)
 import           Data.List (transpose,reverse)
-import           Data.Stringable (toString)
 import           Data.Text (Text)
 import           GHC.IO.Handle (Handle)
 import qualified Data.Text as T
@@ -57,7 +56,7 @@ printLength = length . filter isAN . toUtf8String where
   isAN c = not (isMark c)
 
 toUtf8String :: BTI -> String
-toUtf8String = toString -- T.unpack . T.decodeUtf8 . conv
+toUtf8String = btiToCS
 {-# INLINE toUtf8String #-}
 
 buildLines :: [[Text]] -> TL.Builder

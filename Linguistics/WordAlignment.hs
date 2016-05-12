@@ -13,7 +13,6 @@ import           Control.Monad.State.Strict
 import           Data.Default
 import           Data.Function (on)
 import           Data.List (groupBy)
-import           Data.Stringable (toString)
 import           Data.Text.Lazy.Builder (Builder)
 import           Data.Vector (Vector)
 import           Pipes hiding ((<~))
@@ -23,6 +22,7 @@ import           System.IO (stderr)
 import           Text.Printf
 
 import           Data.Vector.Combined
+import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.AlignmentBuilder
 import           Linguistics.WordAlignment.PipedPairs
@@ -70,8 +70,8 @@ btFilter _    _        _ xs = xs
 -- | Default system for printing out the status every 10k alignments.
 
 eachGroupStatus len k x y = do
-  let wLx = toString $ wordLang x
-      wLy = toString $ wordLang y
+  let wLx :: String = btiToCS $ wordLang x
+      wLy :: String = btiToCS $ wordLang y
   v <- use aliVerbose
   numGs <- use aliGroups
   curG  <- use aliCurGroup

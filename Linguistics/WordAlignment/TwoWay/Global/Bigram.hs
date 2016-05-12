@@ -6,7 +6,6 @@ import           Data.FMList (FMList)
 import qualified Data.FMList as FM
 import           Data.Sequence (Seq)
 import           Data.Strict.Tuple (Pair (..))
-import           Data.Stringable (toString,toText)
 import           Data.Text (Text,pack)
 import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)

@@ -4,7 +4,6 @@ module Linguistics.WordAlignment.TwoWay.Global.Simple where
 import           Data.ByteString.Char8 (ByteString)
 import           Data.FMList (FMList)
 import           Data.Sequence (Seq)
-import           Data.Stringable (toText)
 import           Data.Text (Text)
 import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)

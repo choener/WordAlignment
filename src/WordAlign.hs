@@ -9,7 +9,6 @@ import           Control.Monad (forM_,when)
 import           Control.Monad.Trans.Class (lift)
 import           Data.Default
 import           Data.FileEmbed
-import           Data.Stringable (toString)
 import           Data.Version (showVersion)
 import           Pipes (for)
 import           Prelude hiding (Word)

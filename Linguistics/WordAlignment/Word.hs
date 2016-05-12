@@ -13,7 +13,6 @@ import           Data.ByteString (ByteString)
 import           Data.Interned
 import           Data.Interned.ByteString
 import           Data.List (intersperse)
-import           Data.Stringable
 import           GHC.Generics
 import           Prelude hiding (Word)
 import qualified Data.Attoparsec.ByteString as AB
@@ -79,7 +78,7 @@ parseWord w = case ABL.eitherResult (ABL.parse go w) of
               <*  (AB.skipSpace       <?> "1+ ws")
               <*> ((VU.fromList . map wW) <$> (AB.takeWhile1 (not . AB.isHorizontalSpace) `AB.sepBy` AB.space) <?> "word")
     wrd  = AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.skipSpace
-    wW   = fromByteString
+    wW   = btiFromCS
 
 addWordDelims :: Word -> Word
 addWordDelims w
@@ -103,7 +102,7 @@ wordLazyTextWS = TLB.toLazyText . wordLazyTextWSB
 -- space.
 
 wordLazyTextWSB :: Word -> TLB.Builder
-wordLazyTextWSB = mconcat . intersperse " " . map (TLB.fromText . toText) . VU.toList . wordWord
+wordLazyTextWSB = mconcat . intersperse " " . map (TLB.fromText . btiToCS) . VU.toList . wordWord
 {-# Inline wordLazyTextWSB #-}
 
 -- |
@@ -120,11 +119,11 @@ data FastChars = FastChars
 fastChars :: Int -> V.Vector Word -> FastChars
 fastChars width ws = {-# SCC "fastChars" #-} deepseq ws `seq` FastChars hm width
   where hm = HM.fromList . map fmt . addDefaultChars . concatMap (VU.toList . wordWord) . V.toList $ ws
-        fmt k = (k , TL.toStrict . TLB.toLazyText . TF.left width ' ' . toText $ k)
-        addDefaultChars xs = xs ++ map fromString ["-", "$", "^"]
+        fmt k = (k , TL.toStrict . TLB.toLazyText . TF.left width ' ' . btiToText $ k)
+        addDefaultChars xs = xs ++ map btiFromCS ["-", "$", "^" :: T.Text]
 {-# NoInline fastChars #-}
 
 fastChar :: FastChars -> BTI -> TLB.Builder
-fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe (TF.left width ' ' . TLB.fromText $ toText k) TLB.fromText $ HM.lookup k hm
+fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe (TF.left width ' ' . TLB.fromText $ btiToCS k) TLB.fromText $ HM.lookup k hm
 {-# InlineAble fastChar #-}
 

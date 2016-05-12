@@ -33,7 +33,6 @@ import qualified Data.ByteString.Short as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import qualified Data.Stringable as SA
 import           Debug.Trace
 import           Text.Printf
 
@@ -78,7 +77,7 @@ parseLine l = case ABL.eitherResult (ABL.parse go l) of
     lang   = wrd <?> "lang"
     bigram = Bigram <$> wrd <*> wrd <?> "bigram"
     score  = AB.double <?> "score"
-    wrd    = SA.fromByteString <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.skipSpace <?> "word"
+    wrd    = btiFromCS <$> AB.takeWhile1 (not . AB.isHorizontalSpace) <* AB.skipSpace <?> "word"
 {-# NoInline parseLine #-}
 
 type Lang = BTI
