@@ -14,16 +14,18 @@ import           Data.Default
 import           Data.Function (on)
 import           Data.Function (on)
 import           Data.List (groupBy)
-import           Data.Text.Lazy.Builder (Builder)
+--import           Data.Text.Lazy.Builder (Builder)
 import           Data.Vector (Vector)
 import           Pipes hiding ((<~))
 import           Prelude hiding (Word)
 import qualified Data.Vector as V
 import           System.Mem (performGC)
+import           Data.ByteString.Builder (Builder)
 
 import           Data.Vector.Combined
 import           NLP.Text.BTI
 
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Word (Word, wordLang, FastChars, fastChars)
 
 
@@ -31,15 +33,16 @@ import           Linguistics.WordAlignment.Word (Word, wordLang, FastChars, fast
 -- | Alignment configuration for use in the Reader.
 
 data AlignmentConfig t = AlignmentConfig
-  { _aliWidth           :: !Int             -- ^ width of columns for the builder
-  , _aliNumCoopts       :: !Int             -- ^ how many co-optimals to take
-  , _aliGroups          :: !Int             -- ^ how many groups will be processed
-  , _aliCurGroup        :: !Int             -- ^ current group
-  , _aliFilterScore     :: !(Maybe Double)  -- ^ if @Just s@ then keep only scores @>= s@
-  , _aliFilterBackt     :: !(Maybe Double)  -- ^ if @Just s@ then backtrack only for scores @>= s@
-  , _aliVerbose         :: !Bool            -- ^ be verbose (what that means depends on the functions)
-  , _aliGroupLanguages  :: ![BTI]           -- ^ the languages used in the current group
-  , _aliCustom          :: !t               -- ^ custom data
+  { _aliWidth             :: !Int             -- ^ width of columns for the builder
+  , _aliNumCoopts         :: !Int             -- ^ how many co-optimals to take
+  , _aliGroups            :: !Int             -- ^ how many groups will be processed
+  , _aliCurGroup          :: !Int             -- ^ current group
+  , _aliFilterScore       :: !(Maybe Double)  -- ^ if @Just s@ then keep only scores @>= s@
+  , _aliFilterBackt       :: !(Maybe Double)  -- ^ if @Just s@ then backtrack only for scores @>= s@
+  , _aliFilterNormalized  :: !Bool            -- ^ apply filter on length-normalized scores
+  , _aliVerbose           :: !Bool            -- ^ be verbose (what that means depends on the functions)
+  , _aliGroupLanguages    :: ![BTI]           -- ^ the languages used in the current group
+  , _aliCustom            :: !t               -- ^ custom data
   }
 
 instance Default t => Default (AlignmentConfig t) where
@@ -50,6 +53,7 @@ instance Default t => Default (AlignmentConfig t) where
           , _aliCurGroup = 0
           , _aliFilterScore = Nothing
           , _aliFilterBackt = Nothing
+          , _aliFilterNormalized = False
           , _aliVerbose = False
           , _aliGroupLanguages = []
           , _aliCustom = def
@@ -69,23 +73,26 @@ runTwowayAlignments
   -- | Perform an action before each group is sent downstream
   => (Int -> Vector (Word,Word) -> AlignmentT t m t)
   -- | Perform the actual alignment
-  -> (t -> FastChars -> Word -> Word -> AlignmentT t m Builder)
+  -> (t -> FastChars -> FastDoubles -> Word -> Word -> AlignmentT t m Builder)
   -- | An action that might do something with each total length, pair
   -- counter, pairX, pairY tripel.
   -> (Int -> Int -> Word -> Word -> AlignmentT t m ())
+  -- | Fast Doubles
+  -> [Double]
   -- | The input words
   -> Vector Word
   -- | A producer of 'Builder's
   -> Producer Builder (AlignmentT t m) ()
-runTwowayAlignments groupAction alignXY eachXY ws = do
+runTwowayAlignments groupAction alignXY eachXY ds ws = do
   width <- use aliWidth
   let !fc = fastChars width ws
+  let !fd = fastDoubles width ds
   -- Generate the pairs of languages
   for (languagePairProducer ws) $ \(lenPs,ps) -> do
     !t <- lift $ groupAction lenPs ps
     for (each $ V.indexed ps) $ \(k,(x,y)) -> do
       lift $ eachXY lenPs k x y
-      lift (alignXY t fc x y) >>= yield
+      lift (alignXY t fc fd x y) >>= yield
 {-# Inline runTwowayAlignments #-}
 
 -- |

@@ -17,6 +17,7 @@ import qualified Data.Vector.Unboxed as VU
 import           Text.Printf
 import qualified Data.Text.Format as TF
 import qualified Data.Text.Lazy.Builder as TLB
+import qualified Data.ByteString.Builder as BB
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -25,8 +26,9 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.Common
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Bigram
-import           Linguistics.WordAlignment.Word (FastChars, fastChar)
+import           Linguistics.WordAlignment.Word (FastChars, fastChar, wordToBigramVector)
 
 
 
@@ -52,23 +54,24 @@ sScore !ss@SimpleScoring{..} !bgm = SigGlobal
 sBacktrackBuilder
   :: Monad m
   => FastChars
+  -> FastDoubles
   -> Int
   -> SimpleScoring
   -> Scores
   -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !fc !k !ss@SimpleScoring{..} !bgm = SigGlobal
+sBacktrackBuilder !fc !fd !k !ss@SimpleScoring{..} !bgm = SigGlobal
   { delin = \ww (Z:.(_ ,b):._     ) -> ww `FM.snoc` ( fastChar fc "-"
                                                     , fastChar fc b
-                                                    , TF.left k ' ' $ TF.fixed 1 gapScore
+                                                    , fastDouble fd gapScore
                                                     )
   , indel = \ww (Z:._     :.(_ ,u)) -> ww `FM.snoc` ( fastChar fc u
                                                     , fastChar fc "-"
-                                                    , TF.left k ' ' $ TF.fixed 1 gapScore
+                                                    , fastDouble fd gapScore
                                                     )
   , align = \ww (Z:.(lb,b):.(lu,u)) -> let z = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
                                        in  ww `FM.snoc` ( fastChar fc u
                                                         , fastChar fc b
-                                                        , TF.left k ' ' $ TF.fixed 1 z
+                                                        , fastDouble fd z
                                                         )
   , done  = const FM.empty
   , h     = SM.toList
@@ -95,6 +98,7 @@ alignGlobalForward !simpleS !bgm !i1 !i2 = {-# SCC "ali_forw" #-} mutateTablesDe
 
 alignGlobalBacktrackBuilder
   :: FastChars
+  -> FastDoubles
   -> Int
   -> SimpleScoring
   -> Scores
@@ -102,8 +106,8 @@ alignGlobalBacktrackBuilder
   -> Vector IMCp
   -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
   -> [[B3]]
-alignGlobalBacktrackBuilder !fc !width !simpleS !bgm !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map FM.toList . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore simpleS bgm <|| sBacktrackBuilder fc width simpleS bgm) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+alignGlobalBacktrackBuilder !fc !fd !width !simpleS !bgm !i1 !i2 !t = {-# SCC "AliBtBuilder" #-} L.map FM.toList . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore simpleS bgm <|| sBacktrackBuilder fc fd width simpleS bgm) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrackBuilder #-}
 
 -- |
@@ -112,17 +116,17 @@ alignGlobal
   :: SimpleScoring
   -> Scores
   -> FastChars
+  -> FastDoubles
   -> Int
   -> Int
   -> Vector BTI
   -> Vector BTI
   -> (Double,[[B3]])
-alignGlobal simpleS bgm fc width k i1' i2' = {-# SCC "alignGlobal" #-} (d, take k bs)
-  where i1 = mkI i1' ; i2 = mkI i2'
+alignGlobal simpleS bgm fc fd width k i1' i2' = {-# SCC "alignGlobal" #-} (d, take k bs)
+  where i1 = wordToBigramVector i1' ; i2 = wordToBigramVector i2'
         n1 = VU.length i1 ; n2 = VU.length i2
         !(Z:.t) = alignGlobalForward simpleS bgm i1 i2
         d = unId $ axiom t
-        bs = alignGlobalBacktrackBuilder fc width simpleS bgm i1 i2 t
-        mkI m = VU.zip m (VU.tail m)
+        bs = alignGlobalBacktrackBuilder fc fd width simpleS bgm i1 i2 t
 {-# NoInline alignGlobal #-}
 

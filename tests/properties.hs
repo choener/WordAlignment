@@ -14,6 +14,7 @@ import           Test.Tasty.QuickCheck as QC
 import           Test.Tasty.Silver as S
 import           Test.Tasty.Silver.Interactive as SI
 import           Test.Tasty.TH
+import qualified Data.ByteString.Builder as BB
 
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
@@ -21,6 +22,7 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 
 import           Linguistics.WordAlignment
+import           Linguistics.WordAlignment.FastLookups
 
 
 
@@ -31,12 +33,13 @@ infixBigramTest = do
   bigramScoring <- BL.readFile "tests/example.bgms" >>= return . mkBigramMap chkLs (-999999)
   ts <- forM ws $ \x -> forM ws $ \y -> do
     let fc = FastChars mempty 8
+    let fd = FastDoubles mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
-    let (d,bts) = alignInfixBigram2 simpleScoring sco fc 8 1 (wordWord x) (wordWord y)
+    let (d,bts) = alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder (-1) ([x,y],(d, bts))
     let hndl = stdout
-    return $ TL.toLazyText ali
-  return $ TL.toStrict $ TL.concat $ concat ts
+    return $ BB.toLazyByteString ali
+  return . TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
 
 goldenInfixBigramTest
   = S.goldenVsAction

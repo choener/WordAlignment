@@ -20,12 +20,14 @@ import           Prelude hiding (Word)
 import qualified Data.Vector as V
 import           System.IO (stderr)
 import           Text.Printf
+import qualified Data.Vector.Unboxed as VU
 
 import           Data.Vector.Combined
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.AlignmentBuilder
 import           Linguistics.WordAlignment.PipedPairs
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Word (Word, wordLang, wordWord, FastChars, fastChars)
 import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as GB2
 import qualified Linguistics.WordAlignment.TwoWay.Global.Simple as GS2
@@ -43,28 +45,31 @@ alignInfixBigram2 = IB2.alignInfix
 -- | Wrap up the most common way to perform alignments. The function @f@
 -- needs to have all scoring parts incorporated.
 
-alignmentWrapper2 f fga fc x y = do
+alignmentWrapper2 f fga fc fd x y = do
   w <- use aliWidth
   c <- use aliNumCoopts
   sf <- use aliFilterScore
   bf <- use aliFilterBackt
-  let (d,bts) = f fga fc w c (wordWord x) (wordWord y)
-  let ali = scoreFilter sf d
-          $ buildAlignmentBuilder (-1) ([x,y],(d, btFilter False bf d bts))
+  fn <- use aliFilterNormalized
+  let (d,bts) = f fga fc fd w c (wordWord x) (wordWord y)
+  let l = VU.length (wordWord x) `max` VU.length (wordWord y)
+  let ali = scoreFilter fn l sf d
+          $ buildAlignmentBuilder 0 ([x,y],(d, btFilter fn l bf d bts))
   return ali
 {-# Inline alignmentWrapper2 #-}
 
 -- |
 
-scoreFilter (Just z) d blder | z > d = mempty
-scoreFilter _        _ blder = blder
+scoreFilter False _ (Just z) d _ | z > d                  = mempty
+scoreFilter True  l (Just z) d _ | z > d / fromIntegral l = mempty
+scoreFilter _  _ _        _ blder = blder
 {-# Inline scoreFilter #-}
 
 -- |
 
-btFilter True _        d xs = []
-btFilter _    (Just z) d xs | z > d = []
-btFilter _    _        _ xs = xs
+btFilter False _ (Just z) d xs | z > d                  = []
+btFilter True  l (Just z) d xs | z > d / fromIntegral l = []
+btFilter _     _ _        _ xs = xs
 {-# Inline btFilter #-}
 
 -- | Default system for printing out the status every 10k alignments.

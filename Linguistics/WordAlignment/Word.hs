@@ -9,6 +9,7 @@ module Linguistics.WordAlignment.Word where
 import           Control.Applicative
 import           Control.DeepSeq
 import           Data.Aeson
+import           Data.Attoparsec.ByteString.Lazy ((<?>))
 import           Data.ByteString (ByteString)
 import           Data.Interned
 import           Data.Interned.ByteString
@@ -18,18 +19,19 @@ import           Prelude hiding (Word)
 import qualified Data.Attoparsec.ByteString as AB
 import qualified Data.Attoparsec.ByteString.Char8 as AB hiding (takeWhile1)
 import qualified Data.Attoparsec.ByteString.Lazy as ABL
-import           Data.Attoparsec.ByteString.Lazy ((<?>))
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL hiding (unpack)
 import qualified Data.ByteString.Lazy.Char8 as BL hiding (readFile)
 import qualified Data.ByteString.Short as S
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Text as T
+import qualified Data.Text.Format as TF
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
-import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector as V
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Text.Format as TF
-import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as VU
+import           Data.Text.Encoding (encodeUtf8)
 
 import           NLP.Text.BTI
 
@@ -105,12 +107,18 @@ wordLazyTextWSB :: Word -> TLB.Builder
 wordLazyTextWSB = mconcat . intersperse " " . map (TLB.fromText . btiToCS) . VU.toList . wordWord
 {-# Inline wordLazyTextWSB #-}
 
+-- | A builder for an utf8 bytestring.
+
+wordUtf8Builder :: Word -> BB.Builder
+wordUtf8Builder = mconcat . intersperse " " . map (BB.byteString . btiToUtf8) . VU.toList . wordWord
+{-# Inline wordUtf8Builder #-}
+
 -- |
 --
 -- TODO @Builder@ or @Text@ or @Lazy.Text@ ?
 
 data FastChars = FastChars
-  { fcTable :: !(HM.HashMap BTI T.Text)
+  { fcTable :: !(HM.HashMap BTI B.ByteString)
   , fcWidth :: !Int
   }
 
@@ -119,11 +127,21 @@ data FastChars = FastChars
 fastChars :: Int -> V.Vector Word -> FastChars
 fastChars width ws = {-# SCC "fastChars" #-} deepseq ws `seq` FastChars hm width
   where hm = HM.fromList . map fmt . addDefaultChars . concatMap (VU.toList . wordWord) . V.toList $ ws
-        fmt k = (k , TL.toStrict . TLB.toLazyText . TF.left width ' ' . btiToText $ k)
+        fmt k = (k , encodeUtf8 . TL.toStrict . TLB.toLazyText . TF.left width ' ' . btiToText $ k)
         addDefaultChars xs = xs ++ map btiFromCS ["-", "$", "^" :: T.Text]
 {-# NoInline fastChars #-}
 
-fastChar :: FastChars -> BTI -> TLB.Builder
-fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe (TF.left width ' ' . TLB.fromText $ btiToCS k) TLB.fromText $ HM.lookup k hm
+fastChar :: FastChars -> BTI -> BB.Builder -- TLB.Builder
+--fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe (BB.byteString . encodeUtf8 . TF.format "{}" . TF.left width ' ' . TF.Only $ btiToCS k) BB.byteString $ HM.lookup k hm
+fastChar (FastChars hm width) k = {-# SCC "fastChar" #-} maybe encodek BB.byteString $ HM.lookup k hm
+  where encodek = BB.byteString . encodeUtf8 . TL.toStrict . TF.format "{}" . TF.Only . TF.left width ' ' $ (btiToCS k :: T.Text)
 {-# InlineAble fastChar #-}
+
+-- | Word to bigram vector
+
+wordToBigramVector :: VU.Vector BTI -> VU.Vector (BTI,BTI)
+wordToBigramVector m' =
+  let m = "^" `VU.cons` m' `VU.snoc` "$"
+  in VU.zip m (VU.tail m)
+{-# Inline wordToBigramVector #-}
 

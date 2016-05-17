@@ -1,5 +1,12 @@
 [![Build Status](https://travis-ci.org/choener/WordAlignment.svg?branch=master)](https://travis-ci.org/choener/WordAlignment)
 
+
+
+This manual can be displayed by calling just ```WordAlign``` or alternatively
+```WordAlign manual```.
+
+
+
 # Word alignments in natural languages
 
 This library and program are designed for the alignment of *words* in human
@@ -26,7 +33,15 @@ Implemented with ideas described in:
 
 
 
-## Usage
+# Usage
+
+Word alignments require three pieces of information: (i) the words to be
+aligned, (ii) the selection of an alignment algorithm, and (iii) a scoring
+scheme (either simple or bigram-based). Each of these is described below.
+
+
+
+## Words to be Aligned
 
 Each word is encoded as a list of *characters*. A single *character*, however,
 is encoded as a *list of unicode symbols*, not just a single symbol.
@@ -52,6 +67,8 @@ characters should be left out.)
     2	Albanian_Tosk	1.100	10	r̃ o k u lʸ i a\' lʸ e m
 
 
+
+## Selection of Alignment Algorithm
 
 The WordAlignment program comes with these modes:
 
@@ -113,8 +130,6 @@ integers (3,3 or 4,6) and will then align only the given language pairs with
 each other. This option should be very helpful in case you want to parallelize
 the program.
 
-```--showmanual``` shows this manual.
-
 ```--filterscore``` is used to limit printing results to only the alignments
 with score not lower than this option. Given that printing requires a
 significant amount of CPU time due to unicode conversion, this option improves
@@ -123,6 +138,9 @@ performance substantially.
 ```--filterbacktrack``` is used to limit printing of backtracking for a given
 alignment to the best results. Works like ```--filterscore``` but will always
 print the forward result.
+
+```--filternormalized``` applies filter on the length-normalized scores instead
+of the absolute ones.
 
 
 
@@ -135,11 +153,11 @@ scores for all language pairs.
 
 
 
-### Simple score file description
+## Simple score file description
 
 
 
-### Bigram score file description
+## Bigram score file description
 
 In contrast to the simple model above, however, character matching is now
 performed in a bigram context.
@@ -163,7 +181,7 @@ Three example lines
 
 
 
-### Example output
+# Example output
 
 The output are four lines for each alignment. An info line with the word ids
 (IDS), the alignment score (SCORE), the normalized scores (NSCORE) and the
@@ -185,7 +203,7 @@ the alignment.
 
 
 
-### Performance Notes
+# Performance Notes
 
 Measured on a core i5-3570K @ 3.40 GHz; single-threaded.
 
@@ -214,7 +232,7 @@ and when printing alignments via ```--filterscore``` is restricted to scores
 
 
 
-### Three- and Four-way Alignments
+# Three- and Four-way Alignments
 
 These are currently disabled. If you need them, consider contacting me.
 

@@ -17,6 +17,7 @@ import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Text.Format as TF
+import qualified Data.ByteString.Builder as BB
 
 import           ADP.Fusion
 import           Data.PrimitiveArray
@@ -24,6 +25,7 @@ import           DP.Seq.Align.Global.Linear2
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Common
 import           Linguistics.WordAlignment.Word (FastChars, fastChar)
 
@@ -45,19 +47,19 @@ sScore ss@SimpleScoring{..} = SigGlobal
 
 -- |
 
-sBacktrackBuilder :: Monad m => FastChars -> Int -> SimpleScoring -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !fc !k !ss@SimpleScoring{..} = SigGlobal
+sBacktrackBuilder :: Monad m => FastChars -> FastDoubles -> Int -> SimpleScoring -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder !fc !fd !k !ss@SimpleScoring{..} = SigGlobal
   { delin = \ww (Z:.b:._) -> ww `FM.snoc` ( fastChar fc "-"
                                           , fastChar fc b
-                                          , TF.left k ' ' $ TF.fixed 1 gapScore
+                                          , fastDouble fd gapScore
                                           )
   , indel = \ww (Z:._:.u) -> ww `FM.snoc` ( fastChar fc u
                                           , fastChar fc "-"
-                                          , TF.left k ' ' $ TF.fixed 1 gapScore
+                                          , fastDouble fd gapScore
                                           )
   , align = \ww (Z:.b:.u) -> ww `FM.snoc` ( fastChar fc u
                                           , fastChar fc b
-                                          , TF.left k ' ' . TF.fixed 1 $ scoreUnigram ss b u
+                                          , fastDouble fd (scoreUnigram ss b u)
                                           )
   , done = const mempty
   , h = SM.toList
@@ -67,7 +69,7 @@ sBacktrackBuilder !fc !k !ss@SimpleScoring{..} = SigGlobal
 -- |
 
 alignGlobalForward :: SimpleScoring -> Vector BTI -> Vector BTI -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
-alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
+alignGlobalForward !scoring !i1 !i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
   gGlobal (sScore scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
     (chr i1) (chr i2)
@@ -77,9 +79,9 @@ alignGlobalForward scoring i1 i2 = {-# SCC "alignGlobalForward" #-} mutateTables
 
 -- |
 
-alignGlobalBacktrack :: FastChars -> Int -> SimpleScoring -> Vector BTI -> Vector BTI -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
-alignGlobalBacktrack fc width scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #-} L.map FM.toList . unId $ axiom b
-  where (Z:.b) = gGlobal (sScore scoring <|| sBacktrackBuilder fc width scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
+alignGlobalBacktrack :: FastChars -> FastDoubles -> Int -> SimpleScoring -> Vector BTI -> Vector BTI -> TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double -> [[B3]]
+alignGlobalBacktrack !fc !fd !width !scoring !i1 !i2 !t = {-# SCC "alignGlobalBacktrack" #-} L.map FM.toList . unId $ axiom b
+  where (Z:.b) = gGlobal (sScore scoring <|| sBacktrackBuilder fc fd width scoring) (toBacktrack t (undefined :: Id a -> Id a)) (chr i1) (chr i2)
 {-# NoInline alignGlobalBacktrack #-}
 
 -- |
@@ -87,15 +89,16 @@ alignGlobalBacktrack fc width scoring i1 i2 t = {-# SCC "alignGlobalBacktrack" #
 alignGlobal
   :: SimpleScoring
   -> FastChars
+  -> FastDoubles
   -> Int
   -> Int
   -> Vector BTI
   -> Vector BTI
   -> (Double,[[B3]])
-alignGlobal scoring fc width k i1 i2 = (d, take k bs) where
+alignGlobal scoring fc fd width k i1 i2 = (d, take k bs) where
   n1 = VU.length i1 ; n2 = VU.length i2
   !(Z:.t) = alignGlobalForward scoring i1 i2
   d = unId $ axiom t
-  bs = alignGlobalBacktrack fc width scoring i1 i2 t
+  bs = alignGlobalBacktrack fc fd width scoring i1 i2 t
 {-# NoInline alignGlobal #-}
 

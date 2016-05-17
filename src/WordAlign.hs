@@ -24,12 +24,14 @@ import           System.Exit
 import           System.IO (stderr, stdout, stdin)
 import           System.Mem (performGC)
 import           Text.Printf
+import qualified Data.ByteString.Builder as BB
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.AlignmentBuilder (BuildAli)
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Common
@@ -45,72 +47,79 @@ import           Paths_WordAlignment (version)
 
 data Config
   = Global2Simple
-    { simpleScoreFile :: String
-    , lpblock         :: Maybe (String,String)
-    , showManual      :: Bool
-    , filterScore     :: Maybe Double
-    , filterBacktrack :: Maybe Double
+    { simpleScoreFile   :: String
+    , lpblock           :: Maybe (String,String)
+    , filterScore       :: Maybe Double
+    , filterBacktrack   :: Maybe Double
+    , filterNormalized  :: Bool
     }
   | Global2Bigram
     { simpleScoreFile :: String
-    , lpblock         :: Maybe (String,String)
-    , showManual      :: Bool
-    , filterScore     :: Maybe Double
-    , filterBacktrack :: Maybe Double
-    , bigramScoreFile :: String
+    , bigramScoreFile   :: String
+    , lpblock           :: Maybe (String,String)
+    , filterScore       :: Maybe Double
+    , filterBacktrack   :: Maybe Double
+    , filterNormalized  :: Bool
     }
   | Infix2Simple
-    { simpleScoreFile :: String
-    , lpblock         :: Maybe (String,String)
-    , showManual      :: Bool
-    , filterScore     :: Maybe Double
-    , filterBacktrack :: Maybe Double
+    { simpleScoreFile   :: String
+    , lpblock           :: Maybe (String,String)
+    , filterScore       :: Maybe Double
+    , filterBacktrack   :: Maybe Double
+    , filterNormalized  :: Bool
     }
   | Infix2Bigram
-    { simpleScoreFile :: String
-    , bigramScoreFile :: String
-    , lpblock         :: Maybe (String,String)
-    , showManual      :: Bool
-    , filterScore     :: Maybe Double
-    , filterBacktrack :: Maybe Double
+    { simpleScoreFile   :: String
+    , bigramScoreFile   :: String
+    , lpblock           :: Maybe (String,String)
+    , filterScore       :: Maybe Double
+    , filterBacktrack   :: Maybe Double
+    , filterNormalized  :: Bool
     }
-  deriving (Show,Data,Typeable)
+  | Manual
+    {
+    }
+  deriving (Show,Eq,Data,Typeable)
 
 oGlobal2Simple = Global2Simple
-  { simpleScoreFile = def   &= help "the file to read the simple scores from"
-  , lpblock         = def   &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"
-  , showManual      = False &= help "show the manual and quit"
-  , filterScore     = def   &= help "only print results with this score or higher"
-  , filterBacktrack = def   &= help "only provide backtracking results for results with this score or higher"
+  { simpleScoreFile   = def   &= help "the file to read the simple scores from"
+  , lpblock           = def   &= help "compare ONLY the given pair of languages: i.e 'Breton','Breton' or 2,3  (with the latter notation '2' being the 2nd language in the input file)"
+  , filterScore       = def   &= help "only print results with this score or higher"
+  , filterBacktrack   = def   &= help "only provide backtracking results for results with this score or higher"
+  , filterNormalized  = False &= help "apply filters to length-normalized scores"
   } &= help "Align words based on a simple, linear scoring model for gaps, and an unigram model for matches."
 
 oGlobal2Bigram = Global2Bigram
   { simpleScoreFile = def
   , lpblock         = def
-  , showManual      = False
   , filterScore     = def
   , filterBacktrack = def
+  , filterNormalized  = False &= help "apply filters to length-normalized scores"
   , bigramScoreFile = def   &= help "the file to read the bigram scores from"
   } &= help "Align words based on a linear scoring model for gaps, but with bigram-based scoring for matches."
 
 oInfix2Simple = Infix2Simple
   { simpleScoreFile = def
   , lpblock         = def
-  , showManual      = False
   , filterScore     = def
   , filterBacktrack = def
+  , filterNormalized  = False &= help "apply filters to length-normalized scores"
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
 oInfix2Bigram = Infix2Bigram
   { simpleScoreFile = def
   , lpblock         = def
-  , showManual      = False
   , filterScore     = def
   , filterBacktrack = def
+  , filterNormalized  = False &= help "apply filters to length-normalized scores"
   , bigramScoreFile = def
   } &= help "Infix-Affine grammar with simple scoring. (VERY EXPERIMENTAL, YOU HAVE BEEN WARNED)"
 
-config = [oGlobal2Simple, oGlobal2Bigram, oInfix2Simple, oInfix2Bigram]
+oManual = Manual
+  {
+  }
+
+config = [oGlobal2Simple, oGlobal2Bigram, oInfix2Simple, oInfix2Bigram, oManual &= auto]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
   &= verbosity
@@ -121,17 +130,24 @@ embeddedManual = $(embedFile "README.md")
 
 main = do
   o <- cmdArgs $ modes config
-  when (showManual o) $ do
-    BS.putStrLn embeddedManual
-    exitSuccess
-  ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
-  let !fc = fastChars 8 ws
-  case o of
-    Global2Simple{..} -> runGlobal2Simple o ws
-    Global2Bigram{..} -> runGlobal2Bigram o ws
-    Infix2Simple{..}  -> runInfix2Simple  o ws
-    Infix2Bigram{..}  -> runInfix2Bigram  o ws
+  if (o == Manual)
+  then runManual o
+  else do
+    ws <- BL.getContents >>= return . V.fromList . map parseWord . BL.lines
+    case o of
+      Global2Simple{..} -> runGlobal2Simple o ws
+      Global2Bigram{..} -> runGlobal2Bigram o ws
+      Infix2Simple{..}  -> runInfix2Simple  o ws
+      Infix2Bigram{..}  -> runInfix2Bigram  o ws
 
+
+
+-- ** Show manual
+
+runManual :: Config -> IO ()
+runManual Manual{} = do
+  BS.putStrLn embeddedManual
+  exitSuccess
 
 
 -- ** Global grammars.
@@ -152,6 +168,7 @@ wrapSimple2IO
   :: BuildAli t2
   => ( SimpleScoring
        -> FastChars
+       -> FastDoubles
        -> Int
        -> Int
        -> VU.Vector BTI
@@ -168,16 +185,30 @@ wrapSimple2IO f cfg ws = do
       -- 4 arguments, @const@ takes care of the @()@ group action result
       {-# Inline align #-}
   runAlignment
-    (for  (runTwowayAlignments groupActionGC align eachGroupStatus ws)
-          (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+    (for  (runTwowayAlignments groupActionGC align eachGroupStatus (collectSimpleScores scoring) ws)
+          --(lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+          (lift . lift . (BB.hPutBuilder stdout))
     )
     ( set aliFilterScore (filterScore cfg) .
       set aliFilterBackt (filterBacktrack cfg) .
+      set aliFilterNormalized (filterNormalized cfg) .
       set aliVerbose (v==Loud) $
       def
     )
 
+-- | Helper function to collect all scores. Used in conjunction with fast
+-- printing of numbers.
 
+collectSimpleScores :: SimpleScoring -> [Double]
+collectSimpleScores SimpleScoring{..} =
+  simpleScore ^.. traverse
+  ++
+  [gapScore, gapOpen, gapExt, defMatch, defMismatch, preSufOpen, preSufExt]
+
+-- | Collect bigram scores
+
+collectBigramScores :: Mapping -> [Double]
+collectBigramScores Mapping{..} = lliid ^.. traverse . traverse
 
 -- ** Affine grammars
 
@@ -209,11 +240,13 @@ wrapBigram2IO f cfg ws = do
       -- 5 arguments, receives the group action result (the bigram scores)
       {-# Inline align #-}
   runAlignment
-    (for  (runTwowayAlignments perGroup align eachGroupStatus ws)
-          (lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+    (for  (runTwowayAlignments perGroup align eachGroupStatus (collectSimpleScores simpleScoring ++ collectBigramScores bigramScoring) ws)
+          --(lift . lift . (TL.hPutStr stdout . TL.toLazyText))
+          (lift . lift . (BB.hPutBuilder stdout))
     )
     ( set aliFilterScore (filterScore cfg) .
       set aliFilterBackt (filterBacktrack cfg) .
+      set aliFilterNormalized (filterNormalized cfg) .
       set aliVerbose (v==Loud) .
       set aliCustom (mempty :: Scores) $
       (def :: AlignmentConfig ())

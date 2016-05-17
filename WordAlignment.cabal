@@ -19,6 +19,10 @@ description:
                 scheme. Simple schemes are unigram schemes in nature but use an
                 ad-hoc scoring scheme. Bigram schemes use actual training data
                 for bigram frequences.
+                .
+                The WordAlign executable provides a wrapper around the provided
+                alignment algorithms. Call WordAlign without any arguments (or
+                just *WordAlign manual* to display the README.md).
 
 
 
@@ -79,6 +83,7 @@ library
     Linguistics.WordAlignment.AlignmentBuilder
     Linguistics.WordAlignment.Bigram
     Linguistics.WordAlignment.Common
+    Linguistics.WordAlignment.FastLookups
     Linguistics.WordAlignment.PipedPairs
     Linguistics.WordAlignment.TwoWay.Global.Bigram
     Linguistics.WordAlignment.TwoWay.Global.Simple

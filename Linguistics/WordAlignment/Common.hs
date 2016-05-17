@@ -15,12 +15,13 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import           Text.Printf
+import qualified Data.ByteString.Builder as BB
 
 import           NLP.Text.BTI
 
 
 
-type B3 = (TL.Builder, TL.Builder, TL.Builder)
+type B3 = (BB.Builder, BB.Builder, BB.Builder)
 
 data InfixScoring = InfixScoring
   { infixOpen :: !Double

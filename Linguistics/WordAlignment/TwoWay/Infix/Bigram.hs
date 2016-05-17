@@ -20,8 +20,9 @@ import           NLP.Scoring.SimpleUnigram
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.Bigram
+import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Common
-import           Linguistics.WordAlignment.Word (FastChars, fastChar)
+import           Linguistics.WordAlignment.Word (FastChars, fastChar, wordToBigramVector)
 
 import           Debug.Trace
 
@@ -64,13 +65,13 @@ sScore ss@SimpleScoring{..} bgm = SigInfix
   }
 {-# Inline sScore #-}
 
-sBacktrackBuilder :: Monad m => FastChars -> Int -> SimpleScoring -> Scores -> SigT m (FMList B3) [FMList B3]
-sBacktrackBuilder !fc !k !ss@SimpleScoring{..} bgm = SigInfix
+sBacktrackBuilder :: Monad m => FastChars -> FastDoubles -> Int -> SimpleScoring -> Scores -> SigT m (FMList B3) [FMList B3]
+sBacktrackBuilder !fc !fd !k !ss@SimpleScoring{..} bgm = SigInfix
   { align = \ww (Z:.(lb,b):.(lu,u)) ->
               let s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
               in  ww `FM.snoc` ( fastChar fc u
                                , fastChar fc b
-                               , TF.left k ' ' $ TF.fixed 1 s
+                               , fastDouble fd s
                                )
   , contL = dow gapExt
   , contU = upp gapExt
@@ -97,12 +98,12 @@ sBacktrackBuilder !fc !k !ss@SimpleScoring{..} bgm = SigInfix
   , h     = SM.toList
   } where upp s ww (Z:._:.(_,u)) = ww `FM.snoc` ( fastChar fc u
                                                 , fastChar fc "-"
-                                                , TF.left k ' ' $ TF.fixed 1 s
+                                                , fastDouble fd s
                                                 )
           {-# Inline upp #-}
           dow s ww (Z:.(_,b):._) = ww `FM.snoc` ( fastChar fc "-"
                                                 , fastChar fc b
-                                                , TF.left k ' ' $ TF.fixed 1 s
+                                                , fastDouble fd s
                                                 )
           {-# Inline dow #-}
 {-# Inline sBacktrackBuilder #-}
@@ -133,6 +134,7 @@ alignInfixForward simpleS bgm i1 i2 = {-# SCC "alignInfixForward" #-} mutateTabl
 
 alignInfixBacktrack
   :: FastChars
+  -> FastDoubles
   -> Int
   -> SimpleScoring
   -> Scores
@@ -140,8 +142,8 @@ alignInfixBacktrack
   -> Vector IMCp
   -> Z:.F:.F:.F:.F:.F:.F:.F:.F
   -> [[B3]]
-alignInfixBacktrack fc width simpleS bgm i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
-  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore simpleS bgm <|| sBacktrackBuilder fc width simpleS bgm)
+alignInfixBacktrack fc fd width simpleS bgm i1 i2 (Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = {-# SCC "alignInfixBacktrack" #-} L.map FM.toList . unId $ axiom ss'
+  where (Z:._:._:._:._:.ss':._:._:._) = gInfix (sScore simpleS bgm <|| sBacktrackBuilder fc fd width simpleS bgm)
                                           (toBacktrack dd (undefined :: Id a -> Id a))
                                           (toBacktrack ii (undefined :: Id a -> Id a))
                                           (toBacktrack mm (undefined :: Id a -> Id a))
@@ -158,17 +160,17 @@ alignInfix
   :: SimpleScoring
   -> Scores
   -> FastChars
+  -> FastDoubles
   -> Int
   -> Int
   -> Vector BTI
   -> Vector BTI
   -> (Double , [[B3]])
-alignInfix simpleS bgm fc width k i1' i2' = {-# SCC "alignInfix" #-} (d, take k bs)
+alignInfix simpleS bgm fc fd width k i1' i2' = {-# SCC "alignInfix" #-} (d, take k bs)
   where d = unId $ axiom ss
         fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward simpleS bgm i1 i2
-        bs = alignInfixBacktrack fc width simpleS bgm i1 i2 fwd
-        mkI m = VU.zip m (VU.tail m)
-        i1 = mkI i1'
-        i2 = mkI i2'
+        bs = alignInfixBacktrack fc fd width simpleS bgm i1 i2 fwd
+        i1 = wordToBigramVector i1'
+        i2 = wordToBigramVector i2'
 {-# NoInline alignInfix #-}
 
