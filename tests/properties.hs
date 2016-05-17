@@ -27,7 +27,7 @@ import           Linguistics.WordAlignment.FastLookups
 
 
 infixBigramTest = do
-  ws <- (map addWordDelims . map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
+  ws <- (map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
   simpleScoring <- simpleScoreFromFile "scores/defaultBigramScoring"
   let chkLs = S.fromList . map wordLang $ ws
   bigramScoring <- BL.readFile "tests/example.bgms" >>= return . mkBigramMap chkLs (-999999)
@@ -36,7 +36,7 @@ infixBigramTest = do
     let fd = FastDoubles mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
     let (d,bts) = alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
-    let ali = buildAlignmentBuilder (-1) ([x,y],(d, bts))
+    let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali
   return . TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
