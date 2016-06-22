@@ -1,0 +1,49 @@
+resolver: nightly-2016-06-21
+
+packages:
+- .
+- location: ../Lib-NaturalLanguageAlphabets/
+  extra-dep: true
+- location: ../Lib-LinguisticsTypes/
+  extra-dep: true
+- location: ../Lib-AlignmentAlgorithms/
+  extra-dep: true
+- location: ../Lib-bimaps/
+  extra-dep: true
+- location: ../Lib-PrimitiveArray/
+  extra-dep: true
+- location: ../Lib-ADPfusion/
+  extra-dep: true
+- location: ../Lib-FormalGrammars/
+  extra-dep: true
+- location: ../Lib-GrammarProducts/
+  extra-dep: true
+- location: ../Lib-AlignmentAlgorithms/
+  extra-dep: true
+- location: ../Lib-DPutils/
+  extra-dep: true
+- location: ../Lib-OrderedBits/
+  extra-dep: true
+
+- location:
+    git: https://github.com/ekmett/trifecta
+    commit: 53f76115ceba688fb0f5aef2fea5d085a1f813ec
+  extra-dep: true
+
+
+extra-deps:
+- cereal-text-0.1.0.2
+- cereal-vector-0.2.0.1
+- intern-0.9.1.4
+- storable-record-0.0.3.1
+- storable-tuple-0.0.3.2
+- trifecta-1.5.2
+- tuple-th-0.2.5
+
+flags:
+  WordAlignment:
+    debug: false
+
+ghc-options:
+  WordAlign: -O2 -fllvm -optlo-O3
+
