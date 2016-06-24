@@ -1,6 +1,7 @@
-0.1.x.y
+0.1.0.1
 -------
 
+- added missing stack.yaml
 - updated README
 
 0.1.0.0
