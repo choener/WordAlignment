@@ -1,4 +1,4 @@
-resolver: lts-5.10
+resolver: lts-6.5
 
 packages:
 - '.'
@@ -22,17 +22,19 @@ packages:
   extra-dep: true
 - location: ../Lib-DPutils/
   extra-dep: true
+- location: ../Lib-OrderedBits
+  extra-dep: true
 
 extra-deps:
-- cereal-text-0.1.0.1
-- FormalGrammars-0.3.0.0
-- GrammarProducts-0.1.1.2
+- cereal-text-0.1.0.2
+# - FormalGrammars-0.3.0.0
+# - GrammarProducts-0.1.1.2
 - intern-0.9.1.4
-- OneTuple-0.2.1
-- OrderedBits-0.0.1.0
+# - OneTuple-0.2.1
+# - OrderedBits-0.0.1.0
 - storable-record-0.0.3.1
 - storable-tuple-0.0.3.2
-- tuple-0.3.0.2
+# - tuple-0.3.0.2
 
 flags:
   WordAlignment:
