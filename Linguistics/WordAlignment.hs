@@ -22,7 +22,7 @@ import           System.IO (stderr)
 import           Text.Printf
 import qualified Data.Vector.Unboxed as VU
 
-import           Data.Vector.Combined
+import           Data.Paired.Vector
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.AlignmentBuilder

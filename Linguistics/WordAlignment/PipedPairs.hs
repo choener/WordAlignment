@@ -22,7 +22,7 @@ import qualified Data.Vector as V
 import           System.Mem (performGC)
 import           Data.ByteString.Builder (Builder)
 
-import           Data.Vector.Combined
+import           Data.Paired.Vector
 import           NLP.Text.BTI
 
 import           Linguistics.WordAlignment.FastLookups
