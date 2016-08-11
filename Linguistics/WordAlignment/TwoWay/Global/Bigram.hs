@@ -19,7 +19,7 @@ import qualified Data.Text.Format as TF
 import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.ByteString.Builder as BB
 
-import           ADP.Fusion
+import           ADP.Fusion.Point
 import           Data.PrimitiveArray
 import           DP.Seq.Align.Global.Linear2
 import           NLP.Scoring.SimpleUnigram

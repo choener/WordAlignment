@@ -11,7 +11,7 @@ import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Vector.Fusion.Stream.Monadic as SM
 import qualified Data.Vector.Unboxed as VU
 
-import           ADP.Fusion
+import           ADP.Fusion.Point
 import           Data.PrimitiveArray
 import           DP.Seq.Align.SemiGlobal.Infix2
 import           NLP.Scoring.SimpleUnigram
