@@ -11,7 +11,7 @@ license-file:   LICENSE
 build-type:     Simple
 stability:      experimental
 cabal-version:  >= 1.10.0
-tested-with:    GHC == 7.8.4, GHC == 7.10.2
+tested-with:    GHC == 7.8.4, GHC == 7.10.3
 synopsis:       Bigram word pair alignments.
 description:
                 The library provides fast dynamic programming algorithms to
@@ -45,31 +45,22 @@ flag debug
 
 
 library
-  build-depends: base                       >= 4.7      &&  < 4.9
-               , ADPfusion                  >= 0.5.2    &&  < 0.5.3
-               , aeson                      >= 0.9      &&  < 0.12
-               , AlignmentAlgorithms        >= 0.1      &&  < 0.2
+  build-depends: base                       >= 4.7      &&  < 5.0
+               , aeson                      >= 0.9      &&  < 1.1
                , attoparsec                 >= 0.10     &&  < 0.14
-               , bimaps                     >= 0.1
                , bytestring
                , containers
                , data-default               >= 0.5      &&  < 0.6
                , deepseq                    >= 1.3      &&  < 1.5
-               , DPutils                    >= 0.0      &&  < 0.1
                , file-embed                 >= 0.0.6    &&  < 0.1
                , fmlist                     >= 0.9      &&  < 0.10
-               , FormalGrammars             >= 0.2.1    &&  < 0.4
                , ghc-prim
-               , GrammarProducts            >= 0.1.1    &&  < 0.1.2
                , hashable                   >= 1.1      &&  < 1.3
                , intern                     >= 0.9      &&  < 0.10
                , lens                       >= 4.0      &&  < 4.14
-               , LinguisticsTypes           >= 0.0.0    &&  < 0.0.1
                , mtl
-               , NaturalLanguageAlphabets   >= 0.1.1    &&  < 0.2.0
                , pipes                      >= 4.0      &&  < 5.0
                , primitive                  >= 0.5      &&  < 0.7
-               , PrimitiveArray             >= 0.6.0    &&  < 0.7.2
                , strict                     >= 0.3.2    &&  < 0.3.3
                , template-haskell
                , text                       >= 1.0      &&  < 1.3
@@ -78,6 +69,16 @@ library
                , tuple-th                   >= 0.2.4    &&  < 0.2.6
                , unordered-containers       >= 0.2.3    &&  < 0.3
                , vector                     >= 0.10     &&  < 0.12
+               --
+               , ADPfusion                  == 0.5.2.*
+               , AlignmentAlgorithms        == 0.1.0.*
+               , bimaps                     == 0.1.0.*
+               , DPutils                    == 0.0.0.*
+               , FormalGrammars             == 0.3.1.*
+               , GrammarProducts            == 0.1.1.*
+               , LinguisticsTypes           == 0.0.0.*
+               , NaturalLanguageAlphabets   == 0.1.1.*
+               , PrimitiveArray             == 0.7.1.*
   exposed-modules:
     Linguistics.WordAlignment
     Linguistics.WordAlignment.AlignmentBuilder
@@ -186,7 +187,7 @@ test-suite properties
                , NaturalLanguageAlphabets
                , tasty                      >= 0.11
                , tasty-quickcheck           >= 0.8
-               , tasty-silver               >= 3.1
+               , tasty-silver               >= 3.1.9
                , tasty-th                   >= 0.1
                , text
                , WordAlignment
