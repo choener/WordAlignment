@@ -73,7 +73,7 @@ library
                , ADPfusion                  == 0.5.2.*
                , AlignmentAlgorithms        == 0.1.0.*
                , bimaps                     == 0.1.0.*
-               , DPutils                    == 0.0.0.*
+               , DPutils                    == 0.0.1.*
                , FormalGrammars             == 0.3.1.*
                , GrammarProducts            == 0.1.1.*
                , LinguisticsTypes           == 0.0.0.*
