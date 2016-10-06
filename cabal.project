@@ -9,3 +9,7 @@ packages: .
           ../Lib-NaturalLanguageAlphabets/
           ../Lib-OrderedBits
           ../Lib-PrimitiveArray/
+
+package WordAlignment
+  optimization: False
+

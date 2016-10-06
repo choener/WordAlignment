@@ -5,6 +5,7 @@ import           Data.FMList (FMList)
 import           Data.Strict.Tuple (Pair (..))
 import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)
+import           Debug.Trace
 import qualified Data.FMList as FM
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
@@ -36,9 +37,12 @@ type SigT m x r = SigInfix m x r IMCp IMCp
 
 sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
 sScore ss@SimpleScoring{..} bgm = SigInfix
-  { align = \ww (Z:.(lb,b):.(lu,u)) ->
-              let s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
-              in  ww + s
+  { align = \ww (Z:.(lp,l):.(up,u)) ->
+              let -- s  = HM.lookupDefault defMismatch (Bigram lb b :!: Bigram lu u) bgm
+                  lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault defMismatch (Bigram mc' c :!: Bigram nd' d) bgm
+                  {-# Inline lkup #-}
+--              in  -- ww + s
+              in  traceShow (ww,lkup up u lp l, lkup lp l up u) $ ww + lkup up u lp l
   , contL = \ww (Z:.b:._) -> ww + gapExt
   , contU = \ww (Z:._:.u) -> ww + gapExt
   , done  = const 0

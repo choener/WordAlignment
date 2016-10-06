@@ -1,9 +1,13 @@
 
+{-# Options_GHC -fno-cse           #-}
+{-# Options_GHC -fno-full-laziness #-}
+
 module Linguistics.WordAlignment.TwoWay.Infix.Simple where
 
 import           Data.FMList (FMList)
 import           Data.Vector.Fusion.Util (Id(..))
 import           Data.Vector.Unboxed (Vector)
+import           Debug.Trace
 import qualified Data.FMList as FM
 import qualified Data.List as L
 import qualified Data.Text.Format as TF
@@ -27,7 +31,7 @@ type SigT m x r = SigInfix m x r BTI BTI
 
 sScore :: Monad m => SimpleScoring -> SigT m Double Double
 sScore ss@SimpleScoring{..} = SigInfix
-  { align = \ww (Z:.b:.u) -> ww + scoreUnigram ss b u
+  { align = \ww (Z:.b:.u) -> let sc = scoreUnigram ss b u in ww + sc
   , contL = \ww (Z:.b:._) -> ww + gapExt
   , contU = \ww (Z:._:.u) -> ww + gapExt
   , done  = const 0
@@ -151,8 +155,16 @@ alignInfix
   -> Vector BTI
   -> (Double , [[B3]])
 alignInfix simpleS fc fd width k i1 i2 = {-# SCC "alignInfix" #-} (d, take k bs)
-  where d = unId $ axiom ss
-        fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward simpleS i1 i2
+  where d = {- traceShow (arrdd," ",arrii," ",arrmm," ",arrsu," ",arrus," ",L.map (unId . axiom) [dd,ii,mm,pu,ss,su,up,us]) -}
+            unId $ axiom ss
+        !fwd@(Z:.dd:.ii:.mm:.pu:.ss:.su:.up:.us) = alignInfixForward simpleS i1 i2
         bs = alignInfixBacktrack fc fd width simpleS i1 i2 fwd
+        {-
+        TW (ITbl _ _ _ arrdd) _ = dd
+        TW (ITbl _ _ _ arrii) _ = ii
+        TW (ITbl _ _ _ arrmm) _ = mm
+        TW (ITbl _ _ _ arrsu) _ = su
+        TW (ITbl _ _ _ arrus) _ = us
+        -}
 {-# NoInline alignInfix #-}
 

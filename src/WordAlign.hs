@@ -12,6 +12,7 @@ import           Data.FileEmbed
 import           Data.Version (showVersion)
 import           Pipes (for)
 import           Prelude hiding (Word)
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as S
@@ -24,7 +25,6 @@ import           System.Exit
 import           System.IO (stderr, stdout, stdin)
 import           System.Mem (performGC)
 import           Text.Printf
-import qualified Data.ByteString.Builder as BB
 
 import           NLP.Scoring.SimpleUnigram
 import           NLP.Scoring.SimpleUnigram.Import

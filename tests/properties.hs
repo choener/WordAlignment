@@ -2,8 +2,10 @@
 module Main where
 
 import           Control.Monad (forM)
+import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as S
+import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.Encoding as TLE
@@ -14,7 +16,6 @@ import           Test.Tasty.QuickCheck as QC
 import           Test.Tasty.Silver as S
 import           Test.Tasty.Silver.Interactive as SI
 import           Test.Tasty.TH
-import qualified Data.ByteString.Builder as BB
 
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
