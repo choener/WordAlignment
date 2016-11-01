@@ -2,6 +2,8 @@
 module Main where
 
 import           Control.Monad (forM)
+import           Data.List (intersperse)
+import           Data.List.Split (splitOneOf)
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as S
@@ -16,6 +18,7 @@ import           Test.Tasty.QuickCheck as QC
 import           Test.Tasty.Silver as S
 import           Test.Tasty.Silver.Interactive as SI
 import           Test.Tasty.TH
+import           System.FilePath ((</>),(<.>))
 
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
@@ -49,9 +52,49 @@ goldenInfixBigramTest
       infixBigramTest
       id
 
+-- Test files are split according to this scheme:
+--
+-- @
+-- directory name "/"
+-- grammartype
+-- unigram or bigram
+-- unigram or bigram score name
+-- words file
+-- ".golden"
+-- @
+
+runSingleTest gldn [dir,grammar,"unigram",wrds,suffix] = do
+  error gldn
+
+runSingleTest gldn [dir,"infix","bigram",bgms,wrds,suffix] = do
+  -- words file
+  ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
+  -- the bigram scoring file
+  let chkLs = S.fromList . map wordLang $ ws
+  bigramScoring <- BL.readFile (dir </> bgms <.> "bgms") >>= return . mkBigramMap chkLs (-999999)
+  -- the bigram-associated simple scoring file
+  simpleScoring <- simpleScoreFromFile $ dir </> bgms <.> "bgdef"
+  -- a particular way we do scores for all inputs
+  ts <- forM ws $ \x -> forM ws $ \y -> do
+    let fc = FastChars mempty 8
+    let fd = FastDoubles mempty 8
+    let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
+    let (d,bts) = alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
+    let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
+    let hndl = stdout
+    return $ BB.toLazyByteString ali
+  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
+  return res
+
+runSingleTest gldn xs = do
+  error gldn
+
+testWrapper gldn = S.goldenVsAction name gldn (runSingleTest gldn xs) id
+  where name = concat . intersperse "-" . drop 1 . take (length xs - 2) $ xs
+        xs   = splitOneOf "/-." gldn
 
 main :: IO ()
 main = do
-  SI.defaultMain goldenInfixBigramTest
-  $(defaultMainGenerator)
+  gg <- testGroup "golden" <$> fmap testWrapper <$> S.findByExtension [".golden"] "tests"
+  SI.defaultMain gg
 
