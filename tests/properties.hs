@@ -1,7 +1,7 @@
 
 module Main where
 
-import           Control.Monad (forM)
+import           Control.Monad (forM,unless)
 import           Data.List (intersperse)
 import           Data.List.Split (splitOneOf)
 import qualified Data.ByteString.Builder as BB
@@ -66,7 +66,8 @@ goldenInfixBigramTest
 runSingleTest gldn [dir,grammar,"unigram",wrds,suffix] = do
   error gldn
 
-runSingleTest gldn [dir,"infix","bigram",bgms,wrds,suffix] = do
+runSingleTest gldn [dir,xfix,"bigram",bgms,wrds,suffix] = do
+  unless (xfix `elem` ["global","infix"]) $ error gldn
   -- words file
   ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
   -- the bigram scoring file
@@ -79,7 +80,9 @@ runSingleTest gldn [dir,"infix","bigram",bgms,wrds,suffix] = do
     let fc = FastChars mempty 8
     let fd = FastDoubles mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
-    let (d,bts) = alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
+    let (d,bts) = case xfix of
+          "global" -> alignGlobalBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
+          "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali
