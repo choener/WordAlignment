@@ -238,6 +238,55 @@ These are currently disabled. If you need them, consider contacting me.
 
 
 
+# Writing unit tests for WordAlign
+
+First, prepare a version of WordAlign that includes the properties test
+program. This is done as follows with a sufficiently new version of cabal:
+
+    cabal new-configure --enable-tests
+    cabal new-build
+
+Once done, take a look at the ```tests``` folder. The files with suffix
+```.golden``` are named in a special manner:
+1. grammar type ```global``` or ```infix```
+1. score system ```unigram``` or ```bigram```
+1. the score files used; for unigrams a single ```.ugdef``` file is required,
+   for bigrams both a ```.bgdef``` and a ```.bgms``` file are required.
+   ```.ugdef``` files hold a unigram scoring system. ```.bgdef``` files bigram
+   default scores. Last, ```.bgms``` files hold scores for known bigrams.
+1. the input words file with the words to be aligned to each other. From the
+   file, all pairs are created where fst <= snd. I.e. the upper triangular
+   matrix of words.
+1. a number with the the co-optimals to backtrack. Normally, this should be
+   ```1``` but a small number of tests should have a big number here -- say
+   ```99``` and all possible co-optimals should be checked for correctness.
+   This may be fewer than the given number but at least one backtrack should
+   always be there.
+
+Running the properties program will then automatically test each golden file vs
+the WordAlign algorithm together with the score files as inputs.
+
+Automatic property are done with a simple ```./properties``` and should be all
+green.
+
+## How to create new test files:
+
+1. Create a new *empty* file named like this example here:
+   ```global-bigram-PTSP800-PTpoSPpampa-1.golden```.
+2. This will test against the global Needleman-Wunsch algorithm with bigram
+   scoring. The score file used is the ```PTSP800.bgms``` bigram score file and
+   the ```PTSP800.bgdef``` file. Words are taken from the
+   ```PTpoSPpampa.words``` file. Exactly one backtrack is generated.
+3. Fill the necessary scoring and words files.
+4. Run the ```properties``` program as follows: ```properties --accept -i```.
+   This should fill the previously empty golden file created in step 1.
+5. Carefully check if the contents of this file are correct.
+6. If so a run of ```./properties``` should now only show green results. In
+   particular, the file name created under 1. should show up as a new property
+   that was tested.
+
+
+
 #### Contact
 
 Christian Hoener zu Siederdissen  

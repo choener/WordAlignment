@@ -8,11 +8,6 @@ IDS:  3 1683 SCORE:   5.00 NSCORE:   1.00    WORD: s o l o   WORD: s u e l o
        s       -       o       l       o
      4.0    -4.0     0.0     3.0     2.0
 
-IDS:  1683 3 SCORE:   5.00 NSCORE:   1.00    WORD: s u e l o   WORD: s o l o
-       s       -       o       l       o
-       s       u       e       l       o
-     4.0    -4.0     0.0     3.0     2.0
-
 IDS:  1683 1683 SCORE:  13.00 NSCORE:   2.60    WORD: s u e l o   WORD: s u e l o
        s       u       e       l       o
        s       u       e       l       o

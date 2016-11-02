@@ -63,27 +63,30 @@ goldenInfixBigramTest
 -- ".golden"
 -- @
 
-runSingleTest gldn [dir,grammar,"unigram",ugms,wrds,suffix] = do
+runSingleTest gldn [dir,grammar,"unigram",ugms,wrds,cnt,suffix] = do
+  let c = read cnt
   unless (grammar `elem` ["global","infix"]) $ error gldn
   -- words file
   ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
   -- the bigram-associated simple scoring file
   simpleScoring <- simpleScoreFromFile $ dir </> ugms <.> "ugdef"
   -- a particular way we do scores for all inputs
-  ts <- forM ws $ \x -> forM ws $ \y -> do
+  let xys = [ (x,y) | x <- ws, y <- ws, x <= y ]
+  ts <- forM xys $ \ (x,y) -> do
     let fc = FastChars mempty 8
     let fd = FastDoubles mempty 8
     let (d,bts) = case grammar of
-          "global" -> alignGlobalSimple2 simpleScoring fc fd 8 1 (wordWord x) (wordWord y)
-          "infix"  -> alignInfixSimple2 simpleScoring fc fd 8 1 (wordWord x) (wordWord y)
+          "global" -> alignGlobalSimple2 simpleScoring fc fd 8 c (wordWord x) (wordWord y)
+          "infix"  -> alignInfixSimple2 simpleScoring fc fd 8 c (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali
-  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
+  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ ts
   return res
 
 
-runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,suffix] = do
+runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,cnt,suffix] = do
+  let c = read cnt
   unless (grammar `elem` ["global","infix"]) $ error gldn
   -- words file
   ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
@@ -93,17 +96,18 @@ runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,suffix] = do
   -- the bigram-associated simple scoring file
   simpleScoring <- simpleScoreFromFile $ dir </> bgms <.> "bgdef"
   -- a particular way we do scores for all inputs
-  ts <- forM ws $ \x -> forM ws $ \y -> do
+  let xys = [ (x,y) | x <- ws, y <- ws, x <= y ]
+  ts <- forM xys $ \ (x,y) -> do
     let fc = FastChars mempty 8
     let fd = FastDoubles mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
     let (d,bts) = case grammar of
-          "global" -> alignGlobalBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
-          "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
+          "global" -> alignGlobalBigram2 simpleScoring sco fc fd 8 c (wordWord x) (wordWord y)
+          "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 c (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali
-  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
+  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ ts
   return res
 
 runSingleTest gldn xs = do
@@ -115,6 +119,6 @@ testWrapper gldn = S.goldenVsAction name gldn (runSingleTest gldn xs) id
 
 main :: IO ()
 main = do
-  gg <- testGroup "golden" <$> fmap testWrapper <$> S.findByExtension [".golden"] "tests"
+  gg <- testGroup "Known good alignments" <$> fmap testWrapper <$> S.findByExtension [".golden"] "tests"
   SI.defaultMain gg
 

@@ -8,11 +8,6 @@ IDS:  49205 57671 SCORE:  -7.44 NSCORE:  -1.49    WORD: p o   WORD: p a m p a
        p       -       -       -       o       $
      5.0    -4.0    -4.0    -4.0     3.8     2.7
 
-IDS:  57671 49205 SCORE:  -7.44 NSCORE:  -1.49    WORD: p a m p a   WORD: p o
-       p       -       -       -       o       $
-       p       a       m       p       a       $
-     5.0    -4.0    -4.0    -4.0     3.8     2.7
-
 IDS:  57671 57671 SCORE: -18.00 NSCORE:  -3.60    WORD: p a m p a   WORD: p a m p a
        p       a       m       p       a       $
        p       a       m       p       a       $
