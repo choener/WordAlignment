@@ -107,7 +107,7 @@ runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,suffix] = do
   return res
 
 runSingleTest gldn xs = do
-  error gldn
+  error $ "don't know how to execute test based on: " ++ gldn
 
 testWrapper gldn = S.goldenVsAction name gldn (runSingleTest gldn xs) id
   where name = concat . intersperse "-" . drop 1 . take (length xs - 2) $ xs
