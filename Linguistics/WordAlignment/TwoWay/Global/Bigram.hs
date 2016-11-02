@@ -73,7 +73,10 @@ sBacktrackBuilder !fc !fd !k !ss@SimpleScoring{..} !bgm = SigGlobal
                                                         , fastChar fc b
                                                         , fastDouble fd z
                                                         )
-  , done  = const FM.empty
+  , done  = const $ FM.singleton ( fastChar fc "^"
+                                 , fastChar fc "^"
+                                 , fastChar fc "-"
+                                 )
   , h     = SM.toList
   }
 {-# Inline sBacktrackBuilder #-}

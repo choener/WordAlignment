@@ -1,15 +1,15 @@
 IDS:  3 3 SCORE: -15.00 NSCORE:  -3.75    WORD: s o l o   WORD: s o l o
-       s       o       l       o       $
-       s       o       l       o       $
-    -3.0    -3.0    -3.0    -3.0    -3.0
+       ^       s       o       l       o       $
+       ^       s       o       l       o       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0
 
 IDS:  3 1683 SCORE:   5.40 NSCORE:   1.08    WORD: s o l o   WORD: s u e l o
-       s       u       e       l       o       $
-       s       -       o       l       o       $
-     5.5    -4.0    -3.0     4.1     5.8     4.1
+       ^       s       u       e       l       o       $
+       ^       s       -       o       l       o       $
+       -     5.5    -4.0    -3.0     4.1     5.8     4.1
 
 IDS:  1683 1683 SCORE: -18.00 NSCORE:  -3.60    WORD: s u e l o   WORD: s u e l o
-       s       u       e       l       o       $
-       s       u       e       l       o       $
-    -3.0    -3.0    -3.0    -3.0    -3.0    -3.0
+       ^       s       u       e       l       o       $
+       ^       s       u       e       l       o       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0    -3.0
 
