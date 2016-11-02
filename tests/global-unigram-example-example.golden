@@ -1,0 +1,180 @@
+IDS:  1 1 SCORE:  16.00 NSCORE:   2.67    WORD: a a a a h h   WORD: a a a a h h
+       a       a       a       a       h       h
+       a       a       a       a       h       h
+     2.0     2.0     2.0     2.0     4.0     4.0
+
+IDS:  1 2 SCORE:  -8.00 NSCORE:  -1.33    WORD: a a a a h h   WORD: h h a a a a
+       h       h       a       a       a       a       -       -
+       -       -       a       a       a       a       h       h
+    -4.0    -4.0     2.0     2.0     2.0     2.0    -4.0    -4.0
+
+IDS:  1 3 SCORE: -26.00 NSCORE:  -2.36    WORD: a a a a h h   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       -       s
+       -       -       -       a       a       -       -       -       a       a       h       h
+    -4.0    -4.0    -4.0     0.0     0.0    -4.0    -4.0    -4.0     2.0     0.0    -4.0     0.0
+
+IDS:  1 4 SCORE: -16.00 NSCORE:  -2.29    WORD: a a a a h h   WORD: h a u s b a u
+       h       a       u       s       b       a       u       -       -
+       -       a       a       -       -       a       a       h       h
+    -4.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0    -4.0
+
+IDS:  1 5 SCORE: -12.00 NSCORE:  -1.50    WORD: a a a a h h   WORD: b a u m h a u s
+       b       a       u       m       h       a       u       -       s
+       -       a       a       -       -       a       a       h       h
+    -4.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0     0.0
+
+IDS:  1 6 SCORE: -28.00 NSCORE:  -3.11    WORD: a a a a h h   WORD: s h i t h o u s e
+       s       h       i       t       h       o       u       s       e       -       -
+       -       -       a       -       -       a       a       -       a       h       h
+    -4.0    -4.0     0.0    -4.0    -4.0     0.0     0.0    -4.0     0.0    -4.0    -4.0
+
+IDS:  2 1 SCORE:  -8.00 NSCORE:  -1.33    WORD: h h a a a a   WORD: a a a a h h
+       -       -       a       a       a       a       h       h
+       h       h       a       a       a       a       -       -
+    -4.0    -4.0     2.0     2.0     2.0     2.0    -4.0    -4.0
+
+IDS:  2 2 SCORE:  16.00 NSCORE:   2.67    WORD: h h a a a a   WORD: h h a a a a
+       h       h       a       a       a       a
+       h       h       a       a       a       a
+     4.0     4.0     2.0     2.0     2.0     2.0
+
+IDS:  2 3 SCORE: -14.00 NSCORE:  -1.27    WORD: h h a a a a   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       s
+       -       h       h       a       a       -       -       -       a       a       -
+    -4.0     0.0     4.0     0.0     0.0    -4.0    -4.0    -4.0     2.0     0.0    -4.0
+
+IDS:  2 4 SCORE:  -4.00 NSCORE:  -0.57    WORD: h h a a a a   WORD: h a u s b a u
+       -       h       a       u       s       b       a       u
+       h       h       a       a       -       -       a       a
+    -4.0     4.0     2.0     0.0    -4.0    -4.0     2.0     0.0
+
+IDS:  2 5 SCORE: -12.00 NSCORE:  -1.50    WORD: h h a a a a   WORD: b a u m h a u s
+       -       b       a       u       m       h       a       u       s
+       h       h       a       a       -       -       a       a       -
+    -4.0     0.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0
+
+IDS:  2 6 SCORE:  -8.00 NSCORE:  -0.89    WORD: h h a a a a   WORD: s h i t h o u s e
+       s       h       i       t       h       o       u       s       e
+       h       h       a       -       -       a       a       -       a
+     0.0     4.0     0.0    -4.0    -4.0     0.0     0.0    -4.0     0.0
+
+IDS:  3 1 SCORE: -26.00 NSCORE:  -2.36    WORD: s c h e i s s h a u s   WORD: a a a a h h
+       -       -       -       a       a       -       -       -       a       a       h       h
+       s       c       h       e       i       s       s       h       a       u       -       s
+    -4.0    -4.0    -4.0     0.0     0.0    -4.0    -4.0    -4.0     2.0     0.0    -4.0     0.0
+
+IDS:  3 2 SCORE: -14.00 NSCORE:  -1.27    WORD: s c h e i s s h a u s   WORD: h h a a a a
+       -       h       h       a       a       -       -       -       a       a       -
+       s       c       h       e       i       s       s       h       a       u       s
+    -4.0     0.0     4.0     0.0     0.0    -4.0    -4.0    -4.0     2.0     0.0    -4.0
+
+IDS:  3 3 SCORE:  36.00 NSCORE:   3.27    WORD: s c h e i s s h a u s   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       s
+       s       c       h       e       i       s       s       h       a       u       s
+     4.0     4.0     4.0     2.0     2.0     4.0     4.0     4.0     2.0     2.0     4.0
+
+IDS:  3 4 SCORE:  -4.00 NSCORE:  -0.36    WORD: s c h e i s s h a u s   WORD: h a u s b a u
+       -       -       h       a       u       -       s       b       a       u       -
+       s       c       h       e       i       s       s       h       a       u       s
+    -4.0    -4.0     4.0     0.0     0.0    -4.0     4.0     0.0     2.0     2.0    -4.0
+
+IDS:  3 5 SCORE:   0.00 NSCORE:   0.00    WORD: s c h e i s s h a u s   WORD: b a u m h a u s
+       -       -       b       a       u       -       m       h       a       u       s
+       s       c       h       e       i       s       s       h       a       u       s
+    -4.0    -4.0     0.0     0.0     0.0    -4.0     0.0     4.0     2.0     2.0     4.0
+
+IDS:  3 6 SCORE:   4.00 NSCORE:   0.36    WORD: s c h e i s s h a u s   WORD: s h i t h o u s e
+       s       -       h       -       i       -       t       h       o       u       s       e
+       s       c       h       e       i       s       s       h       a       u       s       -
+     4.0    -4.0     4.0    -4.0     2.0    -4.0     0.0     4.0     0.0     2.0     4.0    -4.0
+
+IDS:  4 1 SCORE: -16.00 NSCORE:  -2.29    WORD: h a u s b a u   WORD: a a a a h h
+       -       a       a       -       -       a       a       h       h
+       h       a       u       s       b       a       u       -       -
+    -4.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0    -4.0
+
+IDS:  4 2 SCORE:  -4.00 NSCORE:  -0.57    WORD: h a u s b a u   WORD: h h a a a a
+       h       h       a       a       -       -       a       a
+       -       h       a       u       s       b       a       u
+    -4.0     4.0     2.0     0.0    -4.0    -4.0     2.0     0.0
+
+IDS:  4 3 SCORE:  -4.00 NSCORE:  -0.36    WORD: h a u s b a u   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       s
+       -       -       h       a       u       -       s       b       a       u       -
+    -4.0    -4.0     4.0     0.0     0.0    -4.0     4.0     0.0     2.0     2.0    -4.0
+
+IDS:  4 4 SCORE:  20.00 NSCORE:   2.86    WORD: h a u s b a u   WORD: h a u s b a u
+       h       a       u       s       b       a       u
+       h       a       u       s       b       a       u
+     4.0     2.0     2.0     4.0     4.0     2.0     2.0
+
+IDS:  4 5 SCORE:   4.00 NSCORE:   0.50    WORD: h a u s b a u   WORD: b a u m h a u s
+       b       a       u       m       h       a       u       s
+       h       a       u       s       b       a       u       -
+     0.0     2.0     2.0     0.0     0.0     2.0     2.0    -4.0
+
+IDS:  4 6 SCORE: -10.00 NSCORE:  -1.11    WORD: h a u s b a u   WORD: s h i t h o u s e
+       s       h       -       i       t       h       o       u       s       e
+       -       h       a       u       s       b       a       u       -       -
+    -4.0     4.0    -4.0     0.0     0.0     0.0     0.0     2.0    -4.0    -4.0
+
+IDS:  5 1 SCORE: -12.00 NSCORE:  -1.50    WORD: b a u m h a u s   WORD: a a a a h h
+       -       a       a       -       -       a       a       h       h
+       b       a       u       m       h       a       u       -       s
+    -4.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0     0.0
+
+IDS:  5 2 SCORE: -12.00 NSCORE:  -1.50    WORD: b a u m h a u s   WORD: h h a a a a
+       h       h       a       a       -       -       a       a       -
+       -       b       a       u       m       h       a       u       s
+    -4.0     0.0     2.0     0.0    -4.0    -4.0     2.0     0.0    -4.0
+
+IDS:  5 3 SCORE:   0.00 NSCORE:   0.00    WORD: b a u m h a u s   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       s
+       -       -       b       a       u       -       m       h       a       u       s
+    -4.0    -4.0     0.0     0.0     0.0    -4.0     0.0     4.0     2.0     2.0     4.0
+
+IDS:  5 4 SCORE:   4.00 NSCORE:   0.50    WORD: b a u m h a u s   WORD: h a u s b a u
+       h       a       u       s       b       a       u       -
+       b       a       u       m       h       a       u       s
+     0.0     2.0     2.0     0.0     0.0     2.0     2.0    -4.0
+
+IDS:  5 5 SCORE:  24.00 NSCORE:   3.00    WORD: b a u m h a u s   WORD: b a u m h a u s
+       b       a       u       m       h       a       u       s
+       b       a       u       m       h       a       u       s
+     4.0     2.0     2.0     4.0     4.0     2.0     2.0     4.0
+
+IDS:  5 6 SCORE:  -2.00 NSCORE:  -0.22    WORD: b a u m h a u s   WORD: s h i t h o u s e
+       s       h       -       i       t       h       o       u       s       e
+       -       b       a       u       m       h       a       u       s       -
+    -4.0     0.0    -4.0     0.0     0.0     4.0     0.0     2.0     4.0    -4.0
+
+IDS:  6 1 SCORE: -28.00 NSCORE:  -3.11    WORD: s h i t h o u s e   WORD: a a a a h h
+       a       -       -       a       -       -       a       a       h       h       -
+       -       s       h       i       t       h       o       u       -       s       e
+    -4.0    -4.0    -4.0     0.0    -4.0    -4.0     0.0     0.0    -4.0     0.0    -4.0
+
+IDS:  6 2 SCORE:  -8.00 NSCORE:  -0.89    WORD: s h i t h o u s e   WORD: h h a a a a
+       h       h       a       -       -       a       a       -       a
+       s       h       i       t       h       o       u       s       e
+     0.0     4.0     0.0    -4.0    -4.0     0.0     0.0    -4.0     0.0
+
+IDS:  6 3 SCORE:   4.00 NSCORE:   0.36    WORD: s h i t h o u s e   WORD: s c h e i s s h a u s
+       s       c       h       e       i       s       s       h       a       u       s       -
+       s       -       h       -       i       -       t       h       o       u       s       e
+     4.0    -4.0     4.0    -4.0     2.0    -4.0     0.0     4.0     0.0     2.0     4.0    -4.0
+
+IDS:  6 4 SCORE: -10.00 NSCORE:  -1.11    WORD: s h i t h o u s e   WORD: h a u s b a u
+       -       h       a       u       s       b       a       u       -       -
+       s       h       -       i       t       h       o       u       s       e
+    -4.0     4.0    -4.0     0.0     0.0     0.0     0.0     2.0    -4.0    -4.0
+
+IDS:  6 5 SCORE:  -2.00 NSCORE:  -0.22    WORD: s h i t h o u s e   WORD: b a u m h a u s
+       b       a       -       u       m       h       a       u       s       -
+       s       -       h       i       t       h       o       u       s       e
+     0.0    -4.0    -4.0     0.0     0.0     4.0     0.0     2.0     4.0    -4.0
+
+IDS:  6 6 SCORE:  28.00 NSCORE:   3.11    WORD: s h i t h o u s e   WORD: s h i t h o u s e
+       s       h       i       t       h       o       u       s       e
+       s       h       i       t       h       o       u       s       e
+     4.0     4.0     2.0     4.0     4.0     2.0     2.0     4.0     2.0
+

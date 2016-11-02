@@ -63,11 +63,28 @@ goldenInfixBigramTest
 -- ".golden"
 -- @
 
-runSingleTest gldn [dir,grammar,"unigram",wrds,suffix] = do
-  error gldn
+runSingleTest gldn [dir,grammar,"unigram",ugms,wrds,suffix] = do
+  unless (grammar `elem` ["global","infix"]) $ error gldn
+  -- words file
+  ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
+  -- the bigram-associated simple scoring file
+  simpleScoring <- simpleScoreFromFile $ dir </> ugms <.> "ugdef"
+  -- a particular way we do scores for all inputs
+  ts <- forM ws $ \x -> forM ws $ \y -> do
+    let fc = FastChars mempty 8
+    let fd = FastDoubles mempty 8
+    let (d,bts) = case grammar of
+          "global" -> alignGlobalSimple2 simpleScoring fc fd 8 1 (wordWord x) (wordWord y)
+          "infix"  -> alignInfixSimple2 simpleScoring fc fd 8 1 (wordWord x) (wordWord y)
+    let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
+    let hndl = stdout
+    return $ BB.toLazyByteString ali
+  let res = TL.toStrict . TLE.decodeUtf8 . mconcat $ concat ts
+  return res
 
-runSingleTest gldn [dir,xfix,"bigram",bgms,wrds,suffix] = do
-  unless (xfix `elem` ["global","infix"]) $ error gldn
+
+runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,suffix] = do
+  unless (grammar `elem` ["global","infix"]) $ error gldn
   -- words file
   ws <- (map parseWord . BL.lines) <$> BL.readFile (dir </> wrds <.> "words")
   -- the bigram scoring file
@@ -80,7 +97,7 @@ runSingleTest gldn [dir,xfix,"bigram",bgms,wrds,suffix] = do
     let fc = FastChars mempty 8
     let fd = FastDoubles mempty 8
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
-    let (d,bts) = case xfix of
+    let (d,bts) = case grammar of
           "global" -> alignGlobalBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
           "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 1 (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
