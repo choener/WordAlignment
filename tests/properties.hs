@@ -4,6 +4,7 @@ module Main where
 import           Control.Monad (forM,unless)
 import           Data.List (intersperse)
 import           Data.List.Split (splitOneOf)
+import           Debug.Trace
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Set as S
@@ -12,13 +13,14 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.Encoding as TLE
 import qualified Data.Text.Lazy.IO as TL
+import           System.FilePath ((</>),(<.>))
 import           System.IO (stdout)
 import           Test.Tasty
 import           Test.Tasty.QuickCheck as QC
 import           Test.Tasty.Silver as S
 import           Test.Tasty.Silver.Interactive as SI
 import           Test.Tasty.TH
-import           System.FilePath ((</>),(<.>))
+import           Data.List (isInfixOf)
 
 import           Linguistics.WordAlignment.Bigram
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, FastChars(..))
@@ -30,6 +32,7 @@ import           Linguistics.WordAlignment.FastLookups
 
 
 
+{-
 infixBigramTest = do
   ws <- (map parseWord . BL.lines) <$> BL.readFile "tests/example.words"
   simpleScoring <- simpleScoreFromFile "scores/defaultBigramScoring"
@@ -51,6 +54,7 @@ goldenInfixBigramTest
       "tests/infix-bigram.golden"
       infixBigramTest
       id
+-}
 
 -- Test files are split according to this scheme:
 --
@@ -93,6 +97,8 @@ runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,cnt,suffix] = do
   -- the bigram scoring file
   let chkLs = S.fromList . map wordLang $ ws
   bigramScoring <- BL.readFile (dir </> bgms <.> "bgms") >>= return . mkBigramMap chkLs (-999999)
+  putStrLn ""
+  print bigramScoring
   -- the bigram-associated simple scoring file
   simpleScoring <- simpleScoreFromFile $ dir </> bgms <.> "bgdef"
   -- a particular way we do scores for all inputs
@@ -119,6 +125,8 @@ testWrapper gldn = S.goldenVsAction name gldn (runSingleTest gldn xs) id
 
 main :: IO ()
 main = do
-  gg <- testGroup "Known good alignments" <$> fmap testWrapper <$> S.findByExtension [".golden"] "tests"
+  gg <-  testGroup "Known good alignments"
+     <$> (fmap testWrapper . filter ("order" `isInfixOf`))
+     <$> S.findByExtension [".golden"] "tests"
   SI.defaultMain gg
 

@@ -3,7 +3,7 @@ IDS:  49205 49205 SCORE:  -9.00 NSCORE:  -4.50    WORD: p o   WORD: p o
        ^       p       o       $
        -    -3.0    -3.0    -3.0
 
-IDS:  49205 57671 SCORE:  -7.44 NSCORE:  -1.49    WORD: p o   WORD: p a m p a
+IDS:  49205 57671 SCORE:  -0.58 NSCORE:  -0.12    WORD: p o   WORD: p a m p a
        ^       p       a       m       p       a       $
        ^       p       -       -       -       o       $
        -     5.0    -4.0    -4.0    -4.0     3.8     2.7

@@ -1,0 +1,14 @@
+-- a gap in linear scoring global alignments
+Gap           -4
+-- gap opening in affine languages
+GapOpen       -4
+-- gap extension in affine languages
+GapExtend     -2
+-- opening the prefix or suffix in overhang languages
+PreSufOpen    -1
+-- extending the prefix or suffix in overhang languages
+PreSufExtend   0
+-- score to return for bigram mismatches
+Mismatch      -3
+-- needs to be set, but is not used (need better simple scoring parser)
+Match         -999999

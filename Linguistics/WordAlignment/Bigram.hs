@@ -93,6 +93,9 @@ data Mapping = Mapping
 instance Hashable (Pair Bigram Bigram) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
+-- | This one is confusing. Given a bigram ab,cd from lang 1 to lang 2, we create
+-- the bigram cd,ab from lang 2 to lang 1 as well.
+
 lines2mapping :: [Line] -> Mapping
 lines2mapping = foldl' mkMapping emptyMapping . concatMap dupGroup . groupBy ((==) `on` ((^._1) &&& (^._2))) where
   dupGroup ls@(l:_)
@@ -103,6 +106,8 @@ lines2mapping = foldl' mkMapping emptyMapping . concatMap dupGroup . groupBy ((=
 emptyMapping = let b = Bigram "" ""
                in Mapping (M.singleton b b) M.empty
 
+-- | Barf in case incompatible duplicated bigram have been found.
+
 mkMapping :: Mapping -> [Line] -> Mapping
 mkMapping !m [] = m
 mkMapping !(Mapping bs ll) xs@(x:_)
@@ -112,13 +117,14 @@ mkMapping !(Mapping bs ll) xs@(x:_)
     bs' = bs `M.union` (M.fromList $ map (\a -> (a,a)) nom)
     ll' = M.insertWith HM.union (x^._1 :!: x^._2) ys ll
     ys :: Scores
-    ys = HM.fromList
+    ys = HM.fromListWith insertBarf
            [ ((k1:!:k2),d)
            | y <- xs
            , let k1 = bs' M.! (y^._3)
            , let k2 = bs' M.! (y^._4)
            , let d = y ^._5
            ]
+    insertBarf dup1 dup2 = error $ "the following two elements are duplicated with language pair: " ++ show (x^._1,x^._2) ++ " " ++ show dup1 ++ " " ++ show dup2
 
 -- | Given a set of acceptable languages, a default score, and the lazy
 -- bytestring of scores, create the 'Mapping' of languages and scores.

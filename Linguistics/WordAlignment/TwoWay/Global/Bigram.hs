@@ -36,17 +36,18 @@ type IMC = BTI
 type SigT m x r = SigGlobal m x r IMCp IMCp
 
 -- |
+--
+-- TODO for general amusement: which of the two tapes @l@ or @u@ belongs to
+-- the first bigram in this?
 
 sScore :: Monad m => SimpleScoring -> Scores -> SigT m Double Double
 sScore !ss@SimpleScoring{..} !bgm = SigGlobal
   { delin = \ww (Z:.c     :._     ) -> ww + gapScore
   , indel = \ww (Z:._     :.c     ) -> ww + gapScore
-  , align = \ww (Z:.(lp,l):.(up,u)) -> ww + lkup up u lp l
+  , align = \ww (Z:.(lp,l):.(up,u)) -> ww + HM.lookupDefault defMismatch (Bigram lp l :!: Bigram up u) bgm
   , done = const 0
   , h         = SM.foldl' max (-888888)
-  } where
-    lkup mc' c nd' d = {-# SCC "lkup" #-} HM.lookupDefault defMismatch (Bigram mc' c :!: Bigram nd' d) bgm
-    {-# Inline lkup #-}
+  }
 {-# INLINE sScore #-}
 
 -- |

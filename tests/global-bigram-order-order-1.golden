@@ -1,0 +1,30 @@
+IDS:  1 1 SCORE: -15.00 NSCORE:  -3.75    WORD: a b D E   WORD: a b D E
+       ^       a       b       D       E       $
+       ^       a       b       D       E       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0
+
+IDS:  1 2 SCORE:  87.00 NSCORE:  21.75    WORD: a b D E   WORD: a c E N
+       ^       a       c       E       N       $
+       ^       a       b       D       E       $
+       -    -3.0    99.0    -3.0    -3.0    -3.0
+
+IDS:  1 3 SCORE: -15.00 NSCORE:  -3.75    WORD: a b D E   WORD: a b D E
+       ^       a       b       D       E       $
+       ^       a       b       D       E       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0
+
+IDS:  2 2 SCORE: -15.00 NSCORE:  -3.75    WORD: a c E N   WORD: a c E N
+       ^       a       c       E       N       $
+       ^       a       c       E       N       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0
+
+IDS:  2 3 SCORE:  87.00 NSCORE:  21.75    WORD: a c E N   WORD: a b D E
+       ^       a       b       D       E       $
+       ^       a       c       E       N       $
+       -    -3.0    99.0    -3.0    -3.0    -3.0
+
+IDS:  3 3 SCORE: -15.00 NSCORE:  -3.75    WORD: a b D E   WORD: a b D E
+       ^       a       b       D       E       $
+       ^       a       b       D       E       $
+       -    -3.0    -3.0    -3.0    -3.0    -3.0
+

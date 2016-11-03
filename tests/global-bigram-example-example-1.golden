@@ -48,7 +48,7 @@ IDS:  2 5 SCORE:   2.90 NSCORE:   0.36    WORD: h h a a a a   WORD: b a u m h a 
        ^       -       -       -       h       h       a       a       a       a       $
        -    -4.0    -4.0    -4.0    -3.0    -3.0    33.9    -4.0    -3.0    -3.0    -3.0
 
-IDS:  2 6 SCORE: -33.00 NSCORE:  -3.67    WORD: h h a a a a   WORD: s h i t h o u s e
+IDS:  2 6 SCORE:  -7.10 NSCORE:  -0.79    WORD: h h a a a a   WORD: s h i t h o u s e
        ^       s       h       i       t       h       o       u       s       e       $
        ^       -       -       -       h       h       a       a       a       a       $
        -    -4.0    -4.0    -4.0    -3.0    -3.0    22.9    -3.0    -3.0    -3.0    -3.0
@@ -68,7 +68,7 @@ IDS:  3 5 SCORE:  71.40 NSCORE:   6.49    WORD: s c h e i s s h a u s   WORD: b 
        ^       s       c       h       e       i       s       s       h       a       u       s       $
        -    -4.0    -4.0    -4.0    -3.0    -3.0    -3.0    -3.0    -3.0    33.9    33.8    33.7    -3.0
 
-IDS:  3 6 SCORE: -17.30 NSCORE:  -1.57    WORD: s c h e i s s h a u s   WORD: s h i t h o u s e
+IDS:  3 6 SCORE:  34.40 NSCORE:   3.13    WORD: s c h e i s s h a u s   WORD: s h i t h o u s e
        ^       -       -       -       s       h       i       t       h       o       u       s       e       $
        ^       s       c       h       e       i       s       s       h       a       u       s       -       $
        -    -4.0    -4.0    -4.0    -3.0    -3.0    -3.0    -3.0    -3.0    22.9    22.8    22.7    -4.0    -3.0
@@ -83,7 +83,7 @@ IDS:  4 5 SCORE:  67.40 NSCORE:   8.43    WORD: h a u s b a u   WORD: b a u m h 
        ^       -       -       -       -       h       a       u       s       b       a       u       $
        -    -4.0    -4.0    -4.0    -4.0    -3.0    33.9    33.8    33.7    -4.0    -4.0    -4.0    -3.0
 
-IDS:  4 6 SCORE: -16.30 NSCORE:  -1.81    WORD: h a u s b a u   WORD: s h i t h o u s e
+IDS:  4 6 SCORE:  35.40 NSCORE:   3.93    WORD: h a u s b a u   WORD: s h i t h o u s e
        ^       s       h       i       t       h       o       u       s       -       -       e       $
        ^       -       -       -       -       h       a       u       s       b       a       u       $
        -    -4.0    -4.0    -4.0    -4.0    -3.0    22.9    22.8    22.7    -4.0    -4.0    -3.0    -3.0
@@ -93,7 +93,7 @@ IDS:  5 5 SCORE: 120.20 NSCORE:  15.03    WORD: b a u m h a u s   WORD: b a u m 
        ^       b       a       u       m       h       a       u       s       $
        -    -3.0    -3.0    33.8    -3.0    -3.0    33.9    33.8    33.7    -3.0
 
-IDS:  5 6 SCORE:  -5.30 NSCORE:  -0.59    WORD: b a u m h a u s   WORD: s h i t h o u s e
+IDS:  5 6 SCORE:  72.30 NSCORE:   8.03    WORD: b a u m h a u s   WORD: s h i t h o u s e
        ^       s       h       i       t       h       o       u       s       e       $
        ^       b       a       u       m       h       a       u       s       -       $
        -    -3.0    -3.0    -3.0    -3.0    22.9    22.9    22.8    22.7    -4.0    -3.0

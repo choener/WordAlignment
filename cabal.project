@@ -10,6 +10,7 @@ packages: .
           ../Lib-OrderedBits
           ../Lib-PrimitiveArray/
 
---package WordAlignment
---  optimization: False
+package WordAlignment
+  ghc-options: -O0
+  optimization: False
 
