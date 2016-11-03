@@ -93,8 +93,10 @@ data Mapping = Mapping
 instance Hashable (Pair Bigram Bigram) where
   hashWithSalt s (a:!:b) = hashWithSalt s (a,b)
 
--- | This one is confusing. Given a bigram ab,cd from lang 1 to lang 2, we create
--- the bigram cd,ab from lang 2 to lang 1 as well.
+-- |
+--
+-- This one is confusing. Given a bigram a-b :!: c-d from lang 1 to lang 2,
+-- we create the bigram c-d :!: a-b from lang 2 to lang 1 as well.
 
 lines2mapping :: [Line] -> Mapping
 lines2mapping = foldl' mkMapping emptyMapping . concatMap dupGroup . groupBy ((==) `on` ((^._1) &&& (^._2))) where

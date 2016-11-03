@@ -97,8 +97,6 @@ runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,cnt,suffix] = do
   -- the bigram scoring file
   let chkLs = S.fromList . map wordLang $ ws
   bigramScoring <- BL.readFile (dir </> bgms <.> "bgms") >>= return . mkBigramMap chkLs (-999999)
-  putStrLn ""
-  print bigramScoring
   -- the bigram-associated simple scoring file
   simpleScoring <- simpleScoreFromFile $ dir </> bgms <.> "bgdef"
   -- a particular way we do scores for all inputs
@@ -126,7 +124,7 @@ testWrapper gldn = S.goldenVsAction name gldn (runSingleTest gldn xs) id
 main :: IO ()
 main = do
   gg <-  testGroup "Known good alignments"
-     <$> (fmap testWrapper . filter ("order" `isInfixOf`))
+     <$> (fmap testWrapper) -- . filter ("order" `isInfixOf`))
      <$> S.findByExtension [".golden"] "tests"
   SI.defaultMain gg
 
