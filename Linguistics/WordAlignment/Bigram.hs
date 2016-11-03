@@ -70,7 +70,7 @@ withDefault d (x:xs)
   | otherwise = (d,(x:xs))
 
 parseLine l = case ABL.eitherResult (ABL.parse go l) of
-                Left  err -> error $ "parseLine of: " ++ show l ++ " failed with: " ++ show err
+                Left  err -> error $ "Linguistics.WordAlignment.Bigram:parseLine of: " ++ show l ++ " failed with: " ++ show err
                 Right p   -> force p
   where
     go     = (,,,,) <$> lang <*> lang <*> bigram <*> bigram <*> score <?> "go"
