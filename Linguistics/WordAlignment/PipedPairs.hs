@@ -119,12 +119,10 @@ languagePairProducer ws = do
   let gs = deepseq ws . V.fromList . map (\(k,g@((i,w):_)) -> (wordLang w,k,i,length g))
          . zip [1..] . groupBy ((==) `on` (wordLang . snd)) . V.toList . V.indexed $ ws
   -- from @gs@ we generate the upper-triangular pairs
-  let (lenWgs,wgs) = second (V.map mkGroup) . upperTriVG OnDiag $ gs
+  let (lenWgs,wgs) = second (V.toList . V.map mkGroup) . upperTriVG OnDiag $ gs
   aliGroups .= lenWgs
   -- each wgs
-  -- NOTE it is imperative that @wgs@ be fusioned away, otherwise this will
-  -- generate a very huge in-memory representation of all input pairs.
-  for (each $ V.indexed wgs) $
+  for (each $ zip [0..] wgs) $
     \(k,w) -> do
       aliCurGroup .= k
       aliGroupLanguages .= w ^. _1
