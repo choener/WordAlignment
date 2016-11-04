@@ -9,6 +9,7 @@ import           Control.Monad (forM_,when)
 import           Control.Monad.Trans.Class (lift)
 import           Data.Default
 import           Data.FileEmbed
+import           Data.List (nub)
 import           Data.Version (showVersion)
 import           Pipes (for)
 import           Prelude hiding (Word)
@@ -186,12 +187,12 @@ wrapSimple2IO f cfg ws = do
       {-# Inline align #-}
   runAlignment
     (for  (runTwowayAlignments groupActionGC align eachGroupStatus (collectSimpleScores scoring) ws)
-          --(lift . lift . (TL.hPutStr stdout . TL.toLazyText))
           (lift . lift . (BB.hPutBuilder stdout))
     )
     ( set aliFilterScore (filterScore cfg) .
       set aliFilterBackt (filterBacktrack cfg) .
       set aliFilterNormalized (filterNormalized cfg) .
+      set aliFilterLanguages (lpBlockConstraints $ lpblock cfg) .
       set aliVerbose (v==Loud) $
       def
     )
@@ -247,8 +248,18 @@ wrapBigram2IO f cfg ws = do
     ( set aliFilterScore (filterScore cfg) .
       set aliFilterBackt (filterBacktrack cfg) .
       set aliFilterNormalized (filterNormalized cfg) .
+      set aliFilterLanguages (lpBlockConstraints $ lpblock cfg) .
       set aliVerbose (v==Loud) .
       set aliCustom (mempty :: Scores) $
       (def :: AlignmentConfig ())
     )
+
+-- | Transform the lpblock input to constraints
+
+lpBlockConstraints :: Maybe (String,String) -> [Either Int BTI]
+lpBlockConstraints Nothing = []
+lpBlockConstraints (Just (x,y)) = nub $ map go [x,y]
+  where go s | [(k,"")] <- reads s = Left k
+             | otherwise = Right $ btiFromCS s -- [(k,"")] <- reads s = Right k
+--             | otherwise = error $ "lpBlockConstraints, can't parse " ++ show s
 
