@@ -1,3 +1,10 @@
+0.2.0.0
+-------
+
+- removed bigram scoring bug [this one deprecates all earlier versions]
+- removed upper bounds
+- flexible framework for unit tests, including a set of unit tests
+
 0.1.x.y
 -------
 

@@ -11,6 +11,7 @@ packages: .
           ../Lib-PrimitiveArray/
 
 package WordAlignment
+--  flags: llvm
 --  ghc-options: -O0
 --  optimization: False
 
