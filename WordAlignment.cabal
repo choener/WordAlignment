@@ -33,7 +33,11 @@ Extra-Source-Files:
   scores/defaultSimpleScores
   stack.yaml
   -- we have lots of test files now that are being checked
-  tests/*
+  tests/*.bgdef
+  tests/*.bgms
+  tests/*.golden
+  tests/*.ugdef
+  tests/*.words
 
 
 
