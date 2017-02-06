@@ -87,7 +87,7 @@ library
                , GrammarProducts            == 0.1.1.*
                , LinguisticsTypes           == 0.0.0.*
                , NaturalLanguageAlphabets   == 0.1.1.*
-               , PrimitiveArray             == 0.7.2.*
+               , PrimitiveArray             == 0.8.0.*
   exposed-modules:
     Linguistics.WordAlignment
     Linguistics.WordAlignment.AlignmentBuilder
