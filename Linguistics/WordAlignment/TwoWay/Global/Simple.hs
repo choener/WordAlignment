@@ -69,7 +69,7 @@ sBacktrackBuilder !fc !fd !k !ss@SimpleScoring{..} = SigGlobal
 -- |
 
 alignGlobalForward :: SimpleScoring -> Vector BTI -> Vector BTI -> Z:.TwITbl Id Unboxed (Z:.EmptyOk:.EmptyOk) (Z:.PointL I:.PointL I) Double
-alignGlobalForward !scoring !i1 !i2 = {-# SCC "alignGlobalForward" #-} mutateTablesDefault $
+alignGlobalForward !scoring !i1 !i2 = {-# SCC "alignGlobalForward" #-} mutateTablesST $
   gGlobal (sScore scoring)
     (ITbl 0 0 (Z:.EmptyOk:.EmptyOk) (fromAssocs (Z:.PointL 0:.PointL 0) (Z:.PointL n1:.PointL n2) (-999999) []))
     (chr i1) (chr i2)
