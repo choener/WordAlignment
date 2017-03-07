@@ -97,8 +97,8 @@ library
     Linguistics.WordAlignment.PipedPairs
     Linguistics.WordAlignment.TwoWay.Global.Bigram
     Linguistics.WordAlignment.TwoWay.Global.Simple
-    Linguistics.WordAlignment.TwoWay.Infix.Bigram
-    Linguistics.WordAlignment.TwoWay.Infix.Simple
+--    Linguistics.WordAlignment.TwoWay.Infix.Bigram
+--    Linguistics.WordAlignment.TwoWay.Infix.Simple
     Linguistics.WordAlignment.Word
   default-language:
     Haskell2010

@@ -40,7 +40,7 @@ import           Linguistics.WordAlignment.PipedPairs
 import           Linguistics.WordAlignment.TwoWay.Global.Simple
 import           Linguistics.WordAlignment.Word (parseWord,Word(..),addWordDelims,wordLazyTextWS,wordLazyTextWSB, fastChars, fastChar, FastChars)
 import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as BI
-import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS
+--import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS
 
 import           Paths_WordAlignment (version)
 
@@ -120,7 +120,9 @@ oManual = Manual
   {
   }
 
-config = [oGlobal2Simple, oGlobal2Bigram, oInfix2Simple, oInfix2Bigram, oManual &= auto]
+config = [ oGlobal2Simple, oGlobal2Bigram
+--         , oInfix2Simple, oInfix2Bigram
+         , oManual &= auto]
   &= program "WordAlign"
   &= summary ("WordAlign " ++ showVersion version ++ " (c) Christian Höner zu Siederdissen 2014--2016, choener@bioinf.uni-leipzig.de")
   &= verbosity
@@ -138,8 +140,8 @@ main = do
     case o of
       Global2Simple{..} -> runGlobal2Simple o ws
       Global2Bigram{..} -> runGlobal2Bigram o ws
-      Infix2Simple{..}  -> runInfix2Simple  o ws
-      Infix2Bigram{..}  -> runInfix2Bigram  o ws
+--      Infix2Simple{..}  -> runInfix2Simple  o ws
+--      Infix2Bigram{..}  -> runInfix2Bigram  o ws
 
 
 
@@ -158,10 +160,10 @@ runManual Manual{} = do
 runGlobal2Simple :: Config -> V.Vector Word -> IO ()
 runGlobal2Simple = wrapSimple2IO (alignGlobalSimple2)
 
--- | Affine infix simple grammar
-
-runInfix2Simple :: Config -> V.Vector Word -> IO ()
-runInfix2Simple = wrapSimple2IO alignInfixSimple2
+---- | Affine infix simple grammar
+--
+--runInfix2Simple :: Config -> V.Vector Word -> IO ()
+--runInfix2Simple = wrapSimple2IO alignInfixSimple2
 
 -- | Wrap simple alignments on two tapes with IO.
 
@@ -218,10 +220,10 @@ collectBigramScores Mapping{..} = lliid ^.. traverse . traverse
 runGlobal2Bigram :: Config -> V.Vector Word -> IO ()
 runGlobal2Bigram = wrapBigram2IO alignGlobalBigram2
 
--- | Affine infix bigram grammar.
-
-runInfix2Bigram :: Config -> V.Vector Word -> IO ()
-runInfix2Bigram = wrapBigram2IO alignInfixBigram2
+---- | Affine infix bigram grammar.
+--
+--runInfix2Bigram :: Config -> V.Vector Word -> IO ()
+--runInfix2Bigram = wrapBigram2IO alignInfixBigram2
 
 -- | Wrap two-tape bigram alignments in IO.
 

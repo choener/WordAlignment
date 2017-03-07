@@ -31,16 +31,16 @@ import           Linguistics.WordAlignment.FastLookups
 import           Linguistics.WordAlignment.Word (Word, wordLang, wordWord, FastChars, fastChars)
 import qualified Linguistics.WordAlignment.TwoWay.Global.Bigram as GB2
 import qualified Linguistics.WordAlignment.TwoWay.Global.Simple as GS2
-import qualified Linguistics.WordAlignment.TwoWay.Infix.Bigram as IB2
-import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS2
+--import qualified Linguistics.WordAlignment.TwoWay.Infix.Bigram as IB2
+--import qualified Linguistics.WordAlignment.TwoWay.Infix.Simple as IS2
 
 
 
 alignGlobalSimple2 = GS2.alignGlobal
 alignGlobalBigram2 = GB2.alignGlobal
 
-alignInfixSimple2 = IS2.alignInfix
-alignInfixBigram2 = IB2.alignInfix
+--alignInfixSimple2 = IS2.alignInfix
+--alignInfixBigram2 = IB2.alignInfix
 
 -- | Wrap up the most common way to perform alignments. The function @f@
 -- needs to have all scoring parts incorporated.

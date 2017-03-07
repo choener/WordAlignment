@@ -205,30 +205,27 @@ the alignment.
 
 # Performance Notes
 
-Measured on a core i5-3570K @ 3.40 GHz; single-threaded.
+Measured on a core i5-3570K @ 3.40 GHz; single-threaded, based on 2001000 alignments.
 
 The program is not compiled for multi-threading, if you need this consider the
 ```--lpblock``` option first and parallelize on the language pair level.
 Otherwise, send a mail.
 
-The running time for calculating 100 000 alignments is:
+When aligning short words, as occur in human language, the approximate number
+of alignments per second is:
 
 | Mode      | Simple/Bigram   | Tapes | Alignments per Second |
 | :---      | :---            | :---: |                  ---: |
-| Global    | Simple          | 2     | 25 000
+| Global    | Simple          | 2     | 34 076
 |           | Bigram          | 2     | 26 600
-| Overhang  | Simple          | 2     | 14 300
-|           | Bigram          | 2     | 15 160
 
 and when printing alignments via ```--filterscore``` is restricted to scores
 ```>=10``` to return about 0.6% of alignments:
 
 | Mode      | Simple/Bigram   | Tapes | Alignments per Second |
 | :---      | :---            | :---: |                  ---: |
-| Global    | Simple          | 2     | 278 000
+| Global    | Simple          | 2     | 155 635
 |           | Bigram          | 2     | 192 500
-| Overhang  | Simple          | 2     |  48 125
-|           | Bigram          | 2     |  54 400
 
 
 

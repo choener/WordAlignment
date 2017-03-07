@@ -1,4 +1,4 @@
-resolver: lts-6.5
+resolver: lts-8.4
 
 packages:
 - '.'
@@ -10,30 +10,37 @@ packages:
   extra-dep: true
 - location: ../Lib-bimaps/
   extra-dep: true
-- location: ../Lib-PrimitiveArray/
-  extra-dep: true
-- location: ../Lib-ADPfusion/
-  extra-dep: true
-- location: ../Lib-FormalGrammars/
-  extra-dep: true
+#- location: ../Lib-PrimitiveArray/
+#  extra-dep: true
+#- location: ../Lib-ADPfusion/
+#  extra-dep: true
+#- location: ../Lib-FormalGrammars/
+#  extra-dep: true
 - location: ../Lib-GrammarProducts/
   extra-dep: true
 - location: ../Lib-AlignmentAlgorithms/
   extra-dep: true
-- location: ../Lib-DPutils/
-  extra-dep: true
-- location: ../Lib-OrderedBits
-  extra-dep: true
+#- location: ../Lib-DPutils/
+#  extra-dep: true
+#- location: ../Lib-OrderedBits
+#  extra-dep: true
 
 extra-deps:
-- cereal-text-0.1.0.2
+- ADPfusion-0.5.2.2
+- DPutils-0.0.1.0
+- FormalGrammars-0.3.1.1
+- OrderedBits-0.0.1.2
+- PrimitiveArray-0.8.0.1
+- intern-0.9.1.4
+- storable-tuple-0.0.3.2
+#- cereal-text-0.1.0.2
 # - FormalGrammars-0.3.0.0
 # - GrammarProducts-0.1.1.2
-- intern-0.9.1.4
+#- intern-0.9.1.4
 # - OneTuple-0.2.1
 # - OrderedBits-0.0.1.0
-- storable-record-0.0.3.1
-- storable-tuple-0.0.3.2
+#- storable-record-0.0.3.1
+#- storable-tuple-0.0.3.2
 # - tuple-0.3.0.2
 
 flags:
@@ -41,5 +48,5 @@ flags:
     debug: false
 
 ghc-options:
-  WordAlign: -O2 -fllvm -optlo-O3
+  WordAlign: -O2 # -fllvm -optlo-O3
 
