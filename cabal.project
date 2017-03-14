@@ -1,12 +1,12 @@
 packages: .
 --          ../Lib-ADPfusion/
-          ../Lib-AlignmentAlgorithms/
+--          ../Lib-AlignmentAlgorithms/
 --          ../Lib-bimaps/
 --          ../Lib-DPutils
 --          ../Lib-FormalGrammars/
-          ../Lib-GrammarProducts/
-          ../Lib-LinguisticsTypes/
-          ../Lib-NaturalLanguageAlphabets/
+--          ../Lib-GrammarProducts/
+--          ../Lib-LinguisticsTypes/
+--          ../Lib-NaturalLanguageAlphabets/
 --          ../Lib-OrderedBits
 --          ../Lib-PrimitiveArray/
 

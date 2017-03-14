@@ -81,7 +81,7 @@ runSingleTest gldn [dir,grammar,"unigram",ugms,wrds,cnt,suffix] = do
     let fd = FastDoubles mempty 8
     let (d,bts) = case grammar of
           "global" -> alignGlobalSimple2 simpleScoring fc fd 8 c (wordWord x) (wordWord y)
-          "infix"  -> alignInfixSimple2 simpleScoring fc fd 8 c (wordWord x) (wordWord y)
+--          "infix"  -> alignInfixSimple2 simpleScoring fc fd 8 c (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali
@@ -107,7 +107,7 @@ runSingleTest gldn [dir,grammar,"bigram",bgms,wrds,cnt,suffix] = do
     let !sco = getScores2 False bigramScoring (wordLang x) (wordLang y)
     let (d,bts) = case grammar of
           "global" -> alignGlobalBigram2 simpleScoring sco fc fd 8 c (wordWord x) (wordWord y)
-          "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 c (wordWord x) (wordWord y)
+--          "infix"  -> alignInfixBigram2 simpleScoring sco fc fd 8 c (wordWord x) (wordWord y)
     let ali = buildAlignmentBuilder 0 ([x,y],(d, bts))
     let hndl = stdout
     return $ BB.toLazyByteString ali

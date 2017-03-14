@@ -1,34 +1,20 @@
-resolver: lts-5.2
+resolver: lts-8.4
 
 packages:
 - '.'
-- location:
-    git: https://github.com/yamadapc/haskell-ascii-progress
-    commit: 8482c6bdabe885a34f89c0b16c62e60b30c2e457
-  extra-dep: true
 
 extra-deps:
-- ADPfusion-0.5.0.0
-- AlignmentAlgorithms-0.0.2.1
-#- ascii-progress-0.3.2.0
-- bimaps-0.0.0.4
-- cereal-text-0.1.0.1
-#- concurrent-output-1.7.1
-- control-monad-omega-0.3.1
-- FormalGrammars-0.2.1.1
-- GrammarProducts-0.1.1.1
 - intern-0.9.1.4
-- LinguisticsTypes-0.0.0.2
-- NaturalLanguageAlphabets-0.1.0.0
-- OrderedBits-0.0.1.0
-- PrimitiveArray-0.7.0.0
-- storable-record-0.0.3
-- storable-tuple-0.0.2
-#- tuple-th-0.2.5
-#- utility-ht-0.0.11
-#- vector-0.11.0.0
-- tuple-0.3.0.2
-- OneTuple-0.2.1
+- storable-tuple-0.0.3.2
 
-flags: {}
+- ADPfusion-0.5.2.2
+- AlignmentAlgorithms-0.1.0.0
+- bimaps-0.1.0.2
+- DPutils-0.0.1.0
+- FormalGrammars-0.3.1.1
+- GrammarProducts-0.1.1.3
+- LinguisticsTypes-0.0.0.3
+- NaturalLanguageAlphabets-0.1.1.0
+- OrderedBits-0.0.1.2
+- PrimitiveArray-0.8.0.1
 
